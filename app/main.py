@@ -52,17 +52,8 @@ app.add_middleware(
 # --------------------------------------------------
 # STATIC + UPLOADS (SAFE PATHS)
 # --------------------------------------------------
-app.mount(
-    "/static",
-    StaticFiles(directory=BASE_DIR / "app"/ "web" / "static"),
-    name="static"
-)
-
-app.mount(
-    "/uploads",
-    StaticFiles(directory=BASE_DIR.parent / "uploads"),
-    name="uploads"
-)
+app.mount("/static", StaticFiles(directory="app/web/static"), name="static")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # --------------------------------------------------
 # ROUTERS
