@@ -1,0 +1,241 @@
+{% extends "layouts/portal_base.html" %}
+
+{% block title %}
+Payment – Solunex Laboratory
+{% endblock %}
+
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/payment.css">
+{% endblock %}
+
+
+{% block content %}
+
+<section class="slx-payment">
+
+<div class="slx-container">
+
+    <!-- ========================================= -->
+    <!-- PAGE HEADER -->
+    <!-- ========================================= -->
+    <div class="slx-payment-header">
+        <h2>Complete Your Booking</h2>
+        <p>
+            Transfer the amount below to our laboratory account
+            to confirm your booking.
+        </p>
+    </div>
+
+
+    <!-- ========================================= -->
+    <!-- PAYMENT LAYOUT -->
+    <!-- ========================================= -->
+    <div class="slx-payment-layout">
+
+
+        <!-- ========================================= -->
+        <!-- TESTS BOOKED SUMMARY -->
+        <!-- ========================================= -->
+        <div class="slx-payment-card">
+
+            <h3>Tests Booked</h3>
+
+            <ul class="slx-tests-list">
+
+                {% for item in items %}
+
+                <li class="slx-test-row">
+
+                    <div class="slx-test-name">
+                        {{ item.test_name_snapshot }}
+                    </div>
+
+                    <div class="slx-test-price">
+                        ₦{{ "{:,.2f}".format(item.price_snapshot) }}
+                    </div>
+
+                </li>
+
+                {% endfor %}
+
+            </ul>
+
+
+            <!-- TOTAL -->
+            <div class="slx-test-total">
+
+                <span>Total Amount</span>
+
+                <strong>
+                    ₦{{ "{:,.2f}".format(booking.total_amount) }}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ========================================= -->
+        <!-- BANK TRANSFER DETAILS -->
+        <!-- ========================================= -->
+        <div class="slx-payment-card">
+
+            <h3>Bank Transfer Details</h3>
+
+            <div class="slx-bank-grid">
+
+                <div class="slx-bank-row">
+                    <span>Bank Name</span>
+                    <strong>Zenith Bank</strong>
+                </div>
+
+                <div class="slx-bank-row">
+                    <span>Account Name</span>
+                    <strong>Solunex Laboratory Services</strong>
+                </div>
+
+                <div class="slx-bank-row">
+                    <span>Account Number</span>
+
+                    <div class="copy-field">
+
+                        <strong id="accountNumber">
+                            1234567890
+                        </strong>
+
+                        <button onclick="copyAccount()">
+                            Copy
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- ========================================= -->
+        <!-- PAYMENT INSTRUCTIONS -->
+        <!-- ========================================= -->
+        <div class="slx-payment-card">
+
+            <h3>Payment Instructions</h3>
+
+            <ul class="slx-payment-steps">
+
+                <li>
+                    Transfer the exact amount to the bank account above.
+                </li>
+
+                <li>
+                    Use your <strong>Booking Code</strong> as the payment narration.
+                </li>
+
+                <li>
+                    After payment confirmation, your laboratory booking
+                    will be activated.
+                </li>
+
+            </ul>
+
+            <div class="slx-booking-code">
+
+                Use this narration:
+                <strong>{{ booking.booking_code }}</strong>
+
+            </div>
+
+        </div>
+
+
+
+    <div class="slx-payment-card slx-upload-card">
+
+<h3>Upload Payment Proof</h3>
+
+{% if request.query_params.get("uploaded") %}
+<div class="slx-success-message">
+    Payment proof uploaded successfully.
+    Our team will verify your payment shortly.
+</div>
+{% endif %}
+
+
+<p>
+After completing the bank transfer, upload your payment receipt
+or transfer confirmation below.
+</p>
+
+<form
+method="post"
+action="/payment/{{ booking.booking_code }}"
+enctype="multipart/form-data"
+class="slx-upload-form"
+>
+
+<input
+type="file"
+name="proof"
+accept="image/*,application/pdf"
+required
+>
+
+<button type="submit" class="btn-primary">
+Submit Payment Proof
+</button>
+
+</form>
+
+</div>
+
+        <!-- ========================================= -->
+        <!-- AFTER PAYMENT / CONFIRMATION -->
+        <!-- ========================================= -->
+        <div class="slx-payment-card slx-confirm-card">
+
+            <h3>After Payment</h3>
+
+            <p>
+                Once your payment is verified, your test request
+                will be activated and processed at our laboratory.
+            </p>
+
+            <a href="/" class="btn-secondary">
+                Return to Home
+            </a>
+
+        </div>
+
+
+    </div> <!-- END payment layout -->
+
+</div> <!-- END container -->
+
+</section>
+
+
+
+<!-- ========================================= -->
+<!-- PAGE SCRIPTS -->
+<!-- ========================================= -->
+<script>
+
+function copyAccount() {
+
+    const acc = document.getElementById("accountNumber").innerText;
+
+    navigator.clipboard.writeText(acc);
+
+    alert("Account number copied");
+
+}
+
+</script>
+
+
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "layouts/base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/admin_booking_detail.css">
+{% endblock %}
+
+{% block content %}
+
+<div class="card">
+
+<h2>Booking Review</h2>
+
+<!-- =========================
+     Booking Summary
+========================= -->
+
+<div class="booking-summary">
+
+<div class="summary-grid">
+
+<div>
+<label>Booking Code</label>
+<span>{{ booking.booking_code }}</span>
+</div>
+
+<div>
+<label>Booking Type</label>
+<span>{{ booking.booking_type }}</span>
+</div>
+
+<div>
+<label>Status</label>
+<span class="status status-{{ booking.status }}">
+{{ booking.status }}
+</span>
+</div>
+
+<div>
+<label>Total Amount</label>
+<span>₦{{ booking.total_amount }}</span>
+</div>
+
+<div>
+<label>Created</label>
+<span>{{ booking.created_at }}</span>
+</div>
+
+</div>
+
+</div>
+
+<hr>
+
+<!-- =========================
+     Patients & Tests
+========================= -->
+
+<h3>Patients & Tests</h3>
+
+<table class="booking-table">
+
+<thead>
+<tr>
+<th>Patient</th>
+<th>Phone</th>
+<th>Test</th>
+<th>Price</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for item in items %}
+
+<tr>
+
+<td>{{ item.patient_name }}</td>
+
+<td>{{ item.patient_phone }}</td>
+
+<td>{{ item.test_name_snapshot }}</td>
+
+<td>₦{{ "{:,.2f}".format(item.price_snapshot) }}</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+<hr>
+
+<!-- =========================
+     Payment Proof
+========================= -->
+
+<h3>Payment Proof</h3>
+
+{% if proof %}
+
+<div class="payment-proof">
+
+<img src="/{{ proof.file_path }}" class="proof-image">
+
+</div>
+
+{% else %}
+
+<p class="muted">
+⚠ Payment proof has not been uploaded yet.
+Admin approval is disabled.
+</p>
+{% endif %}
+
+<hr>
+
+<!-- =========================
+     Admin Decision
+========================= -->
+
+{% if proof and booking.status == "awaiting_verification" %}
+
+<div class="action-buttons">
+
+<button class="btn-success"
+onclick="approvePayment({{ proof.id }})">
+Approve Payment
+</button>
+
+<button class="btn-danger"
+onclick="rejectPayment({{ proof.id }})">
+Reject Payment
+</button>
+
+</div>
+
+{% endif %}
+
+{% if not proof and booking.status == "pending_approval" %}
+
+<div class="action-buttons">
+
+<button class="btn-success"
+onclick="approveCredit({{ booking.id }})">
+Approve Credit
+</button>
+
+</div>
+
+{% endif %}
+
+</div>
+
+
+
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/admin_booking_detail.js"></script>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "layouts/portal_base.html" %}
+
+{% block title %}Laboratory Results – I & E Lab{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/results.css">
+{% endblock %}
+
+{% block content %}
+
+<section class="slx-results">
+
+<div class="slx-container">
+
+<div class="slx-results-header">
+<h2>Released Laboratory Results</h2>
+
+<p>
+Below are the laboratory results that have been verified and released
+by our laboratory team.
+</p>
+</div>
+
+
+<div class="slx-results-card">
+
+{% if results %}
+
+<table class="slx-results-table">
+
+<thead>
+<tr>
+<th>Test</th>
+<th>Date Released</th>
+<th>Branch</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for r in results %}
+
+<tr>
+
+<td class="test-name">
+{{ r.test_type.name if r.test_type else "Laboratory Test" }}
+</td>
+
+<td>
+{{ r.created_at.strftime('%d %b %Y') if r.created_at else "-" }}
+</td>
+
+<td>
+{{ r.branch.name if r.branch else "-" }}
+</td>
+
+<td class="result-actions">
+
+<a class="btn-download"
+href="/results/{{ r.id }}">
+View
+</a>
+
+<a class="btn-download"
+href="/results/{{ r.id }}/download">
+Download
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+{% else %}
+
+<div class="slx-empty-state">
+
+<h3>No Results Available</h3>
+
+<p>
+We could not find any released laboratory results associated with
+your account.
+</p>
+
+<a href="/lookup" class="btn-primary">
+Search Again
+</a>
+
+</div>
+
+{% endif %}
+
+</div>
+
+
+<div class="slx-results-footer">
+
+<a href="/book" class="btn-secondary">
+Book Another Test
+</a>
+
+</div>
+
+</div>
+
+</section>
+
+{% endblock %}

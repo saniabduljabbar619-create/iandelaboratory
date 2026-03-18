@@ -1,0 +1,194 @@
+{% extends "layouts/portal_base.html" %}
+
+{% block title %}Result Viewer – I & E Lab{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/result_view.css">
+{% endblock %}
+
+{% block content %}
+
+<section class="slx-result-view">
+
+<div class="slx-container">
+
+<!-- ================= RESULT HEADER ================= -->
+
+<div class="slx-result-header">
+
+<h2>I & E Diagnostic Laboratory</h2>
+
+<p class="result-subtitle">
+Secure Diagnostic Result Viewer
+</p>
+
+</div>
+
+
+<!-- ================= PATIENT INFORMATION ================= -->
+
+<div class="slx-result-meta">
+
+<div class="meta-block">
+<strong>Patient Name:</strong>
+{{ result.patient.full_name }}
+</div>
+
+<div class="meta-block">
+<strong>Patient No:</strong>
+{{ result.patient.patient_no }}
+</div>
+
+<div class="meta-block">
+<strong>Sex:</strong>
+{{ result.patient.sex }}
+</div>
+
+<div class="meta-block">
+<strong>Age:</strong>
+{{ result.patient.age }}
+</div>
+
+<div class="meta-block">
+<strong>Test:</strong>
+{{ result.test_type.name if result.test_type else "Laboratory Test" }}
+</div>
+
+<div class="meta-block">
+<strong>Date:</strong>
+{{ result.created_at.strftime("%d %b %Y") if result.created_at else "-" }}
+</div>
+
+</div>
+
+
+
+<!-- ================= RESULT TABLE ================= -->
+
+<div class="slx-result-card">
+
+{% set values = result.values %}
+{% set flags = result.flags %}
+
+<table class="slx-result-table">
+
+
+{% if values and values.get('cells') %}
+
+<!-- GRID BASED RESULTS -->
+
+<thead>
+<tr>
+
+{% for col in values.cells[0] %}
+<th>{{ col }}</th>
+{% endfor %}
+
+</tr>
+</thead>
+
+<tbody>
+
+{% for row in values.cells[1:] %}
+
+<tr>
+
+{% for col in row %}
+<td>{{ col }}</td>
+{% endfor %}
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+
+{% else %}
+
+<!-- FIELD BASED RESULTS -->
+
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Result</th>
+<th>Flag</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for key, value in values.items() %}
+
+<tr>
+
+<td>{{ key }}</td>
+
+<td>{{ value }}</td>
+
+<td>
+{{ flags[key] if flags and key in flags else "-" }}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+{% endif %}
+
+</table>
+
+</div>
+
+
+
+<!-- ================= SCIENTIST SIGNATURE ================= -->
+
+<div class="slx-result-footer">
+
+<div>
+
+<strong>Released By:</strong>
+
+{{ result.released_by if result.released_by else "Laboratory Scientist" }}
+
+</div>
+
+<div>
+
+<strong>Date Released:</strong>
+
+{{ result.updated_at.strftime("%d %b %Y") if result.updated_at else "-" }}
+
+</div>
+
+</div>
+
+
+
+<!-- ================= ACTION BUTTONS ================= -->
+
+<div class="slx-result-actions">
+
+<a class="btn-download"
+href="/results/{{ result.id }}/download">
+
+Download Official PDF
+
+</a>
+
+<a href="/results" class="btn-secondary">
+
+Back to Results
+
+</a>
+
+</div>
+
+</div>
+
+</section>
+
+{% endblock %}

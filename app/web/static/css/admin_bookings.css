@@ -1,0 +1,100 @@
+.page-header{
+margin-bottom:20px;
+}
+
+.page-header h2{
+font-size:24px;
+font-weight:600;
+}
+
+.page-subtitle{
+color:#666;
+margin-top:4px;
+}
+
+.card{
+background:white;
+border-radius:8px;
+padding:20px;
+box-shadow:0 1px 4px rgba(0,0,0,0.06);
+}
+
+.admin-table{
+width:100%;
+border-collapse:collapse;
+font-size:14px;
+}
+
+.admin-table th{
+text-align:left;
+padding:12px;
+border-bottom:2px solid #eee;
+background:#fafafa;
+}
+
+.admin-table td{
+padding:12px;
+border-bottom:1px solid #eee;
+}
+
+.admin-table tr:hover{
+background:#fafafa;
+}
+
+.code{
+font-weight:600;
+color:#333;
+}
+
+.status{
+padding:4px 10px;
+border-radius:4px;
+font-size:12px;
+font-weight:600;
+text-transform:capitalize;
+}
+
+.status-pending{
+background:#fff4e5;
+color:#b76e00;
+}
+
+.status-awaiting_verification{
+background:#e7f3ff;
+color:#1d6fd8;
+}
+
+.status-payment_verified{
+background:#e7f8ee;
+color:#178a45;
+}
+
+.status-payment_rejected{
+background:#fdeaea;
+color:#c62828;
+}
+
+.btn-view{
+text-decoration:none;
+padding:6px 12px;
+background:#1d6fd8;
+color:white;
+border-radius:4px;
+font-size:13px;
+}
+
+.btn-view:hover{
+background:#1556a8;
+}
+
+.alert{
+padding:10px 14px;
+border-radius:6px;
+margin-bottom:20px;
+font-size:14px;
+}
+
+.alert.success{
+background:#e7f8ee;
+color:#1b7f45;
+}

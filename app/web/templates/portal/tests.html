@@ -1,0 +1,99 @@
+{% extends "layouts/portal_base.html" %}
+
+{% block title %}Laboratory Tests – I & E Lab{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/tests.css">
+{% endblock %}
+
+{% block content %}
+
+<section class="slx-tests">
+
+<div class="slx-container">
+
+<div class="slx-section-head">
+<h2>Laboratory Tests</h2>
+<p>
+Browse available diagnostic tests offered by our laboratory.
+</p>
+</div>
+
+
+<div class="slx-test-search">
+<input type="text" id="testSearch" placeholder="Search laboratory tests...">
+</div>
+
+
+{% for category, tests in tests_by_category.items() %}
+
+<div class="slx-test-category">
+
+<h3 class="slx-category-title">
+{{ category }}
+</h3>
+
+<div class="slx-grid-3">
+
+{% for test in tests %}
+
+<div class="slx-test-card">
+
+<h4>{{ test.name }}</h4>
+
+<p class="slx-test-desc">
+{{ test.description or "Professional laboratory diagnostic test." }}
+</p>
+
+<div class="slx-test-footer">
+
+<div class="slx-test-price">
+₦{{ "{:,.2f}".format(test.price or 0) }}
+</div>
+
+<a href="/book" class="btn-book">
+Book Test
+</a>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</section>
+
+
+<script>
+
+const searchInput = document.getElementById("testSearch");
+
+searchInput.addEventListener("keyup", function(){
+
+const term = this.value.toLowerCase();
+
+document.querySelectorAll(".slx-test-card").forEach(card=>{
+
+let text = card.innerText.toLowerCase();
+
+if(text.includes(term)){
+card.style.display="block";
+}else{
+card.style.display="none";
+}
+
+});
+
+});
+
+</script>
+
+{% endblock %}

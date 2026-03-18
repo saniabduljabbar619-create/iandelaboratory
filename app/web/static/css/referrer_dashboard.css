@@ -1,0 +1,102 @@
+.dashboard {
+    padding: 24px;
+}
+
+/* HEADER */
+.header {
+    margin-bottom: 20px;
+}
+
+.header h2 {
+    font-weight: 600;
+}
+
+.subtitle {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* CARDS */
+.cards {
+    margin: 20px 0 30px;
+}
+
+.card {
+    background: #ffffff;
+    padding: 20px 24px;
+    border-radius: 14px;
+    width: 280px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.card p {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.card h1 {
+    font-size: 30px;
+    font-weight: 600;
+    color: #0a2540;
+}
+
+/* SECTION */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* TABLE */
+.table-section table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table-section th {
+    text-align: left;
+    font-size: 13px;
+    color: #6b7280;
+    padding: 12px;
+    background: #f8fafc;
+}
+
+.table-section td {
+    padding: 14px 12px;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+}
+
+.table-section tr {
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.table-section tr:hover {
+    background: #f1f5f9;
+}
+
+/* PATIENTS */
+.patients-section {
+    margin-top: 30px;
+}
+
+#selectedBooking {
+    font-size: 13px;
+    color: #0a7cff;
+}
+
+.patient-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px;
+    background: #ffffff;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid #eee;
+    font-size: 14px;
+}

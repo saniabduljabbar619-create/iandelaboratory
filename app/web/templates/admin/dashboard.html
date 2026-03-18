@@ -1,0 +1,334 @@
+{% extends "layouts/base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/dashboard.css">
+<style>
+    /* Professional Refinements */
+    :root {
+        --brand-teal: #0d9488;
+        --debt-amber: #f59e0b;
+        --slate-text: #64748b;
+    }
+
+    /* Status Badges */
+    .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.025em; }
+    .status-paid { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-pending { background: #fef9c3; color: #a16207; border: 1px solid #fef08a; }
+    .status-credit { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+    .status-alert { background: #fff1f2; color: #be123c; border: 1px solid #ffe4e6; }
+    
+    /* Table Styling */
+    .financial-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 1rem; }
+    .financial-table th { background: #f8fafc; color: var(--slate-text); text-align: left; padding: 14px; font-size: 0.75rem; font-weight: 600; border-bottom: 2px solid #edf2f7; }
+    .financial-table td { padding: 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.85rem; }
+    .financial-table tr:hover td { background-color: #fcfdfe; }
+    
+    /* Today Strip Styling */
+    .today-strip { display: flex; gap: 20px; margin-bottom: 25px; }
+    .today-item { flex: 1; background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .today-item .label { color: var(--slate-text); font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; }
+    .today-item .value { color: #1e293b; font-size: 1.4rem; font-weight: 800; }
+    .today-item.highlight { border-top: 4px solid var(--brand-teal); }
+    .today-item.warning { border-top: 4px solid var(--debt-amber); }
+
+    /* Action Buttons */
+    .btn-approve { background: var(--brand-teal); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .btn-approve:hover { background: #0f766e; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+    <div>
+        <h2 class="page-title" style="margin:0; font-weight: 800; color: #1e293b;">Management Command Center</h2>
+        <p style="color: var(--slate-text); margin: 0; font-size: 0.9rem;">Real-time financial and operational oversight</p>
+    </div>
+    <div class="date-display" style="background: white; padding: 8px 16px; border-radius: 10px; border: 1px solid #e2e8f0; font-weight: 600; color: #475569;">
+        <i class="fas fa-calendar-check text-teal-600 mr-2"></i> {{ request.state.year }} Fiscal Year
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; margin-bottom: 25px;">
+    <div class="card" style="padding: 24px; display: flex; align-items: center; gap: 20px;">
+        <div style="width: 50px; height: 50px; background: #f0fdfa; color: var(--brand-teal); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+            <i class="fas fa-user-shield"></i>
+        </div>
+        <div>
+            <p style="margin:0; color: var(--slate-text); font-size: 0.8rem; font-weight: 600;">ADMINISTRATOR</p>
+            <h3 style="margin:0; font-size: 1.25rem; color: #1e293b;">{{ user.username }}</h3>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 20px;">
+        <form method="get" action="/admin/dashboard" id="filterForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            {% if user.role == "super_admin" %}
+            <div class="filter-group">
+                <label style="font-size: 0.7rem; color: var(--slate-text); font-weight: 800; text-transform: uppercase;">Regional Scope</label>
+                <select name="branch_id" onchange="this.form.submit()" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 500;">
+                    <option value="">All Branches</option>
+                    {% for b in branches %}
+                    <option value="{{ b.id }}" {% if selected_branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="filter-group">
+                <label style="font-size: 0.7rem; color: var(--slate-text); font-weight: 800; text-transform: uppercase;">Accounting Ledger</label>
+                <select name="financial_view" onchange="this.form.submit()" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 500;">
+                    <option value="payments" {% if financial_view == "payments" %}selected{% endif %}>Realized Cash (Verified)</option>
+                    <option value="credit_pending" {% if financial_view == "credit_pending" %}selected{% endif %}>Authorization Queue</option>
+                    <option value="credit_approved" {% if financial_view == "credit_approved" %}selected{% endif %}>Approved Credit (Debtors)</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="today-strip">
+    <div class="today-item">
+        <span class="label"><i class="fas fa-users mr-2 text-blue-500"></i> PATIENTS TODAY</span>
+        <span class="value">{{ today_metrics.patients_today or 0 }}</span>
+    </div>
+    <div class="today-item highlight">
+        <span class="label"><i class="fas fa-cash-register mr-2 text-teal-500"></i> CASH TODAY</span>
+        <span class="value text-teal-600">₦ {{ "{:,.2f}".format(today_metrics.revenue_today or 0) }}</span>
+    </div>
+    <div class="today-item warning">
+        <span class="label"><i class="fas fa-hand-holding-usd mr-2 text-amber-500"></i> CREDIT TODAY</span>
+        <span class="value text-amber-600">₦ {{ "{:,.2f}".format(today_metrics.debt_today or 0) }}</span>
+    </div>
+</div>
+
+<div class="metrics-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px;">
+    <div class="metric-card">
+        <p class="metric-title">Active Database</p>
+        <h3 class="font-bold">{{ metrics.patients }} Patients</h3>
+    </div>
+    <div class="metric-card">
+        <p class="metric-title">Critical Results</p>
+        <h3 style="color: #6366f1;">{{ metrics.pending_review }} Reviewing</h3>
+    </div>
+    <div class="metric-card">
+        <p class="metric-title">Total Cash Banked</p>
+        <h3 style="color: var(--brand-teal);">₦ {{ "{:,.2f}".format(metrics.revenue) }}</h3>
+    </div>
+    <div class="metric-card" style="border-left: 4px solid var(--debt-amber);">
+        <p class="metric-title">Total Credit Owed</p>
+        <h3 style="color: #b45309;">₦ {{ "{:,.2f}".format(metrics.total_credit or 0) }}</h3>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 30px; border-radius: 12px; overflow: hidden;">
+    <div style="background: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9;">
+        <h3 style="margin: 0; color: #1e293b; font-size: 1.1rem; font-weight: 700;">
+            {% if financial_view == "payments" %}Verified Cash Payments
+            {% elif financial_view == "credit_pending" %}Pending Authorization Requests
+            {% elif financial_view == "credit_approved" %}Approved Referrer Debt Ledger
+            {% else %}High Risk Debtor List{% endif %}
+        </h3>
+        <span class="status-badge status-credit">{{ financial_data|length }} Entries Found</span>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="financial-table">
+            <thead>
+    <tr>
+        {% if financial_view == "credit_approved" %}
+            <th>BATCH CODE</th>
+            <th>ENTITY / REFERRER</th>
+            <th>PATIENTS</th>
+            <th>TOTAL DEBT</th>
+            <th>ACTIONS</th>
+        {% else %}
+            <th>REF CODE</th>
+            <th>CLIENT / ENTITY</th>
+            <th>AMOUNT</th>
+            <th>LEDGER STATUS</th>
+            {% if financial_view == "credit_pending" %}<th>ACTIONS</th>{% endif %}
+        {% endif %}
+    </tr>
+</thead>
+<tbody>
+    {% for row in financial_data %}
+    <tr>
+        {% if financial_view == "credit_approved" %}
+            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--brand-teal);">
+                {{ row.booking_code }}
+            </td>
+            <td style="font-weight: 700; color: #1e293b;">{{ row.referrer_name }}</td>
+            <td>
+                <span class="badge" style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px; color: #475569;">
+                    {{ row.patient_count }} Cases
+                </span>
+            </td>
+            <td style="font-weight: 800; color: #be123c;">
+                ₦ {{ "{:,.2f}".format(row.total_batch_amount) }}
+            </td>
+            <td>
+                <button class="btn-approve" onclick="settleBatch('{{ row.booking_code }}', this)" style="background: #059669; padding: 6px 12px; font-size: 0.75rem;">
+                    <i class="fas fa-check-double mr-1"></i> SETTLE
+                </button>
+            </td>
+        {% else %}
+            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--brand-teal);">
+                {{ row.booking_code or 'N/A' }}
+            </td>
+            <td>
+                <div style="font-weight: 700; color: #334155;">{{ row.referrer_name or row.full_name }}</div>
+                <div style="font-size: 0.75rem; color: var(--slate-text);">
+                    <i class="far fa-clock mr-1"></i> {{ row.created_at.strftime('%d %b %Y') if row.created_at else 'N/A' }}
+                </div>
+            </td>
+            <td style="font-weight: 800; color: #1e293b;">
+                ₦ {{ "{:,.2f}".format(row.total_amount or row.amount) }}
+            </td>
+            <td>
+                <span class="status-badge {% if financial_view == 'credit_pending' %}status-pending{% else %}status-paid{% endif %}">
+                    {{ row.status|replace('_', ' ') if row.status else 'Verified' }}
+                </span>
+            </td>
+            {% if financial_view == "credit_pending" %}
+            <td>
+                <button class="btn-approve" onclick="approveCredit({{ row.id }}, this)">
+                    <i class="fas fa-check-circle mr-1"></i> AUTHORIZE
+                </button>
+            </td>
+            {% endif %}
+        {% endif %}
+    </tr>
+    {% else %}
+    <tr>
+        <td colspan="5" style="text-align: center; padding: 40px; color: var(--slate-text);">
+            <i class="fas fa-folder-open mb-3" style="font-size: 2rem; opacity: 0.3;"></i>
+            <p>No records found for this ledger view.</p>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
+        </table>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 40px;">
+    <div class="card chart-card" style="padding:20px;">
+        <h3 class="chart-title" style="margin-bottom: 20px; font-size: 1rem; color: #1e293b;"><i class="fas fa-chart-line mr-2 text-teal-600"></i> Revenue Trajectory</h3>
+        <canvas id="revenueChart" style="max-height: 300px;"></canvas>
+    </div>
+    <div class="card chart-card" style="padding:20px;">
+        <h3 class="chart-title" style="margin-bottom: 20px; font-size: 1rem; color: #1e293b;"><i class="fas fa-chart-bar mr-2 text-blue-600"></i> Daily Volume</h3>
+        <canvas id="activityChart" style="max-height: 300px;"></canvas>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Shared Chart Config
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#94a3b8';
+
+    // REVENUE TREND
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: {
+            labels: {{ trend_labels|tojson }},
+            datasets: [{
+                label: 'Verified Revenue (₦)',
+                data: {{ trend_values|tojson }},
+                borderColor: '#0d9488',
+                backgroundColor: 'rgba(13, 148, 136, 0.05)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#0d9488'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+        }
+    });
+
+    // ACTIVITY ANALYSIS
+    new Chart(document.getElementById('activityChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ activity_labels|default(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])|tojson }},
+            datasets: [
+                { label: 'Patients', data: {{ patients_values|default([0,0,0,0,0,0,0])|tojson }}, backgroundColor: '#0ea5e9', borderRadius: 6 },
+                { label: 'Orders', data: {{ requests_values|default([0,0,0,0,0,0,0])|tojson }}, backgroundColor: '#1e293b', borderRadius: 6 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 20 } } },
+            scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
+        }
+    });
+});
+
+async function approveCredit(id, btn) {
+    if (!confirm("Are you sure you want to authorize this credit booking? It will be logged as outstanding debt.")) return;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    
+    try {
+        const response = await fetch(`/admin/bookings/${id}/approve-credit`, { 
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert("Authorization failed. Please check permissions.");
+            btn.disabled = false;
+            btn.innerHTML = 'Authorize';
+        }
+    } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+    }
+}
+
+
+// Add this below your approveCredit function
+async function settleBatch(bookingCode, btn) {
+    if (!confirm(`Confirm payment received for Batch: ${bookingCode}?\nThis will mark all patients in this batch as PAID.`)) return;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Settling...';
+    
+    try {
+        const response = await fetch(`/admin/finance/settle-batch/${bookingCode}`, { 
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+            // Success: reload to clear the batch from the debt list
+            location.reload();
+        } else {
+            const errData = await response.json();
+            alert("Settlement failed: " + (errData.detail || "Unknown error"));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-double mr-1"></i> SETTLE BATCH';
+        }
+    } catch (e) {
+        console.error("Settlement Error:", e);
+        btn.disabled = false;
+        btn.innerHTML = 'SETTLE BATCH';
+    }
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "layouts/portal_base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/referrer_login.css">
+{% endblock %}
+
+{% block content %}
+
+<div class="login-container">
+    <div class="login-card">
+
+        <h2>Referrer Portal</h2>
+        <p class="subtitle">Access your credit dashboard</p>
+
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" id="phone" placeholder="e.g. 07011221133">
+        </div>
+
+        <button id="loginBtn" onclick="login()">Login</button>
+
+        <p id="errorMsg" class="error"></p>
+
+    </div>
+</div>
+
+<script>
+async function login() {
+    const phone = document.getElementById("phone").value.trim();
+    const btn = document.getElementById("loginBtn");
+    const error = document.getElementById("errorMsg");
+
+    error.innerText = "";
+
+    if (!phone) {
+        error.innerText = "Phone number is required";
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Signing in...";
+
+    try {
+        const res = await fetch("/api/referrer/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ phone })
+        });
+
+        if (!res.ok) {
+            error.innerText = "Invalid phone number";
+            btn.disabled = false;
+            btn.innerText = "Login";
+            return;
+        }
+
+        const data = await res.json();
+
+        localStorage.setItem("referrer_id", data.referrer_id);
+        localStorage.setItem("referrer_name", data.name);
+
+        window.location.href = "/portal/referrer/dashboard";
+
+    } catch (err) {
+        error.innerText = "Network error. Try again.";
+        btn.disabled = false;
+        btn.innerText = "Login";
+    }
+}
+</script>
+{% endblock %}

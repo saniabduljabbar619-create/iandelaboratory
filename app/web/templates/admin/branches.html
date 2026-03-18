@@ -1,0 +1,54 @@
+{% extends "layouts/base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/branches.css">
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h2 class="page-title">Branch Management</h2>
+        <p class="page-subtitle">Manage operational lab branches</p>
+    </div>
+
+    <a href="/admin/branches/create" class="btn-primary">
+        + Create Branch
+    </a>
+</div>
+
+<div class="card table-card">
+
+    <table class="sx-table">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th class="align-right">Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for branch in branches %}
+            <tr>
+                <td>
+                    <span class="branch-code-badge">
+                        {{ branch.code }}
+                    </span>
+                </td>
+
+                <td class="branch-name">
+                    {{ branch.name }}
+                </td>
+
+                <td class="align-right">
+                    <a href="#" class="btn-secondary btn-sm">Edit</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock %}

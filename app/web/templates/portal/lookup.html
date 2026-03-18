@@ -1,0 +1,50 @@
+{% extends "layouts/portal_base.html" %}
+
+{% block content %}
+<div class="portal-container">
+
+    <div class="portal-card">
+        <h2>Patient Result Portal</h2>
+        <p class="subtitle">
+            Sign in using your registered phone number and patient number to access your released results.
+        </p>
+
+        <form method="post" action="/login" class="portal-form">
+
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input 
+                    type="tel" 
+                    name="phone" 
+                    placeholder="e.g. 08012345678"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label>Patient Number</label>
+                <input 
+                    type="password" 
+                    name="patient_no" 
+                    placeholder="Enter your patient number"
+                    required>
+            </div>
+
+            <button type="submit" class="btn-primary">
+                Sign In & View Results
+            </button>
+
+        </form>
+
+        {% if error %}
+        <div class="sx-alert error" style="margin-top:20px;">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <div class="security-note">
+            Your login credentials are encrypted and securely processed by I & E Laboratory Systems.
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,1698 @@
+﻿{
+    "openapi":  "3.1.0",
+    "info":  {
+                 "title":  "Solunex Lab Backend",
+                 "version":  "0.1.0"
+             },
+    "paths":  {
+                  "/api/auth/login":  {
+                                          "post":  {
+                                                       "tags":  [
+                                                                    "auth"
+                                                                ],
+                                                       "summary":  "Login Stub",
+                                                       "operationId":  "login_stub_api_auth_login_post",
+                                                       "responses":  {
+                                                                         "200":  {
+                                                                                     "description":  "Successful Response",
+                                                                                     "content":  {
+                                                                                                     "application/json":  {
+                                                                                                                              "schema":  {
+
+                                                                                                                                         }
+                                                                                                                          }
+                                                                                                 }
+                                                                                 }
+                                                                     }
+                                                   }
+                                      },
+                  "/api/patients":  {
+                                        "post":  {
+                                                     "tags":  [
+                                                                  "patients"
+                                                              ],
+                                                     "summary":  "Create Patient",
+                                                     "operationId":  "create_patient_api_patients_post",
+                                                     "requestBody":  {
+                                                                         "content":  {
+                                                                                         "application/json":  {
+                                                                                                                  "schema":  {
+                                                                                                                                 "$ref":  "#/components/schemas/PatientCreate"
+                                                                                                                             }
+                                                                                                              }
+                                                                                     },
+                                                                         "required":  true
+                                                                     },
+                                                     "responses":  {
+                                                                       "200":  {
+                                                                                   "description":  "Successful Response",
+                                                                                   "content":  {
+                                                                                                   "application/json":  {
+                                                                                                                            "schema":  {
+                                                                                                                                           "$ref":  "#/components/schemas/PatientOut"
+                                                                                                                                       }
+                                                                                                                        }
+                                                                                               }
+                                                                               },
+                                                                       "422":  {
+                                                                                   "description":  "Validation Error",
+                                                                                   "content":  {
+                                                                                                   "application/json":  {
+                                                                                                                            "schema":  {
+                                                                                                                                           "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                       }
+                                                                                                                        }
+                                                                                               }
+                                                                               }
+                                                                   }
+                                                 }
+                                    },
+                  "/api/patients/search":  {
+                                               "get":  {
+                                                           "tags":  [
+                                                                        "patients"
+                                                                    ],
+                                                           "summary":  "Search Patients",
+                                                           "operationId":  "search_patients_api_patients_search_get",
+                                                           "parameters":  [
+                                                                              {
+                                                                                  "name":  "q",
+                                                                                  "in":  "query",
+                                                                                  "required":  true,
+                                                                                  "schema":  {
+                                                                                                 "type":  "string",
+                                                                                                 "minLength":  1,
+                                                                                                 "title":  "Q"
+                                                                                             }
+                                                                              }
+                                                                          ],
+                                                           "responses":  {
+                                                                             "200":  {
+                                                                                         "description":  "Successful Response",
+                                                                                         "content":  {
+                                                                                                         "application/json":  {
+                                                                                                                                  "schema":  {
+                                                                                                                                                 "type":  "array",
+                                                                                                                                                 "items":  {
+                                                                                                                                                               "$ref":  "#/components/schemas/PatientOut"
+                                                                                                                                                           },
+                                                                                                                                                 "title":  "Response Search Patients Api Patients Search Get"
+                                                                                                                                             }
+                                                                                                                              }
+                                                                                                     }
+                                                                                     },
+                                                                             "422":  {
+                                                                                         "description":  "Validation Error",
+                                                                                         "content":  {
+                                                                                                         "application/json":  {
+                                                                                                                                  "schema":  {
+                                                                                                                                                 "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                             }
+                                                                                                                              }
+                                                                                                     }
+                                                                                     }
+                                                                         }
+                                                       }
+                                           },
+                  "/api/patients/{patient_id}":  {
+                                                     "get":  {
+                                                                 "tags":  [
+                                                                              "patients"
+                                                                          ],
+                                                                 "summary":  "Get Patient",
+                                                                 "operationId":  "get_patient_api_patients__patient_id__get",
+                                                                 "parameters":  [
+                                                                                    {
+                                                                                        "name":  "patient_id",
+                                                                                        "in":  "path",
+                                                                                        "required":  true,
+                                                                                        "schema":  {
+                                                                                                       "type":  "integer",
+                                                                                                       "title":  "Patient Id"
+                                                                                                   }
+                                                                                    }
+                                                                                ],
+                                                                 "responses":  {
+                                                                                   "200":  {
+                                                                                               "description":  "Successful Response",
+                                                                                               "content":  {
+                                                                                                               "application/json":  {
+                                                                                                                                        "schema":  {
+                                                                                                                                                       "$ref":  "#/components/schemas/PatientOut"
+                                                                                                                                                   }
+                                                                                                                                    }
+                                                                                                           }
+                                                                                           },
+                                                                                   "422":  {
+                                                                                               "description":  "Validation Error",
+                                                                                               "content":  {
+                                                                                                               "application/json":  {
+                                                                                                                                        "schema":  {
+                                                                                                                                                       "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                   }
+                                                                                                                                    }
+                                                                                                           }
+                                                                                           }
+                                                                               }
+                                                             },
+                                                     "patch":  {
+                                                                   "tags":  [
+                                                                                "patients"
+                                                                            ],
+                                                                   "summary":  "Update Patient",
+                                                                   "operationId":  "update_patient_api_patients__patient_id__patch",
+                                                                   "parameters":  [
+                                                                                      {
+                                                                                          "name":  "patient_id",
+                                                                                          "in":  "path",
+                                                                                          "required":  true,
+                                                                                          "schema":  {
+                                                                                                         "type":  "integer",
+                                                                                                         "title":  "Patient Id"
+                                                                                                     }
+                                                                                      }
+                                                                                  ],
+                                                                   "requestBody":  {
+                                                                                       "required":  true,
+                                                                                       "content":  {
+                                                                                                       "application/json":  {
+                                                                                                                                "schema":  {
+                                                                                                                                               "$ref":  "#/components/schemas/PatientUpdate"
+                                                                                                                                           }
+                                                                                                                            }
+                                                                                                   }
+                                                                                   },
+                                                                   "responses":  {
+                                                                                     "200":  {
+                                                                                                 "description":  "Successful Response",
+                                                                                                 "content":  {
+                                                                                                                 "application/json":  {
+                                                                                                                                          "schema":  {
+                                                                                                                                                         "$ref":  "#/components/schemas/PatientOut"
+                                                                                                                                                     }
+                                                                                                                                      }
+                                                                                                             }
+                                                                                             },
+                                                                                     "422":  {
+                                                                                                 "description":  "Validation Error",
+                                                                                                 "content":  {
+                                                                                                                 "application/json":  {
+                                                                                                                                          "schema":  {
+                                                                                                                                                         "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                     }
+                                                                                                                                      }
+                                                                                                             }
+                                                                                             }
+                                                                                 }
+                                                               }
+                                                 },
+                  "/api/templates":  {
+                                         "post":  {
+                                                      "tags":  [
+                                                                   "templates"
+                                                               ],
+                                                      "summary":  "Create Template",
+                                                      "operationId":  "create_template_api_templates_post",
+                                                      "requestBody":  {
+                                                                          "content":  {
+                                                                                          "application/json":  {
+                                                                                                                   "schema":  {
+                                                                                                                                  "$ref":  "#/components/schemas/TestTemplateCreate"
+                                                                                                                              }
+                                                                                                               }
+                                                                                      },
+                                                                          "required":  true
+                                                                      },
+                                                      "responses":  {
+                                                                        "200":  {
+                                                                                    "description":  "Successful Response",
+                                                                                    "content":  {
+                                                                                                    "application/json":  {
+                                                                                                                             "schema":  {
+                                                                                                                                            "$ref":  "#/components/schemas/TestTemplateOut"
+                                                                                                                                        }
+                                                                                                                         }
+                                                                                                }
+                                                                                },
+                                                                        "422":  {
+                                                                                    "description":  "Validation Error",
+                                                                                    "content":  {
+                                                                                                    "application/json":  {
+                                                                                                                             "schema":  {
+                                                                                                                                            "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                        }
+                                                                                                                         }
+                                                                                                }
+                                                                                }
+                                                                    }
+                                                  }
+                                     },
+                  "/api/templates/active":  {
+                                                "get":  {
+                                                            "tags":  [
+                                                                         "templates"
+                                                                     ],
+                                                            "summary":  "List Active Templates",
+                                                            "operationId":  "list_active_templates_api_templates_active_get",
+                                                            "parameters":  [
+                                                                               {
+                                                                                   "name":  "test_type_id",
+                                                                                   "in":  "query",
+                                                                                   "required":  false,
+                                                                                   "schema":  {
+                                                                                                  "anyOf":  [
+                                                                                                                {
+                                                                                                                    "type":  "integer"
+                                                                                                                },
+                                                                                                                {
+                                                                                                                    "type":  "null"
+                                                                                                                }
+                                                                                                            ],
+                                                                                                  "title":  "Test Type Id"
+                                                                                              }
+                                                                               }
+                                                                           ],
+                                                            "responses":  {
+                                                                              "200":  {
+                                                                                          "description":  "Successful Response",
+                                                                                          "content":  {
+                                                                                                          "application/json":  {
+                                                                                                                                   "schema":  {
+                                                                                                                                                  "type":  "array",
+                                                                                                                                                  "items":  {
+                                                                                                                                                                "$ref":  "#/components/schemas/TestTemplateOut"
+                                                                                                                                                            },
+                                                                                                                                                  "title":  "Response List Active Templates Api Templates Active Get"
+                                                                                                                                              }
+                                                                                                                               }
+                                                                                                      }
+                                                                                      },
+                                                                              "422":  {
+                                                                                          "description":  "Validation Error",
+                                                                                          "content":  {
+                                                                                                          "application/json":  {
+                                                                                                                                   "schema":  {
+                                                                                                                                                  "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                              }
+                                                                                                                               }
+                                                                                                      }
+                                                                                      }
+                                                                          }
+                                                        }
+                                            },
+                  "/api/templates/{template_id}":  {
+                                                       "get":  {
+                                                                   "tags":  [
+                                                                                "templates"
+                                                                            ],
+                                                                   "summary":  "Get Template",
+                                                                   "operationId":  "get_template_api_templates__template_id__get",
+                                                                   "parameters":  [
+                                                                                      {
+                                                                                          "name":  "template_id",
+                                                                                          "in":  "path",
+                                                                                          "required":  true,
+                                                                                          "schema":  {
+                                                                                                         "type":  "integer",
+                                                                                                         "title":  "Template Id"
+                                                                                                     }
+                                                                                      }
+                                                                                  ],
+                                                                   "responses":  {
+                                                                                     "200":  {
+                                                                                                 "description":  "Successful Response",
+                                                                                                 "content":  {
+                                                                                                                 "application/json":  {
+                                                                                                                                          "schema":  {
+                                                                                                                                                         "$ref":  "#/components/schemas/TestTemplateOut"
+                                                                                                                                                     }
+                                                                                                                                      }
+                                                                                                             }
+                                                                                             },
+                                                                                     "422":  {
+                                                                                                 "description":  "Validation Error",
+                                                                                                 "content":  {
+                                                                                                                 "application/json":  {
+                                                                                                                                          "schema":  {
+                                                                                                                                                         "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                     }
+                                                                                                                                      }
+                                                                                                             }
+                                                                                             }
+                                                                                 }
+                                                               }
+                                                   },
+                  "/api/results/instantiate":  {
+                                                   "post":  {
+                                                                "tags":  [
+                                                                             "results"
+                                                                         ],
+                                                                "summary":  "Instantiate Result",
+                                                                "operationId":  "instantiate_result_api_results_instantiate_post",
+                                                                "requestBody":  {
+                                                                                    "content":  {
+                                                                                                    "application/json":  {
+                                                                                                                             "schema":  {
+                                                                                                                                            "$ref":  "#/components/schemas/ResultInstantiate"
+                                                                                                                                        }
+                                                                                                                         }
+                                                                                                },
+                                                                                    "required":  true
+                                                                                },
+                                                                "responses":  {
+                                                                                  "200":  {
+                                                                                              "description":  "Successful Response",
+                                                                                              "content":  {
+                                                                                                              "application/json":  {
+                                                                                                                                       "schema":  {
+                                                                                                                                                      "$ref":  "#/components/schemas/TestResultOut"
+                                                                                                                                                  }
+                                                                                                                                   }
+                                                                                                          }
+                                                                                          },
+                                                                                  "422":  {
+                                                                                              "description":  "Validation Error",
+                                                                                              "content":  {
+                                                                                                              "application/json":  {
+                                                                                                                                       "schema":  {
+                                                                                                                                                      "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                  }
+                                                                                                                                   }
+                                                                                                          }
+                                                                                          }
+                                                                              }
+                                                            }
+                                               },
+                  "/api/results/{result_id}":  {
+                                                   "get":  {
+                                                               "tags":  [
+                                                                            "results"
+                                                                        ],
+                                                               "summary":  "Get Result",
+                                                               "operationId":  "get_result_api_results__result_id__get",
+                                                               "parameters":  [
+                                                                                  {
+                                                                                      "name":  "result_id",
+                                                                                      "in":  "path",
+                                                                                      "required":  true,
+                                                                                      "schema":  {
+                                                                                                     "type":  "integer",
+                                                                                                     "title":  "Result Id"
+                                                                                                 }
+                                                                                  }
+                                                                              ],
+                                                               "responses":  {
+                                                                                 "200":  {
+                                                                                             "description":  "Successful Response",
+                                                                                             "content":  {
+                                                                                                             "application/json":  {
+                                                                                                                                      "schema":  {
+                                                                                                                                                     "$ref":  "#/components/schemas/TestResultOut"
+                                                                                                                                                 }
+                                                                                                                                  }
+                                                                                                         }
+                                                                                         },
+                                                                                 "422":  {
+                                                                                             "description":  "Validation Error",
+                                                                                             "content":  {
+                                                                                                             "application/json":  {
+                                                                                                                                      "schema":  {
+                                                                                                                                                     "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                 }
+                                                                                                                                  }
+                                                                                                         }
+                                                                                         }
+                                                                             }
+                                                           }
+                                               },
+                  "/api/results/{result_id}/values":  {
+                                                          "patch":  {
+                                                                        "tags":  [
+                                                                                     "results"
+                                                                                 ],
+                                                                        "summary":  "Update Result Values",
+                                                                        "operationId":  "update_result_values_api_results__result_id__values_patch",
+                                                                        "parameters":  [
+                                                                                           {
+                                                                                               "name":  "result_id",
+                                                                                               "in":  "path",
+                                                                                               "required":  true,
+                                                                                               "schema":  {
+                                                                                                              "type":  "integer",
+                                                                                                              "title":  "Result Id"
+                                                                                                          }
+                                                                                           }
+                                                                                       ],
+                                                                        "requestBody":  {
+                                                                                            "required":  true,
+                                                                                            "content":  {
+                                                                                                            "application/json":  {
+                                                                                                                                     "schema":  {
+                                                                                                                                                    "$ref":  "#/components/schemas/ResultUpdateValues"
+                                                                                                                                                }
+                                                                                                                                 }
+                                                                                                        }
+                                                                                        },
+                                                                        "responses":  {
+                                                                                          "200":  {
+                                                                                                      "description":  "Successful Response",
+                                                                                                      "content":  {
+                                                                                                                      "application/json":  {
+                                                                                                                                               "schema":  {
+                                                                                                                                                              "$ref":  "#/components/schemas/TestResultOut"
+                                                                                                                                                          }
+                                                                                                                                           }
+                                                                                                                  }
+                                                                                                  },
+                                                                                          "422":  {
+                                                                                                      "description":  "Validation Error",
+                                                                                                      "content":  {
+                                                                                                                      "application/json":  {
+                                                                                                                                               "schema":  {
+                                                                                                                                                              "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                          }
+                                                                                                                                           }
+                                                                                                                  }
+                                                                                                  }
+                                                                                      }
+                                                                    }
+                                                      },
+                  "/api/results/{result_id}/status":  {
+                                                          "patch":  {
+                                                                        "tags":  [
+                                                                                     "results"
+                                                                                 ],
+                                                                        "summary":  "Set Result Status",
+                                                                        "operationId":  "set_result_status_api_results__result_id__status_patch",
+                                                                        "parameters":  [
+                                                                                           {
+                                                                                               "name":  "result_id",
+                                                                                               "in":  "path",
+                                                                                               "required":  true,
+                                                                                               "schema":  {
+                                                                                                              "type":  "integer",
+                                                                                                              "title":  "Result Id"
+                                                                                                          }
+                                                                                           },
+                                                                                           {
+                                                                                               "name":  "x-role",
+                                                                                               "in":  "header",
+                                                                                               "required":  false,
+                                                                                               "schema":  {
+                                                                                                              "type":  "string",
+                                                                                                              "default":  "labtech",
+                                                                                                              "title":  "X-Role"
+                                                                                                          }
+                                                                                           }
+                                                                                       ],
+                                                                        "requestBody":  {
+                                                                                            "required":  true,
+                                                                                            "content":  {
+                                                                                                            "application/json":  {
+                                                                                                                                     "schema":  {
+                                                                                                                                                    "$ref":  "#/components/schemas/ResultSetStatus"
+                                                                                                                                                }
+                                                                                                                                 }
+                                                                                                        }
+                                                                                        },
+                                                                        "responses":  {
+                                                                                          "200":  {
+                                                                                                      "description":  "Successful Response",
+                                                                                                      "content":  {
+                                                                                                                      "application/json":  {
+                                                                                                                                               "schema":  {
+                                                                                                                                                              "$ref":  "#/components/schemas/TestResultOut"
+                                                                                                                                                          }
+                                                                                                                                           }
+                                                                                                                  }
+                                                                                                  },
+                                                                                          "422":  {
+                                                                                                      "description":  "Validation Error",
+                                                                                                      "content":  {
+                                                                                                                      "application/json":  {
+                                                                                                                                               "schema":  {
+                                                                                                                                                              "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                          }
+                                                                                                                                           }
+                                                                                                                  }
+                                                                                                  }
+                                                                                      }
+                                                                    }
+                                                      },
+                  "/api/test-types":  {
+                                          "get":  {
+                                                      "tags":  [
+                                                                   "test_types"
+                                                               ],
+                                                      "summary":  "List Test Types",
+                                                      "operationId":  "list_test_types_api_test_types_get",
+                                                      "responses":  {
+                                                                        "200":  {
+                                                                                    "description":  "Successful Response",
+                                                                                    "content":  {
+                                                                                                    "application/json":  {
+                                                                                                                             "schema":  {
+                                                                                                                                            "items":  {
+                                                                                                                                                          "$ref":  "#/components/schemas/TestTypeOut"
+                                                                                                                                                      },
+                                                                                                                                            "type":  "array",
+                                                                                                                                            "title":  "Response List Test Types Api Test Types Get"
+                                                                                                                                        }
+                                                                                                                         }
+                                                                                                }
+                                                                                }
+                                                                    }
+                                                  },
+                                          "post":  {
+                                                       "tags":  [
+                                                                    "test_types"
+                                                                ],
+                                                       "summary":  "Create Test Type",
+                                                       "operationId":  "create_test_type_api_test_types_post",
+                                                       "requestBody":  {
+                                                                           "content":  {
+                                                                                           "application/json":  {
+                                                                                                                    "schema":  {
+                                                                                                                                   "$ref":  "#/components/schemas/TestTypeCreate"
+                                                                                                                               }
+                                                                                                                }
+                                                                                       },
+                                                                           "required":  true
+                                                                       },
+                                                       "responses":  {
+                                                                         "200":  {
+                                                                                     "description":  "Successful Response",
+                                                                                     "content":  {
+                                                                                                     "application/json":  {
+                                                                                                                              "schema":  {
+                                                                                                                                             "$ref":  "#/components/schemas/TestTypeOut"
+                                                                                                                                         }
+                                                                                                                          }
+                                                                                                 }
+                                                                                 },
+                                                                         "422":  {
+                                                                                     "description":  "Validation Error",
+                                                                                     "content":  {
+                                                                                                     "application/json":  {
+                                                                                                                              "schema":  {
+                                                                                                                                             "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                         }
+                                                                                                                          }
+                                                                                                 }
+                                                                                 }
+                                                                     }
+                                                   }
+                                      },
+                  "/portal/login":  {
+                                        "post":  {
+                                                     "tags":  [
+                                                                  "portal"
+                                                              ],
+                                                     "summary":  "Portal Login",
+                                                     "operationId":  "portal_login_portal_login_post",
+                                                     "requestBody":  {
+                                                                         "content":  {
+                                                                                         "application/json":  {
+                                                                                                                  "schema":  {
+                                                                                                                                 "$ref":  "#/components/schemas/PortalLogin"
+                                                                                                                             }
+                                                                                                              }
+                                                                                     },
+                                                                         "required":  true
+                                                                     },
+                                                     "responses":  {
+                                                                       "200":  {
+                                                                                   "description":  "Successful Response",
+                                                                                   "content":  {
+                                                                                                   "application/json":  {
+                                                                                                                            "schema":  {
+                                                                                                                                           "$ref":  "#/components/schemas/PortalTokenOut"
+                                                                                                                                       }
+                                                                                                                        }
+                                                                                               }
+                                                                               },
+                                                                       "422":  {
+                                                                                   "description":  "Validation Error",
+                                                                                   "content":  {
+                                                                                                   "application/json":  {
+                                                                                                                            "schema":  {
+                                                                                                                                           "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                       }
+                                                                                                                        }
+                                                                                               }
+                                                                               }
+                                                                   }
+                                                 }
+                                    },
+                  "/portal/results":  {
+                                          "get":  {
+                                                      "tags":  [
+                                                                   "portal"
+                                                               ],
+                                                      "summary":  "Portal List Results",
+                                                      "operationId":  "portal_list_results_portal_results_get",
+                                                      "parameters":  [
+                                                                         {
+                                                                             "name":  "authorization",
+                                                                             "in":  "header",
+                                                                             "required":  false,
+                                                                             "schema":  {
+                                                                                            "anyOf":  [
+                                                                                                          {
+                                                                                                              "type":  "string"
+                                                                                                          },
+                                                                                                          {
+                                                                                                              "type":  "null"
+                                                                                                          }
+                                                                                                      ],
+                                                                                            "title":  "Authorization"
+                                                                                        }
+                                                                         }
+                                                                     ],
+                                                      "responses":  {
+                                                                        "200":  {
+                                                                                    "description":  "Successful Response",
+                                                                                    "content":  {
+                                                                                                    "application/json":  {
+                                                                                                                             "schema":  {
+                                                                                                                                            "type":  "array",
+                                                                                                                                            "items":  {
+                                                                                                                                                          "$ref":  "#/components/schemas/PortalResultItem"
+                                                                                                                                                      },
+                                                                                                                                            "title":  "Response Portal List Results Portal Results Get"
+                                                                                                                                        }
+                                                                                                                         }
+                                                                                                }
+                                                                                },
+                                                                        "422":  {
+                                                                                    "description":  "Validation Error",
+                                                                                    "content":  {
+                                                                                                    "application/json":  {
+                                                                                                                             "schema":  {
+                                                                                                                                            "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                        }
+                                                                                                                         }
+                                                                                                }
+                                                                                }
+                                                                    }
+                                                  }
+                                      },
+                  "/portal/results/{result_id}/pdf":  {
+                                                          "get":  {
+                                                                      "tags":  [
+                                                                                   "portal"
+                                                                               ],
+                                                                      "summary":  "Portal Download Pdf",
+                                                                      "operationId":  "portal_download_pdf_portal_results__result_id__pdf_get",
+                                                                      "parameters":  [
+                                                                                         {
+                                                                                             "name":  "result_id",
+                                                                                             "in":  "path",
+                                                                                             "required":  true,
+                                                                                             "schema":  {
+                                                                                                            "type":  "integer",
+                                                                                                            "title":  "Result Id"
+                                                                                                        }
+                                                                                         },
+                                                                                         {
+                                                                                             "name":  "authorization",
+                                                                                             "in":  "header",
+                                                                                             "required":  false,
+                                                                                             "schema":  {
+                                                                                                            "anyOf":  [
+                                                                                                                          {
+                                                                                                                              "type":  "string"
+                                                                                                                          },
+                                                                                                                          {
+                                                                                                                              "type":  "null"
+                                                                                                                          }
+                                                                                                                      ],
+                                                                                                            "title":  "Authorization"
+                                                                                                        }
+                                                                                         }
+                                                                                     ],
+                                                                      "responses":  {
+                                                                                        "200":  {
+                                                                                                    "description":  "Successful Response",
+                                                                                                    "content":  {
+                                                                                                                    "application/json":  {
+                                                                                                                                             "schema":  {
+
+                                                                                                                                                        }
+                                                                                                                                         }
+                                                                                                                }
+                                                                                                },
+                                                                                        "422":  {
+                                                                                                    "description":  "Validation Error",
+                                                                                                    "content":  {
+                                                                                                                    "application/json":  {
+                                                                                                                                             "schema":  {
+                                                                                                                                                            "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                                        }
+                                                                                                                                         }
+                                                                                                                }
+                                                                                                }
+                                                                                    }
+                                                                  }
+                                                      },
+                  "/api/debug/audit-test":  {
+                                                "get":  {
+                                                            "tags":  [
+                                                                         "debug"
+                                                                     ],
+                                                            "summary":  "Audit Test",
+                                                            "operationId":  "audit_test_api_debug_audit_test_get",
+                                                            "responses":  {
+                                                                              "200":  {
+                                                                                          "description":  "Successful Response",
+                                                                                          "content":  {
+                                                                                                          "application/json":  {
+                                                                                                                                   "schema":  {
+
+                                                                                                                                              }
+                                                                                                                               }
+                                                                                                      }
+                                                                                      }
+                                                                          }
+                                                        }
+                                            },
+                  "/api/audits":  {
+                                      "get":  {
+                                                  "tags":  [
+                                                               "audits"
+                                                           ],
+                                                  "summary":  "List Audits",
+                                                  "operationId":  "list_audits_api_audits_get",
+                                                  "parameters":  [
+                                                                     {
+                                                                         "name":  "action",
+                                                                         "in":  "query",
+                                                                         "required":  false,
+                                                                         "schema":  {
+                                                                                        "anyOf":  [
+                                                                                                      {
+                                                                                                          "type":  "string"
+                                                                                                      },
+                                                                                                      {
+                                                                                                          "type":  "null"
+                                                                                                      }
+                                                                                                  ],
+                                                                                        "title":  "Action"
+                                                                                    }
+                                                                     },
+                                                                     {
+                                                                         "name":  "actor_type",
+                                                                         "in":  "query",
+                                                                         "required":  false,
+                                                                         "schema":  {
+                                                                                        "anyOf":  [
+                                                                                                      {
+                                                                                                          "type":  "string"
+                                                                                                      },
+                                                                                                      {
+                                                                                                          "type":  "null"
+                                                                                                      }
+                                                                                                  ],
+                                                                                        "title":  "Actor Type"
+                                                                                    }
+                                                                     },
+                                                                     {
+                                                                         "name":  "actor",
+                                                                         "in":  "query",
+                                                                         "required":  false,
+                                                                         "schema":  {
+                                                                                        "anyOf":  [
+                                                                                                      {
+                                                                                                          "type":  "string"
+                                                                                                      },
+                                                                                                      {
+                                                                                                          "type":  "null"
+                                                                                                      }
+                                                                                                  ],
+                                                                                        "title":  "Actor"
+                                                                                    }
+                                                                     },
+                                                                     {
+                                                                         "name":  "entity",
+                                                                         "in":  "query",
+                                                                         "required":  false,
+                                                                         "schema":  {
+                                                                                        "anyOf":  [
+                                                                                                      {
+                                                                                                          "type":  "string"
+                                                                                                      },
+                                                                                                      {
+                                                                                                          "type":  "null"
+                                                                                                      }
+                                                                                                  ],
+                                                                                        "title":  "Entity"
+                                                                                    }
+                                                                     },
+                                                                     {
+                                                                         "name":  "entity_id",
+                                                                         "in":  "query",
+                                                                         "required":  false,
+                                                                         "schema":  {
+                                                                                        "anyOf":  [
+                                                                                                      {
+                                                                                                          "type":  "integer"
+                                                                                                      },
+                                                                                                      {
+                                                                                                          "type":  "null"
+                                                                                                      }
+                                                                                                  ],
+                                                                                        "title":  "Entity Id"
+                                                                                    }
+                                                                     },
+                                                                     {
+                                                                         "name":  "limit",
+                                                                         "in":  "query",
+                                                                         "required":  false,
+                                                                         "schema":  {
+                                                                                        "type":  "integer",
+                                                                                        "maximum":  200,
+                                                                                        "minimum":  1,
+                                                                                        "default":  50,
+                                                                                        "title":  "Limit"
+                                                                                    }
+                                                                     },
+                                                                     {
+                                                                         "name":  "X-Role",
+                                                                         "in":  "header",
+                                                                         "required":  false,
+                                                                         "schema":  {
+                                                                                        "anyOf":  [
+                                                                                                      {
+                                                                                                          "type":  "string"
+                                                                                                      },
+                                                                                                      {
+                                                                                                          "type":  "null"
+                                                                                                      }
+                                                                                                  ],
+                                                                                        "title":  "X-Role"
+                                                                                    }
+                                                                     }
+                                                                 ],
+                                                  "responses":  {
+                                                                    "200":  {
+                                                                                "description":  "Successful Response",
+                                                                                "content":  {
+                                                                                                "application/json":  {
+                                                                                                                         "schema":  {
+                                                                                                                                        "type":  "array",
+                                                                                                                                        "items":  {
+                                                                                                                                                      "$ref":  "#/components/schemas/AuditLogOut"
+                                                                                                                                                  },
+                                                                                                                                        "title":  "Response List Audits Api Audits Get"
+                                                                                                                                    }
+                                                                                                                     }
+                                                                                            }
+                                                                            },
+                                                                    "422":  {
+                                                                                "description":  "Validation Error",
+                                                                                "content":  {
+                                                                                                "application/json":  {
+                                                                                                                         "schema":  {
+                                                                                                                                        "$ref":  "#/components/schemas/HTTPValidationError"
+                                                                                                                                    }
+                                                                                                                     }
+                                                                                            }
+                                                                            }
+                                                                }
+                                              }
+                                  },
+                  "/audit-test":  {
+                                      "get":  {
+                                                  "summary":  "Audit Test",
+                                                  "operationId":  "audit_test_audit_test_get",
+                                                  "responses":  {
+                                                                    "200":  {
+                                                                                "description":  "Successful Response",
+                                                                                "content":  {
+                                                                                                "application/json":  {
+                                                                                                                         "schema":  {
+
+                                                                                                                                    }
+                                                                                                                     }
+                                                                                            }
+                                                                            }
+                                                                }
+                                              }
+                                  },
+                  "/health":  {
+                                  "get":  {
+                                              "summary":  "Health",
+                                              "operationId":  "health_health_get",
+                                              "responses":  {
+                                                                "200":  {
+                                                                            "description":  "Successful Response",
+                                                                            "content":  {
+                                                                                            "application/json":  {
+                                                                                                                     "schema":  {
+
+                                                                                                                                }
+                                                                                                                 }
+                                                                                        }
+                                                                        }
+                                                            }
+                                          }
+                              },
+                  "/health/db":  {
+                                     "get":  {
+                                                 "summary":  "Health Db",
+                                                 "operationId":  "health_db_health_db_get",
+                                                 "responses":  {
+                                                                   "200":  {
+                                                                               "description":  "Successful Response",
+                                                                               "content":  {
+                                                                                               "application/json":  {
+                                                                                                                        "schema":  {
+
+                                                                                                                                   }
+                                                                                                                    }
+                                                                                           }
+                                                                           }
+                                                               }
+                                             }
+                                 }
+              },
+    "components":  {
+                       "schemas":  {
+                                       "AuditLogOut":  {
+                                                           "properties":  {
+                                                                              "id":  {
+                                                                                         "type":  "integer",
+                                                                                         "title":  "Id"
+                                                                                     },
+                                                                              "actor_type":  {
+                                                                                                 "type":  "string",
+                                                                                                 "title":  "Actor Type"
+                                                                                             },
+                                                                              "actor":  {
+                                                                                            "anyOf":  [
+                                                                                                          {
+                                                                                                              "type":  "string"
+                                                                                                          },
+                                                                                                          {
+                                                                                                              "type":  "null"
+                                                                                                          }
+                                                                                                      ],
+                                                                                            "title":  "Actor"
+                                                                                        },
+                                                                              "action":  {
+                                                                                             "type":  "string",
+                                                                                             "title":  "Action"
+                                                                                         },
+                                                                              "entity":  {
+                                                                                             "anyOf":  [
+                                                                                                           {
+                                                                                                               "type":  "string"
+                                                                                                           },
+                                                                                                           {
+                                                                                                               "type":  "null"
+                                                                                                           }
+                                                                                                       ],
+                                                                                             "title":  "Entity"
+                                                                                         },
+                                                                              "entity_id":  {
+                                                                                                "anyOf":  [
+                                                                                                              {
+                                                                                                                  "type":  "integer"
+                                                                                                              },
+                                                                                                              {
+                                                                                                                  "type":  "null"
+                                                                                                              }
+                                                                                                          ],
+                                                                                                "title":  "Entity Id"
+                                                                                            },
+                                                                              "ip":  {
+                                                                                         "anyOf":  [
+                                                                                                       {
+                                                                                                           "type":  "string"
+                                                                                                       },
+                                                                                                       {
+                                                                                                           "type":  "null"
+                                                                                                       }
+                                                                                                   ],
+                                                                                         "title":  "Ip"
+                                                                                     },
+                                                                              "meta":  {
+                                                                                           "anyOf":  [
+                                                                                                         {
+                                                                                                             "additionalProperties":  true,
+                                                                                                             "type":  "object"
+                                                                                                         },
+                                                                                                         {
+                                                                                                             "type":  "null"
+                                                                                                         }
+                                                                                                     ],
+                                                                                           "title":  "Meta"
+                                                                                       },
+                                                                              "created_at":  {
+                                                                                                 "type":  "string",
+                                                                                                 "format":  "date-time",
+                                                                                                 "title":  "Created At"
+                                                                                             }
+                                                                          },
+                                                           "type":  "object",
+                                                           "required":  [
+                                                                            "id",
+                                                                            "actor_type",
+                                                                            "action",
+                                                                            "created_at"
+                                                                        ],
+                                                           "title":  "AuditLogOut"
+                                                       },
+                                       "HTTPValidationError":  {
+                                                                   "properties":  {
+                                                                                      "detail":  {
+                                                                                                     "items":  {
+                                                                                                                   "$ref":  "#/components/schemas/ValidationError"
+                                                                                                               },
+                                                                                                     "type":  "array",
+                                                                                                     "title":  "Detail"
+                                                                                                 }
+                                                                                  },
+                                                                   "type":  "object",
+                                                                   "title":  "HTTPValidationError"
+                                                               },
+                                       "PatientCreate":  {
+                                                             "properties":  {
+                                                                                "patient_no":  {
+                                                                                                   "type":  "string",
+                                                                                                   "maxLength":  50,
+                                                                                                   "minLength":  1,
+                                                                                                   "title":  "Patient No"
+                                                                                               },
+                                                                                "full_name":  {
+                                                                                                  "type":  "string",
+                                                                                                  "maxLength":  255,
+                                                                                                  "minLength":  1,
+                                                                                                  "title":  "Full Name"
+                                                                                              },
+                                                                                "phone":  {
+                                                                                              "type":  "string",
+                                                                                              "maxLength":  30,
+                                                                                              "minLength":  3,
+                                                                                              "title":  "Phone"
+                                                                                          },
+                                                                                "date_of_birth":  {
+                                                                                                      "anyOf":  [
+                                                                                                                    {
+                                                                                                                        "type":  "string",
+                                                                                                                        "format":  "date"
+                                                                                                                    },
+                                                                                                                    {
+                                                                                                                        "type":  "null"
+                                                                                                                    }
+                                                                                                                ],
+                                                                                                      "title":  "Date Of Birth"
+                                                                                                  },
+                                                                                "gender":  {
+                                                                                               "anyOf":  [
+                                                                                                             {
+                                                                                                                 "type":  "string"
+                                                                                                             },
+                                                                                                             {
+                                                                                                                 "type":  "null"
+                                                                                                             }
+                                                                                                         ],
+                                                                                               "title":  "Gender"
+                                                                                           },
+                                                                                "address":  {
+                                                                                                "anyOf":  [
+                                                                                                              {
+                                                                                                                  "type":  "string"
+                                                                                                              },
+                                                                                                              {
+                                                                                                                  "type":  "null"
+                                                                                                              }
+                                                                                                          ],
+                                                                                                "title":  "Address"
+                                                                                            }
+                                                                            },
+                                                             "type":  "object",
+                                                             "required":  [
+                                                                              "patient_no",
+                                                                              "full_name",
+                                                                              "phone"
+                                                                          ],
+                                                             "title":  "PatientCreate"
+                                                         },
+                                       "PatientOut":  {
+                                                          "properties":  {
+                                                                             "id":  {
+                                                                                        "type":  "integer",
+                                                                                        "title":  "Id"
+                                                                                    },
+                                                                             "patient_no":  {
+                                                                                                "type":  "string",
+                                                                                                "title":  "Patient No"
+                                                                                            },
+                                                                             "full_name":  {
+                                                                                               "type":  "string",
+                                                                                               "title":  "Full Name"
+                                                                                           },
+                                                                             "phone":  {
+                                                                                           "type":  "string",
+                                                                                           "title":  "Phone"
+                                                                                       },
+                                                                             "date_of_birth":  {
+                                                                                                   "anyOf":  [
+                                                                                                                 {
+                                                                                                                     "type":  "string",
+                                                                                                                     "format":  "date"
+                                                                                                                 },
+                                                                                                                 {
+                                                                                                                     "type":  "null"
+                                                                                                                 }
+                                                                                                             ],
+                                                                                                   "title":  "Date Of Birth"
+                                                                                               },
+                                                                             "gender":  {
+                                                                                            "anyOf":  [
+                                                                                                          {
+                                                                                                              "type":  "string"
+                                                                                                          },
+                                                                                                          {
+                                                                                                              "type":  "null"
+                                                                                                          }
+                                                                                                      ],
+                                                                                            "title":  "Gender"
+                                                                                        },
+                                                                             "address":  {
+                                                                                             "anyOf":  [
+                                                                                                           {
+                                                                                                               "type":  "string"
+                                                                                                           },
+                                                                                                           {
+                                                                                                               "type":  "null"
+                                                                                                           }
+                                                                                                       ],
+                                                                                             "title":  "Address"
+                                                                                         },
+                                                                             "created_at":  {
+                                                                                                "type":  "string",
+                                                                                                "format":  "date-time",
+                                                                                                "title":  "Created At"
+                                                                                            },
+                                                                             "updated_at":  {
+                                                                                                "type":  "string",
+                                                                                                "format":  "date-time",
+                                                                                                "title":  "Updated At"
+                                                                                            }
+                                                                         },
+                                                          "type":  "object",
+                                                          "required":  [
+                                                                           "id",
+                                                                           "patient_no",
+                                                                           "full_name",
+                                                                           "phone",
+                                                                           "date_of_birth",
+                                                                           "gender",
+                                                                           "address",
+                                                                           "created_at",
+                                                                           "updated_at"
+                                                                       ],
+                                                          "title":  "PatientOut"
+                                                      },
+                                       "PatientUpdate":  {
+                                                             "properties":  {
+                                                                                "full_name":  {
+                                                                                                  "anyOf":  [
+                                                                                                                {
+                                                                                                                    "type":  "string"
+                                                                                                                },
+                                                                                                                {
+                                                                                                                    "type":  "null"
+                                                                                                                }
+                                                                                                            ],
+                                                                                                  "title":  "Full Name"
+                                                                                              },
+                                                                                "phone":  {
+                                                                                              "anyOf":  [
+                                                                                                            {
+                                                                                                                "type":  "string"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type":  "null"
+                                                                                                            }
+                                                                                                        ],
+                                                                                              "title":  "Phone"
+                                                                                          },
+                                                                                "date_of_birth":  {
+                                                                                                      "anyOf":  [
+                                                                                                                    {
+                                                                                                                        "type":  "string",
+                                                                                                                        "format":  "date"
+                                                                                                                    },
+                                                                                                                    {
+                                                                                                                        "type":  "null"
+                                                                                                                    }
+                                                                                                                ],
+                                                                                                      "title":  "Date Of Birth"
+                                                                                                  },
+                                                                                "gender":  {
+                                                                                               "anyOf":  [
+                                                                                                             {
+                                                                                                                 "type":  "string"
+                                                                                                             },
+                                                                                                             {
+                                                                                                                 "type":  "null"
+                                                                                                             }
+                                                                                                         ],
+                                                                                               "title":  "Gender"
+                                                                                           },
+                                                                                "address":  {
+                                                                                                "anyOf":  [
+                                                                                                              {
+                                                                                                                  "type":  "string"
+                                                                                                              },
+                                                                                                              {
+                                                                                                                  "type":  "null"
+                                                                                                              }
+                                                                                                          ],
+                                                                                                "title":  "Address"
+                                                                                            }
+                                                                            },
+                                                             "type":  "object",
+                                                             "title":  "PatientUpdate"
+                                                         },
+                                       "PortalLogin":  {
+                                                           "properties":  {
+                                                                              "phone":  {
+                                                                                            "type":  "string",
+                                                                                            "title":  "Phone"
+                                                                                        },
+                                                                              "patient_no":  {
+                                                                                                 "type":  "string",
+                                                                                                 "title":  "Patient No"
+                                                                                             }
+                                                                          },
+                                                           "type":  "object",
+                                                           "required":  [
+                                                                            "phone",
+                                                                            "patient_no"
+                                                                        ],
+                                                           "title":  "PortalLogin"
+                                                       },
+                                       "PortalResultItem":  {
+                                                                "properties":  {
+                                                                                   "id":  {
+                                                                                              "type":  "integer",
+                                                                                              "title":  "Id"
+                                                                                          },
+                                                                                   "test_type_id":  {
+                                                                                                        "type":  "integer",
+                                                                                                        "title":  "Test Type Id"
+                                                                                                    },
+                                                                                   "template_id":  {
+                                                                                                       "type":  "integer",
+                                                                                                       "title":  "Template Id"
+                                                                                                   },
+                                                                                   "status":  {
+                                                                                                  "type":  "string",
+                                                                                                  "title":  "Status"
+                                                                                              },
+                                                                                   "created_at":  {
+                                                                                                      "type":  "string",
+                                                                                                      "format":  "date-time",
+                                                                                                      "title":  "Created At"
+                                                                                                  }
+                                                                               },
+                                                                "type":  "object",
+                                                                "required":  [
+                                                                                 "id",
+                                                                                 "test_type_id",
+                                                                                 "template_id",
+                                                                                 "status",
+                                                                                 "created_at"
+                                                                             ],
+                                                                "title":  "PortalResultItem"
+                                                            },
+                                       "PortalTokenOut":  {
+                                                              "properties":  {
+                                                                                 "token":  {
+                                                                                               "type":  "string",
+                                                                                               "title":  "Token"
+                                                                                           },
+                                                                                 "expires_at":  {
+                                                                                                    "type":  "string",
+                                                                                                    "format":  "date-time",
+                                                                                                    "title":  "Expires At"
+                                                                                                }
+                                                                             },
+                                                              "type":  "object",
+                                                              "required":  [
+                                                                               "token",
+                                                                               "expires_at"
+                                                                           ],
+                                                              "title":  "PortalTokenOut"
+                                                          },
+                                       "ResultInstantiate":  {
+                                                                 "properties":  {
+                                                                                    "patient_id":  {
+                                                                                                       "type":  "integer",
+                                                                                                       "title":  "Patient Id"
+                                                                                                   },
+                                                                                    "template_id":  {
+                                                                                                        "type":  "integer",
+                                                                                                        "title":  "Template Id"
+                                                                                                    }
+                                                                                },
+                                                                 "type":  "object",
+                                                                 "required":  [
+                                                                                  "patient_id",
+                                                                                  "template_id"
+                                                                              ],
+                                                                 "title":  "ResultInstantiate"
+                                                             },
+                                       "ResultSetStatus":  {
+                                                               "properties":  {
+                                                                                  "status":  {
+                                                                                                 "type":  "string",
+                                                                                                 "minLength":  1,
+                                                                                                 "title":  "Status"
+                                                                                             }
+                                                                              },
+                                                               "type":  "object",
+                                                               "required":  [
+                                                                                "status"
+                                                                            ],
+                                                               "title":  "ResultSetStatus"
+                                                           },
+                                       "ResultUpdateValues":  {
+                                                                  "properties":  {
+                                                                                     "values":  {
+                                                                                                    "additionalProperties":  true,
+                                                                                                    "type":  "object",
+                                                                                                    "title":  "Values"
+                                                                                                },
+                                                                                     "notes":  {
+                                                                                                   "anyOf":  [
+                                                                                                                 {
+                                                                                                                     "type":  "string"
+                                                                                                                 },
+                                                                                                                 {
+                                                                                                                     "type":  "null"
+                                                                                                                 }
+                                                                                                             ],
+                                                                                                   "title":  "Notes"
+                                                                                               }
+                                                                                 },
+                                                                  "type":  "object",
+                                                                  "title":  "ResultUpdateValues"
+                                                              },
+                                       "TestResultOut":  {
+                                                             "properties":  {
+                                                                                "id":  {
+                                                                                           "type":  "integer",
+                                                                                           "title":  "Id"
+                                                                                       },
+                                                                                "patient_id":  {
+                                                                                                   "type":  "integer",
+                                                                                                   "title":  "Patient Id"
+                                                                                               },
+                                                                                "test_type_id":  {
+                                                                                                     "type":  "integer",
+                                                                                                     "title":  "Test Type Id"
+                                                                                                 },
+                                                                                "template_id":  {
+                                                                                                    "type":  "integer",
+                                                                                                    "title":  "Template Id"
+                                                                                                },
+                                                                                "status":  {
+                                                                                               "type":  "string",
+                                                                                               "title":  "Status"
+                                                                                           },
+                                                                                "template_snapshot":  {
+                                                                                                          "additionalProperties":  true,
+                                                                                                          "type":  "object",
+                                                                                                          "title":  "Template Snapshot"
+                                                                                                      },
+                                                                                "values":  {
+                                                                                               "additionalProperties":  true,
+                                                                                               "type":  "object",
+                                                                                               "title":  "Values"
+                                                                                           },
+                                                                                "flags":  {
+                                                                                              "additionalProperties":  true,
+                                                                                              "type":  "object",
+                                                                                              "title":  "Flags"
+                                                                                          },
+                                                                                "notes":  {
+                                                                                              "anyOf":  [
+                                                                                                            {
+                                                                                                                "type":  "string"
+                                                                                                            },
+                                                                                                            {
+                                                                                                                "type":  "null"
+                                                                                                            }
+                                                                                                        ],
+                                                                                              "title":  "Notes"
+                                                                                          },
+                                                                                "created_at":  {
+                                                                                                   "type":  "string",
+                                                                                                   "format":  "date-time",
+                                                                                                   "title":  "Created At"
+                                                                                               },
+                                                                                "updated_at":  {
+                                                                                                   "type":  "string",
+                                                                                                   "format":  "date-time",
+                                                                                                   "title":  "Updated At"
+                                                                                               }
+                                                                            },
+                                                             "type":  "object",
+                                                             "required":  [
+                                                                              "id",
+                                                                              "patient_id",
+                                                                              "test_type_id",
+                                                                              "template_id",
+                                                                              "status",
+                                                                              "template_snapshot",
+                                                                              "values",
+                                                                              "flags",
+                                                                              "notes",
+                                                                              "created_at",
+                                                                              "updated_at"
+                                                                          ],
+                                                             "title":  "TestResultOut"
+                                                         },
+                                       "TestTemplateCreate":  {
+                                                                  "properties":  {
+                                                                                     "test_type_id":  {
+                                                                                                          "type":  "integer",
+                                                                                                          "title":  "Test Type Id"
+                                                                                                      },
+                                                                                     "title":  {
+                                                                                                   "type":  "string",
+                                                                                                   "maxLength":  255,
+                                                                                                   "minLength":  1,
+                                                                                                   "title":  "Title"
+                                                                                               },
+                                                                                     "structure":  {
+                                                                                                       "additionalProperties":  true,
+                                                                                                       "type":  "object",
+                                                                                                       "title":  "Structure"
+                                                                                                   },
+                                                                                     "rules":  {
+                                                                                                   "anyOf":  [
+                                                                                                                 {
+                                                                                                                     "additionalProperties":  true,
+                                                                                                                     "type":  "object"
+                                                                                                                 },
+                                                                                                                 {
+                                                                                                                     "type":  "null"
+                                                                                                                 }
+                                                                                                             ],
+                                                                                                   "title":  "Rules"
+                                                                                               },
+                                                                                     "is_active":  {
+                                                                                                       "type":  "boolean",
+                                                                                                       "title":  "Is Active",
+                                                                                                       "default":  true
+                                                                                                   }
+                                                                                 },
+                                                                  "type":  "object",
+                                                                  "required":  [
+                                                                                   "test_type_id",
+                                                                                   "title",
+                                                                                   "structure"
+                                                                               ],
+                                                                  "title":  "TestTemplateCreate"
+                                                              },
+                                       "TestTemplateOut":  {
+                                                               "properties":  {
+                                                                                  "id":  {
+                                                                                             "type":  "integer",
+                                                                                             "title":  "Id"
+                                                                                         },
+                                                                                  "test_type_id":  {
+                                                                                                       "type":  "integer",
+                                                                                                       "title":  "Test Type Id"
+                                                                                                   },
+                                                                                  "title":  {
+                                                                                                "type":  "string",
+                                                                                                "title":  "Title"
+                                                                                            },
+                                                                                  "structure":  {
+                                                                                                    "additionalProperties":  true,
+                                                                                                    "type":  "object",
+                                                                                                    "title":  "Structure"
+                                                                                                },
+                                                                                  "rules":  {
+                                                                                                "anyOf":  [
+                                                                                                              {
+                                                                                                                  "additionalProperties":  true,
+                                                                                                                  "type":  "object"
+                                                                                                              },
+                                                                                                              {
+                                                                                                                  "type":  "null"
+                                                                                                              }
+                                                                                                          ],
+                                                                                                "title":  "Rules"
+                                                                                            },
+                                                                                  "is_active":  {
+                                                                                                    "type":  "boolean",
+                                                                                                    "title":  "Is Active"
+                                                                                                },
+                                                                                  "created_at":  {
+                                                                                                     "type":  "string",
+                                                                                                     "format":  "date-time",
+                                                                                                     "title":  "Created At"
+                                                                                                 },
+                                                                                  "updated_at":  {
+                                                                                                     "type":  "string",
+                                                                                                     "format":  "date-time",
+                                                                                                     "title":  "Updated At"
+                                                                                                 }
+                                                                              },
+                                                               "type":  "object",
+                                                               "required":  [
+                                                                                "id",
+                                                                                "test_type_id",
+                                                                                "title",
+                                                                                "structure",
+                                                                                "rules",
+                                                                                "is_active",
+                                                                                "created_at",
+                                                                                "updated_at"
+                                                                            ],
+                                                               "title":  "TestTemplateOut"
+                                                           },
+                                       "TestTypeCreate":  {
+                                                              "properties":  {
+                                                                                 "code":  {
+                                                                                              "type":  "string",
+                                                                                              "maxLength":  50,
+                                                                                              "minLength":  1,
+                                                                                              "title":  "Code"
+                                                                                          },
+                                                                                 "name":  {
+                                                                                              "type":  "string",
+                                                                                              "maxLength":  255,
+                                                                                              "minLength":  1,
+                                                                                              "title":  "Name"
+                                                                                          },
+                                                                                 "description":  {
+                                                                                                     "anyOf":  [
+                                                                                                                   {
+                                                                                                                       "type":  "string"
+                                                                                                                   },
+                                                                                                                   {
+                                                                                                                       "type":  "null"
+                                                                                                                   }
+                                                                                                               ],
+                                                                                                     "title":  "Description"
+                                                                                                 }
+                                                                             },
+                                                              "type":  "object",
+                                                              "required":  [
+                                                                               "code",
+                                                                               "name"
+                                                                           ],
+                                                              "title":  "TestTypeCreate"
+                                                          },
+                                       "TestTypeOut":  {
+                                                           "properties":  {
+                                                                              "id":  {
+                                                                                         "type":  "integer",
+                                                                                         "title":  "Id"
+                                                                                     },
+                                                                              "code":  {
+                                                                                           "type":  "string",
+                                                                                           "title":  "Code"
+                                                                                       },
+                                                                              "name":  {
+                                                                                           "type":  "string",
+                                                                                           "title":  "Name"
+                                                                                       },
+                                                                              "description":  {
+                                                                                                  "anyOf":  [
+                                                                                                                {
+                                                                                                                    "type":  "string"
+                                                                                                                },
+                                                                                                                {
+                                                                                                                    "type":  "null"
+                                                                                                                }
+                                                                                                            ],
+                                                                                                  "title":  "Description"
+                                                                                              },
+                                                                              "created_at":  {
+                                                                                                 "type":  "string",
+                                                                                                 "format":  "date-time",
+                                                                                                 "title":  "Created At"
+                                                                                             },
+                                                                              "updated_at":  {
+                                                                                                 "type":  "string",
+                                                                                                 "format":  "date-time",
+                                                                                                 "title":  "Updated At"
+                                                                                             }
+                                                                          },
+                                                           "type":  "object",
+                                                           "required":  [
+                                                                            "id",
+                                                                            "code",
+                                                                            "name",
+                                                                            "description",
+                                                                            "created_at",
+                                                                            "updated_at"
+                                                                        ],
+                                                           "title":  "TestTypeOut"
+                                                       },
+                                       "ValidationError":  {
+                                                               "properties":  {
+                                                                                  "loc":  {
+                                                                                              "items":  {
+                                                                                                            "anyOf":  [
+                                                                                                                          {
+                                                                                                                              "type":  "string"
+                                                                                                                          },
+                                                                                                                          {
+                                                                                                                              "type":  "integer"
+                                                                                                                          }
+                                                                                                                      ]
+                                                                                                        },
+                                                                                              "type":  "array",
+                                                                                              "title":  "Location"
+                                                                                          },
+                                                                                  "msg":  {
+                                                                                              "type":  "string",
+                                                                                              "title":  "Message"
+                                                                                          },
+                                                                                  "type":  {
+                                                                                               "type":  "string",
+                                                                                               "title":  "Error Type"
+                                                                                           }
+                                                                              },
+                                                               "type":  "object",
+                                                               "required":  [
+                                                                                "loc",
+                                                                                "msg",
+                                                                                "type"
+                                                                            ],
+                                                               "title":  "ValidationError"
+                                                           }
+                                   }
+                   }
+}

@@ -1,0 +1,65 @@
+{% extends "layouts/base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/user_create.css">
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h2 class="page-title">Create User</h2>
+        <p class="page-subtitle">Provision system access for staff</p>
+    </div>
+</div>
+
+<div class="card form-card">
+
+    <form method="post" class="sx-form">
+
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" name="username" required>
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" required>
+        </div>
+
+        <div class="form-group">
+            <label>Role</label>
+            <select name="role" required>
+                {% if current_user.role == "super_admin" %}
+                    <option value="branch_admin">Branch Admin</option>
+                {% endif %}
+                <option value="lab_staff">Lab Staff</option>
+                <option value="cashier">Cashier</option>
+            </select>
+        </div>
+
+        {% if current_user.role == "super_admin" %}
+        <div class="form-group">
+            <label>Branch</label>
+            <select name="branch_id" required>
+                {% for branch in branches %}
+                    <option value="{{ branch.id }}">
+                        {{ branch.code }} — {{ branch.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <a href="/admin/users" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">
+                Create User
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

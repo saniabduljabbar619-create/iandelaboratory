@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>{% block title %}I & E Lab – Precision Diagnostics{% endblock %}</title>
+
+<link rel="stylesheet" href="/static/css/portal.css">
+
+{% block page_css %}{% endblock %}
+
+</head>
+
+
+<body>
+
+
+<!-- ================= HEADER ================= -->
+
+<header class="slx-portal-header">
+
+<div class="slx-container slx-header-inner">
+
+
+<!-- BRAND -->
+
+<a href="/" class="slx-brand">
+
+<div class="slx-brand-mark"></div>
+
+<div class="slx-brand-text">
+<div class="slx-brand-name">I & E Lab</div>
+<div class="slx-brand-sub">Precision Diagnostics</div>
+</div>
+
+</a>
+
+
+
+<!-- MOBILE MENU BUTTON -->
+
+<button class="slx-menu-toggle" onclick="toggleMenu()">
+☰
+</button>
+
+
+
+<!-- NAVIGATION -->
+
+<nav class="slx-nav" id="slxNav">
+
+<a href="/"
+class="{% if request.url.path == '/' %}active{% endif %}">
+Home
+</a>
+
+<a href="/tests"
+class="{% if 'tests' in request.url.path %}active{% endif %}">
+Tests
+</a>
+
+<a href="/book"
+class="{% if 'book' in request.url.path %}active{% endif %}">
+Book Test
+</a>
+
+<a href="/lookup"
+class="{% if 'lookup' in request.url.path or 'results' in request.url.path %}active{% endif %}">
+Results
+</a>
+
+<a href="/contact"
+class="{% if 'contact' in request.url.path %}active{% endif %}">
+Contact
+</a>
+
+<a href="/articles"
+class="{% if 'articles' in request.url.path %}active{% endif %}">
+Articles
+</a>
+
+</nav>
+
+</div>
+
+</header>
+
+
+
+<!-- ================= MAIN ================= -->
+
+<main class="slx-portal-main">
+
+{% block content %}{% endblock %}
+
+</main>
+
+
+
+<!-- ================= FOOTER ================= -->
+
+<footer class="slx-portal-footer">
+
+<div class="slx-container slx-footer-grid">
+
+
+<!-- LAB INFO -->
+
+<div class="slx-footer-col">
+
+<h4>I & E Laboratory</h4>
+
+<p>
+Precision diagnostics delivering accurate laboratory
+results for healthcare providers and patients.
+</p>
+
+</div>
+
+
+
+<!-- QUICK LINKS -->
+
+<div class="slx-footer-col">
+
+<h4>Quick Links</h4>
+
+<ul>
+
+<li><a href="/">Home</a></li>
+
+<li><a href="/tests">Laboratory Tests</a></li>
+
+<li><a href="/book">Book a Test</a></li>
+
+<li><a href="/lookup">Check Results</a></li>
+
+</ul>
+
+</div>
+
+
+
+<!-- SUPPORT -->
+
+<div class="slx-footer-col">
+
+<h4>Support</h4>
+
+<ul>
+
+<li><a href="/contact">Contact</a></li>
+
+<li><a href="/articles">Health Articles</a></li>
+
+</ul>
+
+</div>
+
+
+
+<!-- COMPANY -->
+
+<div class="slx-footer-col">
+
+<h4>Technology</h4>
+
+<p>
+Powered by <strong>Solunex Technologies</strong><br>
+Secure Medical Data Infrastructure
+</p>
+
+</div>
+
+
+
+</div>
+
+
+
+<div class="slx-footer-bottom">
+
+© {{ request.state.year if request.state and request.state.year else "2026" }}
+Solunex Technologies
+
+</div>
+
+
+</footer>
+
+
+
+<!-- ================= MOBILE NAV SCRIPT ================= -->
+
+<script>
+
+function toggleMenu() {
+
+const nav = document.getElementById("slxNav");
+nav.classList.toggle("open");
+
+}
+
+</script>
+
+
+</body>
+</html>

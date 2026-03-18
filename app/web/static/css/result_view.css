@@ -1,0 +1,240 @@
+/* ==================================
+   RESULT VIEW PAGE
+================================== */
+
+.slx-result-view{
+padding:100px 0;
+}
+
+
+/* ==================================
+   HEADER
+================================== */
+
+.slx-result-header{
+text-align:center;
+margin-bottom:40px;
+}
+
+.slx-result-header h2{
+font-size:28px;
+color:var(--sx-deep-green);
+margin-bottom:8px;
+}
+
+.slx-result-header p{
+font-size:14px;
+color:var(--sx-text-soft);
+}
+
+
+/* ==================================
+   RESULT CARD
+================================== */
+
+.slx-result-card{
+
+background:var(--sx-white);
+border-radius:16px;
+border:1px solid var(--sx-border);
+box-shadow:0 20px 40px rgba(11,31,42,0.06);
+
+padding:35px;
+
+overflow-x:auto;
+
+}
+
+
+/* ==================================
+   RESULT TABLE
+================================== */
+
+.slx-result-table{
+
+width:100%;
+border-collapse:collapse;
+min-width:600px;
+
+}
+
+
+/* TABLE HEADER */
+
+.slx-result-table thead th{
+
+text-align:left;
+
+font-size:13px;
+font-weight:600;
+
+color:var(--sx-text-soft);
+
+padding:12px 14px;
+
+border-bottom:2px solid var(--sx-border);
+
+background:#f8fafc;
+
+}
+
+
+/* TABLE BODY */
+
+.slx-result-table tbody td{
+
+padding:14px;
+
+font-size:14px;
+
+border-bottom:1px solid var(--sx-border);
+
+}
+
+
+/* PARAMETER COLUMN */
+
+.slx-result-table tbody td:first-child{
+
+font-weight:600;
+
+color:var(--sx-blue-black);
+
+}
+
+
+/* RESULT COLUMN */
+
+.slx-result-table tbody td:nth-child(2){
+
+font-weight:500;
+
+}
+
+
+/* FLAG COLUMN */
+
+.slx-result-table tbody td:last-child{
+
+font-weight:600;
+
+text-align:center;
+
+}
+
+
+/* ==================================
+   FLAG COLORS
+================================== */
+
+.flag-high{
+
+color:#b91c1c;
+font-weight:700;
+
+}
+
+.flag-low{
+
+color:#2563eb;
+font-weight:700;
+
+}
+
+.flag-normal{
+
+color:#059669;
+
+}
+
+
+/* ==================================
+   ACTION BUTTONS
+================================== */
+
+.slx-result-actions{
+
+margin-top:35px;
+
+display:flex;
+justify-content:center;
+align-items:center;
+gap:20px;
+
+flex-wrap:wrap;
+
+}
+
+
+.btn-download{
+
+background:var(--sx-blue-black);
+color:white;
+
+padding:12px 18px;
+
+border-radius:10px;
+
+text-decoration:none;
+
+font-size:14px;
+
+transition:0.2s;
+
+}
+
+.btn-download:hover{
+
+background:#112E3A;
+
+}
+
+
+.btn-secondary{
+
+padding:12px 18px;
+
+border-radius:10px;
+
+background:#f3f5f6;
+
+color:#333;
+
+text-decoration:none;
+
+font-size:14px;
+
+transition:0.2s;
+
+}
+
+.btn-secondary:hover{
+
+background:#e6e9ec;
+
+}
+
+
+/* ==================================
+   MOBILE RESPONSIVE
+================================== */
+
+@media (max-width:768px){
+
+.slx-result-view{
+padding:60px 0;
+}
+
+.slx-result-card{
+padding:25px;
+}
+
+.slx-result-header h2{
+font-size:22px;
+}
+
+.slx-result-table{
+min-width:500px;
+}
+
+}

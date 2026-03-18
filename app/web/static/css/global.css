@@ -1,0 +1,633 @@
+/* ===============================
+   SOLUNEX BASE THEME v1
+================================= */
+
+:root {
+    --sx-deep-green: #0F3D2E;
+    --sx-navy-green: #123C34;
+    --sx-blue-black: #0B1F2A;
+    --sx-yellow: #F4B400;
+    --sx-white: #FFFFFF;
+    --sx-light-gray: #F5F7F9;
+    --sx-border: #E5E7EB;
+    --sx-text-dark: #1F2937;
+}
+
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background-color: var(--sx-light-gray);
+    color: var(--sx-text-dark);
+}
+
+/* ===============================
+   LAYOUT
+================================= */
+
+.app-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* ===============================
+   SIDEBAR
+================================= */
+
+.sidebar {
+    width: 260px;
+    background: linear-gradient(
+        180deg,
+        var(--sx-blue-black) 0%,
+        var(--sx-navy-green) 100%
+    );
+    color: var(--sx-white);
+    padding: 30px 20px;
+}
+
+.sidebar .brand h2 {
+    font-size: 20px;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.sidebar .brand small {
+    color: #9CA3AF;
+    font-size: 12px;
+}
+
+.sidebar nav {
+    margin-top: 40px;
+}
+
+.sidebar nav a {
+    display: block;
+    padding: 12px 14px;
+    margin-bottom: 6px;
+    text-decoration: none;
+    color: #CBD5E1;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: 0.25s ease;
+}
+
+.sidebar nav a:hover {
+    background: rgba(244, 180, 0, 0.12);
+    color: var(--sx-yellow);
+}
+
+.sidebar nav a.active {
+    background: rgba(244, 180, 0, 0.18);
+    color: var(--sx-yellow);
+}
+
+/* ===============================
+   MAIN CONTENT
+================================= */
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===============================
+   TOPBAR
+================================= */
+
+.topbar {
+    background: var(--sx-white);
+    padding: 18px 30px;
+    border-bottom: 1px solid var(--sx-border);
+    display: flex;
+    justify-content: flex-end;
+    font-size: 14px;
+}
+
+/* ===============================
+   CONTENT AREA
+================================= */
+
+.content-area {
+    padding: 35px;
+    overflow-y: auto;
+}
+
+/* ===============================
+   COMPONENTS
+================================= */
+
+.page-title {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--sx-deep-green);
+}
+
+.card {
+    background: var(--sx-white);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border: 1px solid var(--sx-border);
+}
+
+/* BUTTON SYSTEM */
+
+.btn {
+    padding: 10px 18px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.btn-primary {
+    background: var(--sx-deep-green);
+    color: var(--sx-white);
+}
+
+.btn-primary:hover {
+    background: #145A45;
+}
+
+.btn-accent {
+    background: var(--sx-yellow);
+    color: #000;
+}
+
+.btn-accent:hover {
+    background: #e6a800;
+}
+
+/* FORM ELEMENTS */
+
+select,
+input {
+    padding: 8px 12px;
+    border: 1px solid var(--sx-border);
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+
+/* ===============================
+   BRAND BLOCK
+================================= */
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 45px;
+}
+
+.brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: linear-gradient(
+        135deg,
+        var(--sx-yellow),
+        var(--sx-deep-green)
+    );
+}
+
+/* ===============================
+   TOPBAR ENHANCEMENTS
+================================= */
+
+.topbar {
+    background: var(--sx-white);
+    padding: 18px 30px;
+    border-bottom: 1px solid var(--sx-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.system-label {
+    font-size: 13px;
+    color: #6B7280;
+    letter-spacing: 0.4px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.user-role {
+    font-size: 12px;
+    color: #6B7280;
+}
+
+/* ================= Alert System ================= */
+
+.sx-alert {
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    animation: fadeIn 0.3s ease;
+}
+
+.sx-alert.success {
+    background: #e6f4ea;
+    color: #1e7e34;
+    border-left: 4px solid var(--sx-deep-green);
+}
+
+.sx-alert.error {
+    background: #fdecea;
+    color: #b02a37;
+    border-left: 4px solid #dc3545;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================= Modal System ================= */
+
+.sx-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 20, 30, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.sx-modal-overlay.hidden {
+    display: none;
+}
+
+.sx-modal {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+}
+
+.sx-modal h3 {
+    margin: 0 0 10px 0;
+    color: var(--sx-blue-black);
+}
+
+.sx-modal p {
+    font-size: 13px;
+    margin-bottom: 20px;
+    opacity: 0.8;
+}
+
+.sx-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.btn-danger:hover {
+    background: #bb2d3b;
+}
+
+
+/* Notification System */
+
+.topbar-right{
+    display:flex;
+    align-items:center;
+    gap:20px;
+}
+
+.notification-wrapper{
+    position:relative;
+}
+
+.notification-btn{
+    background:none;
+    border:none;
+    font-size:18px;
+    cursor:pointer;
+    position:relative;
+}
+
+.notif-count{
+    position:absolute;
+    top:-6px;
+    right:-6px;
+    background:#e63946;
+    color:white;
+    font-size:11px;
+    padding:2px 6px;
+    border-radius:10px;
+}
+
+.notif-panel{
+    position:absolute;
+    right:0;
+    top:35px;
+    width:320px;
+    background:white;
+    border:1px solid #ddd;
+    border-radius:8px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.08);
+    z-index:100;
+}
+
+.notif-header{
+    padding:10px 14px;
+    border-bottom:1px solid #eee;
+    font-weight:600;
+}
+
+.notif-list{
+    max-height:300px;
+    overflow-y:auto;
+}
+
+.notif-item{
+    padding:10px 14px;
+    border-bottom:1px solid #f2f2f2;
+    cursor:pointer;
+}
+
+.notif-item:hover{
+    background:#f7f7f7;
+}
+
+.notif-title{
+    font-weight:600;
+    font-size:13px;
+}
+
+.notif-message{
+    font-size:12px;
+    color:#666;
+}
+
+.hidden{
+    display:none;
+}
+
+/* ================= Footer ================= */
+
+.app-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 25px;
+    font-size: 12px;
+    background: var(--sx-blue-black);
+    color: #cbd5e1;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.footer-left strong {
+    color: white;
+    margin-right: 8px;
+}
+
+.footer-version {
+    background: var(--sx-deep-green);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+}
+
+.footer-center strong {
+    color: var(--sx-yellow);
+}
+
+.footer-right {
+    opacity: 0.8;
+}
+
+html, body {
+    height: 100%;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.content-area {
+    flex: 1;
+}
+
+
+
+.notif-unread{
+    background:#f0f6ff;
+    border-left:4px solid #3b82f6;
+}
+
+.notif-item{
+    padding:10px;
+    border-bottom:1px solid #eee;
+    cursor:pointer;
+}
+
+.notif-item:hover{
+    background:#f9fafb;
+}
+
+
+
+
+/* ===============================
+   FINAL RESPONSIVE ENGINE 
+================================= */
+
+/* 1. Ensure the Overlay is ready */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* 2. Tablet and Mobile Logic */
+@media (max-width: 1024px) {
+    
+    /* Force main content to fill screen */
+    .app-container {
+        display: block; /* Break the flex side-by-side */
+        position: relative;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -260px; /* Pull it completely off-screen */
+        top: 0;
+        bottom: 0;
+        height: 100vh;
+        z-index: 2001; /* Above overlay */
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 10px 0 15px rgba(0,0,0,0.1);
+    }
+
+    /* This moves the sidebar into view */
+    .sidebar.active {
+        transform: translateX(260px);
+    }
+
+    /* Make the topbar button visible */
+    .mobile-toggle {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+    }
+
+    /* Ensure Main Content occupies full width */
+    .main-content {
+        width: 100%;
+        min-width: 100%;
+    }
+
+    /* Stack your dashboard grids */
+    .today-strip, 
+    .metrics-grid, 
+    .chart-container-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+    }
+
+    /* Hide User Info on small screens to save space */
+    .user-info {
+        display: none !important;
+    }
+
+    /* Allow tables to scroll sideways instead of breaking */
+    .card {
+        overflow-x: auto;
+    }
+    
+    table {
+        min-width: 600px; /* Prevents text squishing */
+    }
+}
+
+/* 3. Small Phone Specifics */
+@media (max-width: 480px) {
+    .topbar {
+        padding: 10px 15px;
+    }
+    
+    .content-area {
+        padding: 15px;
+    }
+
+    .page-title {
+        font-size: 18px;
+    }
+}
+
+
+
+
+/* The Toggle Button Container */
+.mobile-toggle {
+    display: none; /* Hidden on desktop */
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* The 3 Lines Logic */
+.hamburger-icon {
+    width: 24px;
+    height: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.hamburger-icon span {
+    display: block;
+    width: 100%;
+    height: 3px;
+    background-color: var(--sx-deep-green); /* Using your brand color */
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+/* Show button only on mobile/tablet */
+@media (max-width: 1024px) {
+    .mobile-toggle {
+        display: flex !important;
+    }
+}
+
+
+/* Smooth page entry */
+.content-area {
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}

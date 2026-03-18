@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<style>
+
+body{
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    color:#222;
+}
+
+.header{
+    display:flex;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.logo{
+    width:80px;
+}
+
+.lab-info{
+    margin-left:15px;
+}
+
+.lab-info h2{
+    margin:0;
+}
+
+.meta{
+    margin-top:20px;
+    margin-bottom:20px;
+}
+
+.meta table{
+    width:100%;
+}
+
+.result-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.result-table th,
+.result-table td{
+    border:1px solid #ccc;
+    padding:6px;
+}
+
+.footer{
+    margin-top:40px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<img src="{{ logo_path }}" class="logo">
+
+<div class="lab-info">
+
+<h2>I & E Diagnostic Laboratory</h2>
+
+<p>
+Accurate Diagnostics • Reliable Results
+</p>
+
+</div>
+
+</div>
+
+
+<div class="meta">
+
+<table>
+
+<tr>
+<td><strong>Patient:</strong> {{ result.patient.full_name }}</td>
+<td><strong>Patient No:</strong> {{ result.patient.patient_no }}</td>
+</tr>
+
+<tr>
+<td><strong>Sex:</strong> {{ result.patient.sex }}</td>
+<td><strong>Age:</strong> {{ result.patient.age }}</td>
+</tr>
+
+<tr>
+<td><strong>Test:</strong> {{ result.test_type.name }}</td>
+<td><strong>Date:</strong> {{ result.created_at.strftime("%d %b %Y") }}</td>
+</tr>
+
+</table>
+
+</div>
+
+
+<table class="result-table">
+
+{% if values.get('cells') %}
+
+<thead>
+<tr>
+{% for col in values.cells[0] %}
+<th>{{ col }}</th>
+{% endfor %}
+</tr>
+</thead>
+
+<tbody>
+
+{% for row in values.cells[1:] %}
+
+<tr>
+
+{% for cell in row %}
+<td>{{ cell }}</td>
+{% endfor %}
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+{% else %}
+
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Result</th>
+<th>Flag</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for key, value in values.items() %}
+
+<tr>
+
+<td>{{ key }}</td>
+
+<td>{{ value }}</td>
+
+<td>{{ flags[key] if flags and key in flags else "-" }}</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+{% endif %}
+
+</table>
+
+
+<div class="footer">
+
+<p>
+
+<strong>Scientist:</strong>
+
+{{ result.released_by if result.released_by else "Medical Laboratory Scientist" }}
+
+</p>
+
+<p>
+
+<strong>Date Released:</strong>
+
+{{ result.updated_at.strftime("%d %b %Y") }}
+
+</p>
+
+</div>
+
+</body>
+</html>

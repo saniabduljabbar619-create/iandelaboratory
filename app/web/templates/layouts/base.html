@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>I & E Lab Portal</title>
+
+    <!-- Global Styles -->
+    <link rel="stylesheet" href="/static/css/global.css">
+    
+    <!-- Page Specific Styles -->
+    {% block page_css %}{% endblock %}
+</head>
+<body>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <div class="app-container">
+
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <div class="brand-mark"></div>
+                <div>
+                    <h2>I & E Lab</h2>
+                    <small>Admin Portal</small>
+                </div>
+            </div>
+
+            <nav>
+                <a href="/admin/dashboard"
+                   class="{% if request.url.path.startswith('/admin/dashboard') %}active{% endif %}">
+                    Dashboard
+                </a>
+
+                <a href="/admin/users"
+                   class="{% if request.url.path.startswith('/admin/users') %}active{% endif %}">
+                    Users
+                </a>
+
+                <a href="/admin/branches"
+                   class="{% if request.url.path.startswith('/admin/branches') %}active{% endif %}">
+                    Branches
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+
+            <header class="topbar">
+                <div class="topbar-left" style="display: flex; align-items: center; gap: 15px;">
+                    <button class="mobile-toggle" id="menuBtn" aria-label="Toggle Menu">
+                        <div class="hamburger-icon">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </button>
+                    <span class="system-label">I & E Platform</span>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="notification-wrapper">
+                        <button class="notification-btn" onclick="toggleNotifications()">
+                            🔔
+                            <span id="notif-count" class="notif-count hidden">0</span>
+                        </button>
+
+                        <div id="notif-panel" class="notif-panel hidden">
+                            <div class="notif-header">Notifications</div>
+                            <div id="notif-list" class="notif-list">
+                                <div class="notif-empty">No notifications</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-info">
+                        <span class="user-name">{{ user.username if user else "" }}</span>
+                        <span class="user-role">{{ user.role if user else "" }}</span>
+                    </div>
+                </div>
+            </header>
+
+        <section class="content-area">
+            {% if request.query_params.get("success") %}
+                <div class="sx-alert success">
+                    {{ request.query_params.get("success") }}
+                </div>
+            {% endif %}
+
+            {% if request.query_params.get("error") %}
+                <div class="sx-alert error">
+                    {{ request.query_params.get("error") }}
+                </div>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </section>
+
+        <!-- ================= Footer ================= -->
+<footer class="app-footer">
+
+    <div class="footer-left">
+        <strong>I & E Lab Platform</strong>
+        <span class="footer-version">
+            v{{ settings.APP_VERSION if settings and settings.APP_VERSION else "1.0.0" }}
+        </span>
+    </div>
+
+    <div class="footer-center">
+        <span class="footer-meta">
+            Environment:
+            <strong>
+                {{ settings.ENVIRONMENT if settings and settings.ENVIRONMENT else "Production" }}
+            </strong>
+        </span>
+    </div>
+
+    <div class="footer-right">
+        <span>
+            © {{ request.state.year if request.state and request.state.year else "2026" }}
+            Solunex Technologies
+        </span>
+    </div>
+
+</footer>
+
+    </main>
+
+</div>
+
+<script>
+    setTimeout(function () {
+        const alerts = document.querySelectorAll('.sx-alert');
+        alerts.forEach(alert => {
+            alert.style.opacity = '0';
+            alert.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 4000);
+</script>
+
+<!-- ================= Confirmation Modal ================= -->
+
+<div id="sxConfirmModal" class="sx-modal-overlay hidden">
+    <div class="sx-modal">
+        <h3 id="sxModalTitle">Confirm Action</h3>
+        <p id="sxModalMessage">Are you sure?</p>
+
+        <div class="sx-modal-actions">
+            <button class="btn-secondary" onclick="closeConfirm()">Cancel</button>
+            <a id="sxConfirmBtn" href="#" class="btn-danger">
+                Confirm
+            </a>
+        </div>
+    </div>
+</div>
+
+
+<script>
+function openConfirm(title, message, url) {
+    document.getElementById('sxModalTitle').innerText = title;
+    document.getElementById('sxModalMessage').innerText = message;
+    document.getElementById('sxConfirmBtn').setAttribute('href', url);
+    document.getElementById('sxConfirmModal').classList.remove('hidden');
+}
+
+function closeConfirm() {
+    document.getElementById('sxConfirmModal').classList.add('hidden');
+}
+</script>
+
+
+<script>
+
+let notifOpen = false
+
+function toggleNotifications(){
+
+    const panel = document.getElementById("notif-panel")
+
+    notifOpen = !notifOpen
+
+    if(notifOpen){
+        panel.classList.remove("hidden")
+    }else{
+        panel.classList.add("hidden")
+    }
+}
+
+/* ==============================
+   Load Notifications
+================================ */
+
+async function loadNotifications(){
+
+    try{
+
+        const res = await fetch("/admin/notifications")
+        const data = await res.json()
+
+        const list = document.getElementById("notif-list")
+        list.innerHTML = ""
+
+        if(data.length === 0){
+            list.innerHTML = `<div class="notif-empty">No notifications</div>`
+            return
+        }
+
+        data.forEach(n => {
+
+            const item = document.createElement("div")
+
+            item.className = "notif-item"
+
+            if(!n.is_read){
+                item.classList.add("notif-unread")
+            }
+
+            item.innerHTML = `
+                <div class="notif-title">${n.title}</div>
+                <div class="notif-message">${n.message}</div>
+            `
+
+            item.onclick = async () => {
+
+                await fetch(`/admin/notifications/${n.id}/read`, {
+                    method: "POST"
+                })
+
+                handleNotification(n)
+
+            }
+
+            list.appendChild(item)
+
+        })
+
+        loadUnreadCount()
+
+    }catch(err){
+        console.error("Notification load error", err)
+    }
+
+}
+
+/* ==============================
+   Load Unread Count
+================================ */
+
+async function loadUnreadCount(){
+
+    try{
+
+        const res = await fetch("/admin/notifications/unread-count")
+        const data = await res.json()
+
+        const count = document.getElementById("notif-count")
+
+        if(data.count > 0){
+            count.innerText = data.count
+            count.classList.remove("hidden")
+        }else{
+            count.classList.add("hidden")
+        }
+
+    }catch(err){
+        console.error("Unread count error", err)
+    }
+
+}
+
+/* ==============================
+   Handle Notification Click
+================================ */
+
+function handleNotification(n){
+
+    if(n.reference_type === "booking"){
+        window.location = `/admin/bookings/${n.reference_id}`
+    }
+
+    if(n.reference_type === "result"){
+        window.location = `/admin/results/${n.reference_id}`
+    }
+
+}
+
+/* ==============================
+   Initial Load
+================================ */
+
+loadNotifications()
+loadUnreadCount()
+
+/* ==============================
+   Polling
+================================ */
+
+setInterval(loadNotifications, 20000)
+setInterval(loadUnreadCount, 20000)
+
+
+document.addEventListener("DOMContentLoaded", function() {
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    function toggleMenu() {
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    if (menuBtn) menuBtn.addEventListener('click', toggleMenu);
+    if (overlay) overlay.addEventListener('click', toggleMenu);
+
+    // Close menu if a link is clicked (good for mobile UX)
+    const links = sidebar.querySelectorAll('nav a');
+    links.forEach(l => l.addEventListener('click', () => {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+    }));
+});
+</script>
+{% block page_js %}{% endblock %}
+</body>
+</html>

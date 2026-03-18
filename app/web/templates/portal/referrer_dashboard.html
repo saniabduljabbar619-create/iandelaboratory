@@ -1,0 +1,167 @@
+{% extends "layouts/portal_base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/referrer_dashboard.css">
+<style>
+    :root {
+        --brand-teal: #0d9488;
+        --debt-amber: #f59e0b;
+        --slate-text: #64748b;
+        --bg-light: #f8fafc;
+    }
+
+    body { background-color: var(--bg-light); font-family: 'Inter', sans-serif; }
+    .dashboard { max-width: 1100px; margin: 2rem auto; padding: 0 20px; }
+    
+    .header { margin-bottom: 30px; }
+    #welcome { color: #1e293b; font-weight: 800; margin-bottom: 5px; }
+    .subtitle { color: var(--slate-text); font-size: 0.95rem; }
+
+    /* Summary Card */
+    .cards { margin-bottom: 30px; }
+    .card { 
+        background: white; padding: 25px; border-radius: 16px; 
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        border-left: 5px solid var(--debt-amber);
+    }
+    .card p { color: var(--slate-text); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 10px; }
+    .card h1 { color: #b45309; margin: 0; font-size: 2.2rem; font-weight: 800; }
+
+    /* Tables & Sections */
+    .table-section, .patients-section { 
+        background: white; border-radius: 16px; padding: 20px; 
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px;
+    }
+    .section-header { border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+    .section-header h3 { margin: 0; color: #1e293b; font-size: 1.1rem; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px; color: var(--slate-text); font-size: 0.75rem; text-transform: uppercase; border-bottom: 2px solid #f1f5f9; }
+    td { padding: 14px 12px; border-bottom: 1px solid #f8fafc; font-size: 0.9rem; color: #334155; }
+    
+    tr.clickable:hover { background: #f0fdfa; cursor: pointer; transition: 0.2s; }
+    
+    .booking-code { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--brand-teal); }
+
+    /* Patient List Styling */
+    .patient-row { 
+        display: grid; grid-template-columns: 1fr 1fr 100px; 
+        padding: 12px; border-radius: 8px; margin-bottom: 8px; background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+    .patient-row span:last-child { font-weight: 700; text-align: right; color: #1e293b; }
+    
+    #selectedBooking { background: var(--brand-teal); color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+
+    <div class="header">
+        <h2 id="welcome">Loading...</h2>
+        <p class="subtitle">Real-time ledger of approved credit bookings</p>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <p>Total Outstanding Balance</p>
+            <h1 id="totalCredit">₦0</h1>
+        </div>
+    </div>
+
+    <div class="table-section">
+        <div class="section-header">
+            <h3>Recent Credit Bookings</h3>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Ref Code</th>
+                    <th>Patients</th>
+                    <th>Total Value</th>
+                    <th>Date Generated</th>
+                </tr>
+            </thead>
+            <tbody id="bookingTable">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="patients-section" id="patientView" style="display: none;">
+        <div class="section-header">
+            <h3>Booking Details</h3>
+            <span id="selectedBooking"></span>
+        </div>
+        <div id="patients"></div>
+    </div>
+
+</div>
+
+<script>
+const referrerId = localStorage.getItem("referrer_id");
+const name = localStorage.getItem("referrer_name");
+
+document.getElementById("welcome").innerText = "Welcome, " + (name || "Referrer");
+
+async function loadDashboard() {
+    try {
+        const res = await fetch(`/api/referrer/dashboard?referrer_id=${referrerId}`);
+        const data = await res.json();
+
+        document.getElementById("totalCredit").innerText =
+            "₦" + Number(data.total_credit || 0).toLocaleString();
+
+        const tbody = document.getElementById("bookingTable");
+        tbody.innerHTML = "";
+
+        if (data.bookings.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:gray;">No credit records found.</td></tr>`;
+            return;
+        }
+
+        data.bookings.forEach(b => {
+            const row = `
+                <tr class="clickable" onclick="loadPatients('${b.booking_code}')">
+                    <td class="booking-code">${b.booking_code}</td>
+                    <td><i class="fas fa-users mr-2"></i> ${b.patients_count}</td>
+                    <td style="font-weight:700;">₦${Number(b.booking_total).toLocaleString()}</td>
+                    <td>${new Date(b.created_at).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    } catch (err) {
+        console.error("Dashboard failed to load", err);
+    }
+}
+
+async function loadPatients(code) {
+    const patientView = document.getElementById("patientView");
+    patientView.style.display = "block";
+    document.getElementById("selectedBooking").innerText = "CODE: " + code;
+
+    const res = await fetch(`/api/referrer/booking/${code}?referrer_id=${referrerId}`);
+    const data = await res.json();
+
+    const div = document.getElementById("patients");
+    div.innerHTML = "";
+
+    data.forEach(p => {
+        div.innerHTML += `
+            <div class="patient-row">
+                <span style="font-weight:600;">${p.full_name}</span>
+                <span style="color:var(--slate-text); font-size:0.85rem;">${p.phone}</span>
+                <span>₦${Number(p.amount).toLocaleString()}</span>
+            </div>
+        `;
+    });
+    
+    // Smooth scroll to patient view
+    patientView.scrollIntoView({ behavior: 'smooth' });
+}
+
+loadDashboard();
+</script>
+{% endblock %}

@@ -1,0 +1,326 @@
+/* =========================
+BOOKING SECTION
+========================= */
+
+.slx-booking {
+    padding: 100px 0;
+}
+
+
+/* =========================
+LAYOUT
+========================= */
+
+.slx-book-layout{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:40px;
+    align-items:start;
+}
+
+
+/* =========================
+CARDS
+========================= */
+
+.slx-book-card {
+    background:white;
+    padding:35px;
+    border-radius:16px;
+    border:1px solid var(--sx-border);
+    box-shadow:0 15px 40px rgba(11,31,42,0.06);
+    margin-bottom:30px;
+}
+
+.slx-book-card h3{
+    margin-bottom:25px;
+    font-size:18px;
+    color:var(--sx-deep-green);
+}
+
+
+/* =========================
+FORM GRID
+========================= */
+
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.form-group label{
+    font-size:13px;
+    color:var(--sx-text-soft);
+}
+
+.form-group input,
+.form-group select{
+    padding:12px;
+    border:1px solid var(--sx-border);
+    border-radius:8px;
+    font-size:14px;
+    background:white;
+}
+
+.form-group input:focus,
+.form-group select:focus{
+    outline:none;
+    border-color:var(--sx-deep-green);
+}
+
+
+/* =========================
+TEST SEARCH
+========================= */
+
+.slx-test-search{
+    margin-bottom:20px;
+}
+
+.slx-test-search input{
+    width:100%;
+    padding:12px;
+    border-radius:8px;
+    border:1px solid var(--sx-border);
+    font-size:14px;
+}
+
+
+/* =========================
+TEST CATEGORY
+========================= */
+
+.slx-test-category{
+    margin-bottom:25px;
+}
+
+.slx-category-title{
+    font-size:13px;
+    font-weight:700;
+    text-transform:uppercase;
+    color:var(--sx-text-soft);
+    margin-bottom:12px;
+}
+
+
+/* =========================
+TEST LIST
+========================= */
+
+.slx-test-list{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.slx-test-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px;
+    border:1px solid var(--sx-border);
+    border-radius:10px;
+    cursor:pointer;
+    transition:0.2s ease;
+    background:white;
+}
+
+.slx-test-item:hover{
+    border-color:var(--sx-deep-green);
+    background:#f9fbfa;
+}
+
+.slx-test-content{
+    display:flex;
+    flex-direction:column;
+}
+
+.slx-test-price{
+    font-size:13px;
+    color:var(--sx-text-soft);
+}
+
+
+/* =========================
+TEST INFO BUTTON
+========================= */
+
+.slx-test-info{
+    margin-left:auto;
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    border:none;
+    background:#f3f6f8;
+    font-size:13px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.slx-test-info:hover{
+    background:var(--sx-deep-green);
+    color:white;
+}
+
+
+/* =========================
+SUMMARY PANEL
+========================= */
+
+.slx-book-summary{
+    position:sticky;
+    top:120px;
+}
+
+.slx-summary-card{
+    background:white;
+    border-radius:16px;
+    padding:30px;
+    border:1px solid var(--sx-border);
+    box-shadow:0 20px 40px rgba(0,0,0,0.05);
+}
+
+.slx-summary-card h3{
+    margin-bottom:20px;
+}
+
+.slx-selected-tests{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    font-size:14px;
+    color:var(--sx-text-soft);
+}
+
+.slx-selected-item{
+    display:flex;
+    justify-content:space-between;
+}
+
+.slx-summary-total{
+    margin-top:20px;
+    font-size:18px;
+    font-weight:600;
+    display:flex;
+    justify-content:space-between;
+    border-top:1px solid var(--sx-border);
+    padding-top:15px;
+}
+
+
+/* =========================
+MODAL
+========================= */
+
+.slx-modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    background:rgba(0,0,0,0.45);
+    align-items:center;
+    justify-content:center;
+    z-index:2000;
+}
+
+.slx-modal-content{
+    background:white;
+    padding:35px;
+    border-radius:12px;
+    max-width:520px;
+    width:90%;
+    box-shadow:0 30px 60px rgba(0,0,0,0.2);
+}
+
+.slx-modal-content h3{
+    margin-bottom:15px;
+}
+
+.slx-modal-content p{
+    color:var(--sx-text-soft);
+    line-height:1.6;
+    margin-bottom:20px;
+}
+
+
+/* =========================
+RESPONSIVE
+========================= */
+
+@media (max-width:1024px){
+
+.slx-book-layout{
+    grid-template-columns:1fr;
+}
+
+.slx-book-summary{
+    position:relative;
+    top:auto;
+}
+
+}
+
+@media (max-width:640px){
+
+.form-grid{
+    grid-template-columns:1fr;
+}
+
+.slx-booking{
+    padding:60px 0;
+}
+
+}
+
+
+
+.slx-booking-type{
+display:flex;
+gap:30px;
+margin-top:10px;
+}
+
+.slx-type-option{
+display:flex;
+align-items:center;
+gap:8px;
+cursor:pointer;
+font-weight:500;
+}
+
+
+.slx-group-item{
+display:flex;
+justify-content:space-between;
+padding:10px;
+border-bottom:1px solid #eee;
+}
+
+
+.btn-secondary{
+display:inline-flex;
+align-items:center;
+justify-content:center;
+padding:10px 16px;
+border-radius:8px;
+border:1px solid #d6dbe1;
+background:#f6f8fa;
+color:#2c3e50;
+font-weight:500;
+cursor:pointer;
+transition:all .2s ease;
+}
+
+.btn-secondary:hover{
+background:#eef1f4;
+border-color:#cbd3db;
+}

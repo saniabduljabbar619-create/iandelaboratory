@@ -1,0 +1,81 @@
+{% extends "layouts/base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/admin_bookings.css">
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h2>Bookings</h2>
+    <p class="page-subtitle">Manage patient bookings and payment verification</p>
+</div>
+
+{% if success %}
+<div class="alert success">
+    {{ success }}
+</div>
+{% endif %}
+
+<div class="card">
+
+<table class="admin-table">
+
+<thead>
+<tr>
+<th>Booking Code</th>
+<th>Patient</th>
+<th>Phone</th>
+<th>Status</th>
+<th>Created</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for booking in bookings %}
+<tr>
+
+<td class="code">
+{{ booking.booking_code }}
+</td>
+
+<td>
+{{ booking.full_name }}
+</td>
+
+<td>
+{{ booking.phone }}
+</td>
+
+<td>
+
+<span class="status status-{{ booking.status }}">
+{{ booking.status.replace("_"," ") }}
+</span>
+
+</td>
+
+<td>
+{{ booking.created_at.strftime("%Y-%m-%d %H:%M") if booking.created_at }}
+</td>
+
+<td>
+
+<a href="/admin/bookings/{{ booking.id }}" class="btn-view">
+View
+</a>
+
+</td>
+
+</tr>
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% endblock %}
