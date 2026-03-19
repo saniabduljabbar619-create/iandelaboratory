@@ -235,7 +235,7 @@ class ResultService:
     ) -> tuple[list[TestResult], int]:
         # Currently permissive for staff roles; tighten later if needed.
         role = (role or "").lower().strip()
-        if role not in {"labtech", "supervisor", "admin"}:
+        if role not in {"labtech", "labstaff", "cashier", "supervisor", "admin"}:
             raise HTTPException(status_code=403, detail="Invalid role")
 
         q = self.db.query(TestResult)
