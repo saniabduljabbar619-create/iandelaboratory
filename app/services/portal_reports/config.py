@@ -1,9 +1,8 @@
 # app/services/portal_reports/config.py
 from pathlib import Path
 
-
 CURRENT_FILE = Path(__file__).resolve()
-APP_ROOT = CURRENT_FILE.parents[2] 
+APP_ROOT = CURRENT_FILE.parents[2]
 
 LAB_PROFILE = {
     "lab_name": "I and E Diagnostic Laboratory and Ultra Sound Scan",
@@ -11,8 +10,8 @@ LAB_PROFILE = {
     "phone": "08063645308 |",
     "email": "iandelaboratory@yahoo.com",
 
-    # Correct path
-    "logo_path": str(APP_ROOT / "static" / "logos" / "logo.png"),
+    # ✅ FIXED PATH
+    "logo_path": str(APP_ROOT / "web" / "static" / "logos" / "logo.png"),
 
     "watermark_enabled": True,
 
