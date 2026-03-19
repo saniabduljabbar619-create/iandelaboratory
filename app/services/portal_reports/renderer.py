@@ -22,17 +22,26 @@ def _draw_header(c, lab_profile, w, h):
 
     top_y = h - 20 * mm
 
+    # In your _draw_header function
     if logo:
         try:
             from PIL import Image
-            pil_img = Image.open(logo).convert("RGB")
+            # logo is already str(logo_path) from your config.py
+            pil_img = Image.open(logo)
+            
+            # Explicitly ensure it is RGB/RGBA to avoid 'L' or 'P' mode errors
+            if pil_img.mode not in ('RGB', 'RGBA'):
+                pil_img = pil_img.convert('RGB')
+                
             img = ImageReader(pil_img)
             size = 18 * mm
-
-            c.drawImage(img, 15 * mm, h - 38 * mm, size, size)
-            c.drawImage(img, w - 15 * mm - size, h - 38 * mm, size, size)
-        except Exception:
-            pass
+    
+            # Check your Y coordinates; if h - 38*mm is too low, 
+            # it might be drawing off-page or behind a table.
+            c.drawImage(img, 15 * mm, h - 35 * mm, size, size, mask='auto')
+            c.drawImage(img, w - 15 * mm - size, h - 35 * mm, size, size, mask='auto')
+        except Exception as e:
+            print(f"DEBUG PDF LOGO ERROR: {e}") # Add this to see the error in Railway logs
 
     lab_name = lab_profile.get("lab_name", "Laboratory")
     address = lab_profile.get("address", "")
