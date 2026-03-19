@@ -24,7 +24,9 @@ def _draw_header(c, lab_profile, w, h):
 
     if logo:
         try:
-            img = ImageReader(logo)
+            from PIL import Image
+            pil_img = Image.open(logo).convert("RGB")
+            img = ImageReader(pil_img)
             size = 18 * mm
 
             c.drawImage(img, 15 * mm, h - 38 * mm, size, size)
@@ -83,7 +85,10 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results):
 
     if watermark and logo:
         try:
-            img = ImageReader(logo)
+            from PIL import Image
+
+            pil_img = Image.open(logo).convert("RGB")
+            img = ImageReader(pil_img)
 
             _safe_set_alpha(c, 0.08)
 
