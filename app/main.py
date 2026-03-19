@@ -37,7 +37,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # APP INIT (ONLY ONCE)
 # --------------------------------------------------
 # main.py
-app = FastAPI(title=settings.APP_NAME, redirect_slashes=False)
+app = FastAPI(title=settings.APP_NAME)
 
 # --------------------------------------------------
 # CORS (ALLOW ALL FOR NOW)
