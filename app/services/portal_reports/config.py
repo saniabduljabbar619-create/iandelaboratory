@@ -12,7 +12,7 @@ LAB_PROFILE = {
     "email": "iandelaboratory@yahoo.com",
 
     # Correct path
-    "logo_path": str(APP_ROOT / "web" / "static" / "logos" / "logo.png"),
+    "logo_path": str(APP_ROOT / "static" / "logos" / "logo.png"),
 
     "watermark_enabled": True,
 
