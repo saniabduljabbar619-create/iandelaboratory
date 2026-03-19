@@ -200,7 +200,7 @@ def download_result(request: Request, result_id: int):
     from pathlib import Path
     BASE_DIR = Path(__file__).resolve().parents[3]
 
-    logo_file = BASE_DIR /"app" / "web" / "static" / "logo.jpeg"
+    logo_file = BASE_DIR /"app" / "web" / "static" / "logo.png"
 
     lab_profile = {
         "lab_name": "I and E Diagnostic Laboratory and Ultra Sound Scan",
