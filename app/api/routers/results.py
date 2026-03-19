@@ -77,7 +77,7 @@ def set_result_status(
     return service.set_status(result_id, payload.status, role=x_role)
 
 
-@router.get("/", response_model=PagedTestResultOut)
+@router.get("", response_model=PagedTestResultOut)
 def list_results(
     current_user = Depends(get_current_user),
     db: Session = Depends(get_db),
