@@ -35,14 +35,19 @@ def create_test_request(
 @router.get("")
 def list_test_requests(
     status: Optional[str] = Query(default=None),
+    q: Optional[str] = Query(default=None), # <--- Catch the worker's query here
     patient_id: Optional[int] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     service = TestRequestService(db, current_user)
+    
+    # Logic: if status is empty but q has 'pending', use q
+    effective_status = status or q
+    
     return service.list(
-        status=status,
+        status=effective_status,
         patient_id=patient_id,
         limit=limit,
     )
