@@ -66,15 +66,16 @@ def update_test_request_status(
 
 @router.get("/count")
 def get_test_requests_count(
-    status: Optional[str] = "pending",
+    status: str = "pending",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    # This is what the NotificationPollingWorker in your Lab App hits
     service = TestRequestService(db, current_user)
-    # We reuse your list logic but just return the length, 
-    # or better yet, a direct count query
-    count = db.query(service.db.query(TestRequest).filter(TestRequest.status == status).exists()).scalar()
-    # If the above is too complex, just use:
-    # count = len(service.list(status=status))
+    
+    # Query directly for the count, respecting the user's branch
+    count = db.query(TestRequest).filter(
+        TestRequest.status == status,
+        TestRequest.branch_id == service.branch_id
+    ).count()
+    
     return {"count": count}
