@@ -66,7 +66,7 @@ def update_test_request_status(
 
 @router.get("/count")
 def get_test_requests_count(
-    status: str = "pending",
+    status: str = "paid",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
