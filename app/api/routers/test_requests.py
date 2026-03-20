@@ -10,6 +10,8 @@ from typing import Optional
 from app.api.deps import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
+from app.models.test_request import TestRequest
+
 from app.schemas.test_request import (
     TestRequestCreate,
     TestRequestOut,
@@ -55,3 +57,19 @@ def update_test_request_status(
 ):
     service = TestRequestService(db, current_user)
     return service.update_status(request_id, payload)
+
+
+@router.get("/count")
+def get_test_requests_count(
+    status: Optional[str] = "pending",
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # This is what the NotificationPollingWorker in your Lab App hits
+    service = TestRequestService(db, current_user)
+    # We reuse your list logic but just return the length, 
+    # or better yet, a direct count query
+    count = db.query(service.db.query(TestRequest).filter(TestRequest.status == status).exists()).scalar()
+    # If the above is too complex, just use:
+    # count = len(service.list(status=status))
+    return {"count": count}
