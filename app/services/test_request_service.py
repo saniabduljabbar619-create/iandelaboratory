@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.branch_scope import resolve_branch_scope
 from app.models.test_type import TestType
 from app.models.test_request import TestRequest
+from app.models.patient import Patient  # <-- ADD THIS IMPORT
 from app.schemas.test_request import TestRequestCreate, TestRequestStatusUpdate
 
 
@@ -46,10 +47,11 @@ class TestRequestService:
         patient_id: int | None = None,
         limit: int = 50
     ):
-
+        # Update query to include Patient model
         q = (
-            self.db.query(TestRequest, TestType)
+            self.db.query(TestRequest, TestType, Patient)
             .join(TestType, TestType.id == TestRequest.test_type_id)
+            .join(Patient, Patient.id == TestRequest.patient_id) # <-- JOIN PATIENT HERE
         )
 
         if self.branch_id:
@@ -65,7 +67,8 @@ class TestRequestService:
 
         out = []
 
-        for tr, tt in rows:
+        # Update the loop to unpack the Patient model (p)
+        for tr, tt, p in rows: 
             out.append({
                 "id": tr.id,
                 "patient_id": tr.patient_id,
@@ -77,9 +80,10 @@ class TestRequestService:
                 "updated_at": tr.updated_at,
                 "branch_id": tr.branch_id,
 
-                # 🔥 enrichment (THIS fixes your UI)
+                # 🔥 Enrichment
                 "test_name": tt.name,
                 "price": float(tt.price),
+                "patient_name": p.full_name, # <-- ADD REAL NAME HERE
             })
 
         return out
