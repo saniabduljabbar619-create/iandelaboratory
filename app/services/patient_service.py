@@ -2,9 +2,10 @@
 # app/services/patient_service.py
 from __future__ import annotations
 
+from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func  # Added func for date extraction
 from sqlalchemy.exc import IntegrityError
 
 from app.models.patient import Patient
@@ -20,7 +21,6 @@ class PatientService:
         self.db = db
         self.current_user = current_user
         self.branch_id = resolve_branch_scope(current_user, requested_branch_id)
-
 
     def _next_patient_no(self) -> str:
         """
@@ -87,7 +87,6 @@ class PatientService:
 
         return p
 
-
     def update(self, patient_id: int, payload: PatientUpdate) -> Patient:
         p = self.get(patient_id)
         data = payload.model_dump(exclude_unset=True)
@@ -97,26 +96,44 @@ class PatientService:
         self.db.refresh(p)
         return p
 
-    def search(self, q: str) -> list[Patient]:
-        q = q.strip()
-        if not q:
-            return []
-
+    def search(self, q: str | None = None, created_date: str | None = None) -> list[Patient]:
+        """
+        Search by query string OR filter by creation date (Daily Queue).
+        """
         query = self.db.query(Patient)
 
+        # 1. Apply Branch Scope
         if self.branch_id:
             query = query.filter(Patient.branch_id == self.branch_id)
 
-        return (
-            query.filter(
-                or_(
-                    Patient.full_name.like(f"%{q}%"),
-                    Patient.phone.like(f"%{q}%"),
-                    Patient.patient_no.like(f"%{q}%"),
+        # 2. Logic for Global Search
+        if q and q.strip():
+            search_str = q.strip()
+            return (
+                query.filter(
+                    or_(
+                        Patient.full_name.ilike(f"%{search_str}%"),
+                        Patient.phone.ilike(f"%{search_str}%"),
+                        Patient.patient_no.ilike(f"%{search_str}%"),
+                    )
                 )
+                .order_by(Patient.id.desc())
+                .limit(50)
+                .all()
             )
-            .order_by(Patient.id.desc())
-            .limit(50)
-            .all()
-        )
 
+        # 3. Logic for Daily Queue (renders one by one as they come)
+        if created_date:
+            try:
+                # Convert 'YYYY-MM-DD' string to a date object
+                target_dt = datetime.strptime(created_date, "%Y-%m-%d").date()
+                return (
+                    query.filter(func.date(Patient.created_at) == target_dt)
+                    .order_by(Patient.created_at.asc()) # Ascending: see them in order of arrival
+                    .all()
+                )
+            except ValueError:
+                return []
+
+        # If no search query and no date, return nothing (protects performance)
+        return []
