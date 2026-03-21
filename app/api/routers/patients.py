@@ -25,15 +25,22 @@ def create_patient(
     return service.create(payload)
 
 
+# app/api/routers/patients.py
+
 @router.get("/search", response_model=list[PatientOut])
 def search_patients(
-    q: str = Query(..., min_length=1),
+    # Make q optional by setting default to None
+    q: Optional[str] = Query(None), 
+    # Add the date filter for the daily queue
+    created_date: Optional[str] = Query(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     service = PatientService(db, current_user)
-    return service.search(q)
-
+    
+    # Logic: If date is provided and q is not, fetch today's queue
+    # Otherwise, perform the standard search
+    return service.search(q=q, created_date=created_date)
 
 @router.get("/{patient_id}", response_model=PatientOut)
 def get_patient(
