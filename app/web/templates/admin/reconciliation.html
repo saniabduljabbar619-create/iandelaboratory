@@ -50,25 +50,28 @@
 
 {% block page_js %}
 <script>
-    async function loadReconciliation() {
-        const start = document.getElementById('startDate').value;
-        const end = document.getElementById('endDate').value;
-        
-        let url = '/admin/payments/reconcile';
-        const params = new URLSearchParams();
-        if (start) params.append('start_date', start);
-        if (end) params.append('end_date', end);
-        if (params.toString()) url += `?${params.toString()}`;
+    // Inside reconciliation.html <script>
+async function loadReconciliation() {
+    const start = document.getElementById('startDate').value;
+    const end = document.getElementById('endDate').value;
+    
+    // POINT TO THE DATA ENDPOINT, NOT THE PAGE ENDPOINT
+    let url = '/admin/payments/reconcile/data'; 
+    
+    const params = new URLSearchParams();
+    if (start) params.append('start_date', start);
+    if (end) params.append('end_date', end);
+    if (params.toString()) url += `?${params.toString()}`;
 
-        try {
-            const res = await fetch(url);
-            const data = await res.json();
-            renderUI(data);
-        } catch (err) {
-            console.error("Failed to load reconciliation data", err);
-        }
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Server error");
+        const data = await res.json(); // This will now receive valid JSON
+        renderUI(data);
+    } catch (err) {
+        console.error("Failed to load reconciliation data", err);
     }
-
+}
     function renderUI(data) {
     // Helper to get value regardless of case
     const getVal = (key) => data.summary[key] || data.summary[key.toLowerCase()] || 0;
