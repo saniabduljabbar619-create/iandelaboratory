@@ -312,21 +312,21 @@ class PaymentService:
             return query.order_by(Payment.created_at.desc()).all()
 
     def reconcile_summary(self, start_date=None, end_date=None):
-    query = self.db.query(
-        Payment.method, 
-        func.sum(Payment.amount).label("total_amount")
-    )
-
-    if self.branch_id:
-        query = query.filter(Payment.branch_id == self.branch_id)
-
-    if start_date:
-        query = query.filter(Payment.created_at >= start_date)
-    if end_date:
-        query = query.filter(Payment.created_at <= end_date)
-
-    results = query.group_by(Payment.method).all()
-
-    summary = {row.method: float(row.total_amount) for row in results}
-    summary["total"] = sum(summary.values())
-    return summary
+        query = self.db.query(
+            Payment.method, 
+            func.sum(Payment.amount).label("total_amount")
+        )
+    
+        if self.branch_id:
+            query = query.filter(Payment.branch_id == self.branch_id)
+    
+        if start_date:
+            query = query.filter(Payment.created_at >= start_date)
+        if end_date:
+            query = query.filter(Payment.created_at <= end_date)
+    
+        results = query.group_by(Payment.method).all()
+    
+        summary = {row.method: float(row.total_amount) for row in results}
+        summary["total"] = sum(summary.values())
+        return summary
