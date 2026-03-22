@@ -98,7 +98,7 @@ def admin_dashboard(
     today_metrics = service.get_today_metrics()
     trend_data = service.get_last_7_days_revenue()
     
-    request.state.year = datetime.datetime.utcnow().year
+    request.state.year = datetime.utcnow().year
 
     # 3. Chart Data Preparation
     trend_labels = [d.strftime("%d %b") for d, a in trend_data]
