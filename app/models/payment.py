@@ -38,6 +38,9 @@ class Payment(Base):
 
     notes = Column(String(500), nullable=True)
 
+    # NEW: Track the cashier/admin who handled the money
+    created_by_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
+    
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"), nullable=False)
 
