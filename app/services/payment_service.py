@@ -207,7 +207,7 @@ class PaymentService:
             method="Transfer",
             status="completed",
             notes=f"BOOKING:{booking.id}",
-            branch_id=branch_id
+            branch_id=branch_id,
             created_by_id=admin_id  # <--- CAPTURE THE VERIFYING ADMIN ID
         )
 
