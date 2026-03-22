@@ -498,35 +498,33 @@ def reconciliation_page(
     )
 
 
-@router.get("/payments/reconcile/data")
+# CHANGE THIS PATH to avoid collision with the page route
+@router.get("/payments/reconcile-json") # <--- Added '-json' to the path
 def reconciliation_data(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     current_user = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    # Use the PaymentService to handle branch scoping (Super Admin vs Branch Admin)
-    # This ensures you don't see "zero" if you're a branch admin
+    # This service ALREADY queries the Payment table, not Bookings.
     service = PaymentService(db, current_user)
     
-    # Parse dates to full datetime objects
+    # 1. Parse dates safely
     start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d"), datetime.min.time()) if start_date else None
     end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d"), datetime.max.time()) if end_date else None
     
-    # 1. Fetch from the actual Payment table
+    # 2. Get real cash/pos/transfer data from the Payment table
     payments = service.reconcile(start_date=start_dt, end_date=end_dt)
-    
-    # 2. Get the calculated summary from the service
     summary = service.reconcile_summary(start_date=start_dt, end_date=end_dt)
 
     return {
         "payments": [
             {
                 "created_at": p.created_at.strftime("%Y-%m-%d %H:%M"),
-                "notes": p.notes or "No notes",
-                "method": p.method or "Unknown",
+                "method": p.method,
                 "amount": float(p.amount),
-                "created_by_id": p.created_by_id
+                "notes": p.notes or "",
+                "created_by_id": p.created_by_id # This tells the admin WHO took the money
             } for p in payments
         ],
         "summary": summary
