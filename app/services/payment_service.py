@@ -88,6 +88,7 @@ class PaymentService:
                 status="completed",
                 request_ids_csv=_csv_from_ids(request_ids) or None,
                 notes=(payload.notes or None),
+                created_by_id=self.current_user.id  # <--- CAPTURE THE CASHIER ID
             )
 
             self.db.add(p)
@@ -207,6 +208,7 @@ class PaymentService:
             status="completed",
             notes=f"BOOKING:{booking.id}",
             branch_id=branch_id
+            created_by_id=admin_id  # <--- CAPTURE THE VERIFYING ADMIN ID
         )
 
         db.add(payment)
