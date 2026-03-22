@@ -517,8 +517,8 @@ def reconciliation_data(
     service = PaymentService(db, current_user)
     
     # Date parsing
-    start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d"), datetime.min) if start_date else None
-    end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d"), datetime.max) if end_date else None
+    start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d"), time.min) if start_date else None
+    end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d"), time.max) if end_date else None
     
     # Get rows from Payment table (ignores Bookings completely)
     payments = service.reconcile(start_date=start_dt, end_date=end_dt)
