@@ -1,0 +1,89 @@
+/* static/css/reconciliation.css */
+
+.reconcile-container {
+    padding: 20px;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.filter-group {
+    display: flex;
+    gap: 10px;
+}
+
+/* Summary Cards */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.summary-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-left: 4px solid #cbd5e0;
+}
+
+.summary-card.total {
+    border-left-color: #48bb78; /* Green for total */
+}
+
+.summary-card label {
+    font-size: 0.85rem;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.summary-card h2 {
+    margin: 10px 0 0;
+    font-size: 1.5rem;
+    color: #2d3748;
+}
+
+/* Table Styles */
+.table-wrapper {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.sx-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.sx-table th {
+    background: #f7fafc;
+    padding: 12px 15px;
+    color: #4a5568;
+    font-weight: 600;
+    border-bottom: 2px solid #edf2f7;
+}
+
+.sx-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+/* Badges */
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.badge.cash { background: #e6fffa; color: #2c7a7b; }
+.badge.transfer { background: #ebf8ff; color: #2b6cb0; }
+.badge.pos { background: #faf5ff; color: #6b46c1; }
