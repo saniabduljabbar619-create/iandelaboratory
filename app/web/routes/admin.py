@@ -505,41 +505,28 @@ def reconciliation_data(
     current_user = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    service = DashboardService(db, current_user)
+    # Use the PaymentService to handle branch scoping (Super Admin vs Branch Admin)
+    # This ensures you don't see "zero" if you're a branch admin
+    service = PaymentService(db, current_user)
     
-    # 1. Use the EXACT string from your DB (likely 'completed' or 'Paid')
-    # If you're unsure, check your DB table 'bookings' for the status column value
-    query = db.query(Booking).filter(Booking.status.in_(["paid", "Paid", "completed"]))
+    # Parse dates to full datetime objects
+    start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d"), datetime.min.time()) if start_date else None
+    end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d"), datetime.max.time()) if end_date else None
     
-    # 2. Convert strings to full datetime objects to include the entire day
-    if start_date:
-        start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d"), time.min)
-        query = query.filter(Booking.created_at >= start_dt)
-        
-    if end_date:
-        end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d"), time.max)
-        query = query.filter(Booking.created_at <= end_dt)
-        
-    payments = query.order_by(Booking.created_at.desc()).all()
-
-    # 3. Use .get() or lowercase checks for payment methods to avoid KeyErrors
-    total = sum(p.total_amount for p in payments)
+    # 1. Fetch from the actual Payment table
+    payments = service.reconcile(start_date=start_dt, end_date=end_dt)
     
-    summary = {
-        "total": float(total),
-        "Cash": float(sum(p.total_amount for p in payments if str(p.payment_method).lower() == "cash")),
-        "Transfer": float(sum(p.total_amount for p in payments if str(p.payment_method).lower() == "transfer")),
-        "POS": float(sum(p.total_amount for p in payments if str(p.payment_method).lower() == "pos"))
-    }
+    # 2. Get the calculated summary from the service
+    summary = service.reconcile_summary(start_date=start_dt, end_date=end_dt)
 
     return {
         "payments": [
             {
-                "created_at": p.created_at.strftime("%Y-%m-%d %H:%M"), # Prettier format
-                "notes": p.booking_code,
-                "method": p.payment_method or "Unknown",
-                "amount": float(p.total_amount),
-                "created_by_name": p.referrer_name or "Walk-in"
+                "created_at": p.created_at.strftime("%Y-%m-%d %H:%M"),
+                "notes": p.notes or "No notes",
+                "method": p.method or "Unknown",
+                "amount": float(p.amount),
+                "created_by_id": p.created_by_id
             } for p in payments
         ],
         "summary": summary
