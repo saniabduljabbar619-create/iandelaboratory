@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/reconciliation.css">
+{% endblock %}
+
+{% block content %}
+<div class="reconcile-container">
+    <header class="page-header">
+        <h1>Payments & Reconciliation</h1>
+        <div class="filter-group">
+            <input type="date" id="startDate" class="sx-input">
+            <input type="date" id="endDate" class="sx-input">
+            <button onclick="loadReconciliation()" class="btn-primary">Filter</button>
+        </div>
+    </header>
+
+    <div class="summary-grid" id="summaryGrid">
+        <div class="summary-card total">
+            <label>Total Revenue</label>
+            <h2 id="totalAmount">₦0.00</h2>
+        </div>
+        <div class="summary-card">
+            <label>Cash</label>
+            <h2 id="cashAmount">₦0.00</h2>
+        </div>
+        <div class="summary-card">
+            <label>Transfer/POS</label>
+            <h2 id="transferAmount">₦0.00</h2>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="sx-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Reference</th>
+                    <th>Method</th>
+                    <th>Amount</th>
+                    <th>Staff</th>
+                </tr>
+            </thead>
+            <tbody id="paymentTableBody">
+                </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    async function loadReconciliation() {
+        const start = document.getElementById('startDate').value;
+        const end = document.getElementById('endDate').value;
+        
+        let url = '/reconcile'; // Your API endpoint
+        const params = new URLSearchParams();
+        if (start) params.append('start_date', start);
+        if (end) params.append('end_date', end);
+        if (params.toString()) url += `?${params.toString()}`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            renderUI(data);
+        } catch (err) {
+            console.error("Failed to load reconciliation data", err);
+        }
+    }
+
+    function renderUI(data) {
+        // Update Summary
+        document.getElementById('totalAmount').innerText = `₦${data.summary.total.toLocaleString()}`;
+        document.getElementById('cashAmount').innerText = `₦${(data.summary.Cash || 0).toLocaleString()}`;
+        document.getElementById('transferAmount').innerText = `₦${((data.summary.Transfer || 0) + (data.summary.POS || 0)).toLocaleString()}`;
+
+        // Update Table
+        const tbody = document.getElementById('paymentTableBody');
+        tbody.innerHTML = data.payments.map(p => `
+            <tr>
+                <td>${new Date(p.created_at).toLocaleDateString()}</td>
+                <td><small>${p.notes || 'N/A'}</small></td>
+                <td><span class="badge ${p.method.toLowerCase()}">${p.method}</span></td>
+                <td><strong>₦${p.amount.toLocaleString()}</strong></td>
+                <td>${p.created_by_name || 'System'}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Initial Load for today
+    document.addEventListener('DOMContentLoaded', loadReconciliation);
+</script>
+{% endblock %}
