@@ -87,3 +87,34 @@
 .badge.cash { background: #e6fffa; color: #2c7a7b; }
 .badge.transfer { background: #ebf8ff; color: #2b6cb0; }
 .badge.pos { background: #faf5ff; color: #6b46c1; }
+
+
+
+/* Date formatting */
+.date-cell { display: flex; flex-direction: column; }
+.date-cell small { color: #888; font-size: 0.75rem; }
+
+/* Branch tags */
+.branch-tag {
+    background: #f0f2f5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #444;
+    border: 1px solid #dcdfe6;
+}
+
+/* Reference handling */
+.ref-cell { max-width: 200px; font-size: 0.85rem; color: #555; }
+.no-data { color: #ccc; font-style: italic; }
+
+/* Amount formatting */
+.amount-cell { font-weight: 700; color: #2c3e50; }
+
+/* Staff cell */
+.staff-cell { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.staff-cell i { color: #a0aec0; }
+
+/* Method Badges */
+.badge.pos { background-color: #f3e5f5; color: #7b1fa2; }
+.badge.transfer { background-color: #e3f2fd; color: #1976d2; }
