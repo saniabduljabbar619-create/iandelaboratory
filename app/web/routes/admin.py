@@ -498,33 +498,40 @@ def reconciliation_page(
     )
 
 
-# CHANGE THIS PATH to avoid collision with the page route
-@router.get("/payments/reconcile-json") # <--- Added '-json' to the path
+# app/web/routes/admin.py
+
+# 1. Keep this for the HTML page
+@router.get("/payments/reconcile", response_class=HTMLResponse)
+def reconciliation_page(request: Request, current_user = Depends(get_current_admin)):
+    return templates.TemplateResponse("admin/reconciliation.html", {"request": request, "user": current_user})
+
+# 2. CHANGE THIS PATH to /data so they don't collide
+@router.get("/payments/reconcile/data") 
 def reconciliation_data(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     current_user = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    # This service ALREADY queries the Payment table, not Bookings.
+    # This points DIRECTLY to the Payments table via your Service
     service = PaymentService(db, current_user)
     
-    # 1. Parse dates safely
-    start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d"), datetime.min.time()) if start_date else None
-    end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d"), datetime.max.time()) if end_date else None
+    # Date parsing
+    start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d"), datetime.min) if start_date else None
+    end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d"), datetime.max) if end_date else None
     
-    # 2. Get real cash/pos/transfer data from the Payment table
+    # Get rows from Payment table (ignores Bookings completely)
     payments = service.reconcile(start_date=start_dt, end_date=end_dt)
     summary = service.reconcile_summary(start_date=start_dt, end_date=end_dt)
 
     return {
         "payments": [
             {
-                "created_at": p.created_at.strftime("%Y-%m-%d %H:%M"),
+                "created_at": p.created_at.isoformat(),
+                "notes": p.notes,
                 "method": p.method,
                 "amount": float(p.amount),
-                "notes": p.notes or "",
-                "created_by_id": p.created_by_id # This tells the admin WHO took the money
+                "staff_name": p.created_by.username if p.created_by else "System" # Who took the money
             } for p in payments
         ],
         "summary": summary
