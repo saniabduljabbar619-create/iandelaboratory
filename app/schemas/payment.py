@@ -20,6 +20,10 @@ class PaymentCreate(BaseModel):
     notes: Optional[str] = None
 
 
+class PaymentReconcileOut(BaseModel):
+    payments: list[PaymentOut]
+    summary: dict[str, float]  # e.g., {"Cash": 5000.0, "total": 5000.0}
+
 class PaymentOut(BaseModel):
     id: int
     patient_id: int
@@ -32,3 +36,4 @@ class PaymentOut(BaseModel):
 
     class Config:
         from_attributes = True
+
