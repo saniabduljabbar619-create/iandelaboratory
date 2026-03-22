@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-
+from datetime import datetime
 from app.api.deps import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
@@ -80,4 +80,32 @@ def get_verified_bookings(
             }
         )
 
+    return out
+
+
+
+@router.get("/reconcile", response_model=list[PaymentOut])
+def reconcile_payments(
+    start_date: datetime = Query(None),
+    end_date: datetime = Query(None),
+    branch_id: int = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Ensure only authorized users (Admins) can access this
+    # if current_user.role != "admin":
+    #     raise HTTPException(status_code=403, detail="Not authorized")
+
+    svc = PaymentService(db, current_user)
+    rows = svc.reconcile(
+        start_date=start_date, 
+        end_date=end_date, 
+        branch_id=branch_id
+    )
+
+    out = []
+    for p in rows:
+        d = PaymentOut.model_validate(p).model_dump()
+        d["request_ids"] = PaymentService.parse_request_ids(p)
+        out.append(PaymentOut(**d))
     return out
