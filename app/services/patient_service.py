@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func  # Added func for date extraction
 from sqlalchemy.exc import IntegrityError
-
+from datetime import datetime, timedelta, timezone
 from app.models.patient import Patient
 from app.schemas.patient import PatientCreate, PatientUpdate
 from app.core.branch_scope import resolve_branch_scope
@@ -97,43 +97,56 @@ class PatientService:
         return p
 
     def search(self, q: str | None = None, created_date: str | None = None) -> list[Patient]:
-        """
-        Search by query string OR filter by creation date (Daily Queue).
-        """
-        query = self.db.query(Patient)
-
-        # 1. Apply Branch Scope
-        if self.branch_id:
-            query = query.filter(Patient.branch_id == self.branch_id)
-
-        # 2. Logic for Global Search
-        if q and q.strip():
-            search_str = q.strip()
-            return (
-                query.filter(
-                    or_(
-                        Patient.full_name.ilike(f"%{search_str}%"),
-                        Patient.phone.ilike(f"%{search_str}%"),
-                        Patient.patient_no.ilike(f"%{search_str}%"),
-                    )
-                )
-                .order_by(Patient.id.desc())
-                .limit(50)
-                .all()
-            )
-
-        # 3. Logic for Daily Queue (renders one by one as they come)
-        if created_date:
-            try:
-                # Convert 'YYYY-MM-DD' string to a date object
-                target_dt = datetime.strptime(created_date, "%Y-%m-%d").date()
+            """
+            Search by query string OR filter by creation date (Daily Queue).
+            """
+            query = self.db.query(Patient)
+    
+            # 1. Apply Branch Scope
+            if self.branch_id:
+                query = query.filter(Patient.branch_id == self.branch_id)
+    
+            # 2. Logic for Global Search
+            if q and q.strip():
+                search_str = q.strip()
                 return (
-                    query.filter(func.date(Patient.created_at) == target_dt)
-                    .order_by(Patient.created_at.asc()) # Ascending: see them in order of arrival
+                    query.filter(
+                        or_(
+                            Patient.full_name.ilike(f"%{search_str}%"),
+                            Patient.phone.ilike(f"%{search_str}%"),
+                            Patient.patient_no.ilike(f"%{search_str}%"),
+                        )
+                    )
+                    .order_by(Patient.id.desc())
+                    .limit(50)
                     .all()
                 )
-            except ValueError:
-                return []
-
-        # If no search query and no date, return nothing (protects performance)
-        return []
+    
+    
+            if created_date:
+                try:
+                    # Parse date from frontend (assumed local time)
+                    day = datetime.strptime(created_date, "%Y-%m-%d")
+    
+                    # Nigeria timezone (UTC+1)
+                    tz_offset = timezone(timedelta(hours=1))
+    
+                    # Make it timezone-aware
+                    start_local = day.replace(
+                        hour=0, minute=0, second=0, microsecond=0, tzinfo=tz_offset
+                    )
+                    end_local = start_local + timedelta(days=1)
+    
+                    # Convert to UTC (what DB should use)
+                    start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
+                    end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
+    
+                    return (
+                        query.filter(Patient.created_at >= start_utc)
+                        .filter(Patient.created_at < end_utc)
+                        .order_by(Patient.created_at.asc())
+                        .all()
+                    )
+    
+                except ValueError:
+                    return []
