@@ -44,3 +44,8 @@ class Payment(Base):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"), nullable=False)
 
+
+    # ADD THESE RELATIONSHIPS
+    created_by = relationship("User") 
+    branch = relationship("Branch")
+
