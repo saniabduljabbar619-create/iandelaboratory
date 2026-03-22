@@ -6,6 +6,7 @@ from __future__ import annotations
 from sqlalchemy import Column, Integer, DateTime, Enum, String, Float, func
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, relationship # Ensure relationship is imported
 
 from app.db.base import Base
 
