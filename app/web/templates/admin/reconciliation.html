@@ -7,26 +7,44 @@
 {% block content %}
 <div class="reconcile-container">
     <header class="page-header">
-        <h1>Payments & Reconciliation</h1>
+        <div class="header-title">
+            <h1>Payments & Reconciliation</h1>
+            <p class="subtitle">Financial overview and audit trail</p>
+        </div>
         <div class="filter-group">
-            <input type="date" id="startDate" class="sx-input">
-            <input type="date" id="endDate" class="sx-input">
-            <button onclick="loadReconciliation()" class="btn-primary">Filter</button>
+            <div class="input-with-label">
+                <label>From</label>
+                <input type="date" id="startDate" class="sx-input">
+            </div>
+            <div class="input-with-label">
+                <label>To</label>
+                <input type="date" id="endDate" class="sx-input">
+            </div>
+            <button onclick="loadReconciliation()" class="btn-primary filter-btn">
+                <i class="fas fa-filter"></i> Filter
+            </button>
         </div>
     </header>
 
     <div class="summary-grid" id="summaryGrid">
         <div class="summary-card total">
-            <label>Total Revenue</label>
-            <h2 id="totalAmount">₦0.00</h2>
+            <div class="card-icon"><i class="fas fa-wallet"></i></div>
+            <div class="card-data">
+                <label>Total Revenue</label>
+                <h2 id="totalAmount">₦0.00</h2>
+            </div>
         </div>
-        <div class="summary-card">
+        <div class="summary-card cash">
             <label>Cash</label>
             <h2 id="cashAmount">₦0.00</h2>
         </div>
-        <div class="summary-card">
-            <label>Transfer/POS</label>
+        <div class="summary-card transfer">
+            <label>Bank Transfer</label>
             <h2 id="transferAmount">₦0.00</h2>
+        </div>
+        <div class="summary-card pos">
+            <label>POS Terminal</label>
+            <h2 id="posAmount">₦0.00</h2>
         </div>
     </div>
 
@@ -34,28 +52,27 @@
         <table class="sx-table">
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Reference</th>
+                    <th>Time & Date</th>
+                    <th>Branch</th>
+                    <th>Reference / Notes</th>
                     <th>Method</th>
                     <th>Amount</th>
-                    <th>Staff</th>
+                    <th>Handled By</th>
                 </tr>
             </thead>
-            <tbody id="paymentTableBody">
-                </tbody>
+            <tbody id="paymentTableBody"></tbody>
         </table>
     </div>
 </div>
 {% endblock %}
 
+
+
 {% block page_js %}
 <script>
-    // Inside reconciliation.html <script>
 async function loadReconciliation() {
     const start = document.getElementById('startDate').value;
     const end = document.getElementById('endDate').value;
-    
-    // POINT TO THE DATA ENDPOINT, NOT THE PAGE ENDPOINT
     let url = '/admin/payments/reconcile/data'; 
     
     const params = new URLSearchParams();
@@ -66,42 +83,59 @@ async function loadReconciliation() {
     try {
         const res = await fetch(url);
         if (!res.ok) throw new Error("Server error");
-        const data = await res.json(); // This will now receive valid JSON
+        const data = await res.json();
         renderUI(data);
     } catch (err) {
-        console.error("Failed to load reconciliation data", err);
+        console.error("Failed to load data", err);
     }
 }
-    function renderUI(data) {
-    // Helper to get value regardless of case
-    const getVal = (key) => data.summary[key] || data.summary[key.toLowerCase()] || 0;
 
-    const total = data.summary.total || 0;
-    const cash = getVal('Cash');
-    const transfer = getVal('Transfer');
-    const pos = getVal('POS');
+function renderUI(data) {
+    const s = data.summary || {};
+    // Safely get values
+    const total = s.total || 0;
+    const cash = s.Cash || s.cash || 0;
+    const transfer = s.Transfer || s.transfer || 0;
+    const pos = s.POS || s.pos || 0;
 
     document.getElementById('totalAmount').innerText = `₦${total.toLocaleString()}`;
     document.getElementById('cashAmount').innerText = `₦${cash.toLocaleString()}`;
-    document.getElementById('transferAmount').innerText = `₦${(transfer + pos).toLocaleString()}`;
+    document.getElementById('transferAmount').innerText = `₦${transfer.toLocaleString()}`;
+    document.getElementById('posAmount').innerText = `₦${pos.toLocaleString()}`;
 
     const tbody = document.getElementById('paymentTableBody');
     if (!data.payments || data.payments.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No payments found for this range.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No payments found.</td></tr>';
         return;
     }
 
-    tbody.innerHTML = data.payments.map(p => `
+    tbody.innerHTML = data.payments.map(p => {
+        const dateObj = new Date(p.created_at);
+        return `
         <tr>
-            <td>${new Date(p.created_at).toLocaleDateString()}</td>
-            <td><small>${p.reference || p.notes || 'N/A'}</small></td>
+            <td>
+                <div class="date-cell">
+                    <span>${dateObj.toLocaleDateString()}</span>
+                    <small>${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+                </div>
+            </td>
+            <td><span class="branch-tag">${p.branch_name || 'Main'}</span></td>
+            <td>
+                <div class="ref-cell">
+                    ${p.reference && p.reference !== 'N/A' ? p.reference : '<span class="no-data">No reference provided</span>'}
+                </div>
+            </td>
             <td><span class="badge ${p.method.toLowerCase()}">${p.method}</span></td>
-            <td><strong>₦${(p.amount || 0).toLocaleString()}</strong></td>
-            <td>${p.staff_name || p.created_by_name || 'System'}</td>
+            <td class="amount-cell">₦${(p.amount || 0).toLocaleString()}</td>
+            <td>
+                <div class="staff-cell">
+                    <i class="fas fa-user-circle"></i> ${p.staff_name || 'System'}
+                </div>
+            </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
-    // Initial Load for today
-    document.addEventListener('DOMContentLoaded', loadReconciliation);
+
+document.addEventListener('DOMContentLoaded', loadReconciliation);
 </script>
 {% endblock %}
