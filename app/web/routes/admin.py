@@ -475,3 +475,69 @@ def settle_batch_payment(
     )
 
     return {"status": "success", "message": f"Batch {booking_code} settled"}
+
+
+
+
+
+# =========================================
+# PAYMENTS & RECONCILIATION
+# =========================================
+
+@router.get("/payments/reconcile", response_class=HTMLResponse)
+def reconciliation_page(
+    request: Request,
+    current_user = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Serves the actual HTML page"""
+    return templates.TemplateResponse(
+        "admin/reconciliation.html", 
+        {"request": request, "user": current_user}
+    )
+
+@router.get("/payments/reconcile/data")
+def reconciliation_data(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Provides the JSON data for the JS fetch call"""
+    # Initialize your service (assuming DashboardService handles this logic)
+    service = DashboardService(db, current_user)
+    
+    # 1. Fetch the payments (Filter by date if provided)
+    # This logic should match your specific DB schema for 'paid' bookings
+    query = db.query(Booking).filter(Booking.status == "paid")
+    
+    if start_date:
+        query = query.filter(Booking.created_at >= start_date)
+    if end_date:
+        query = query.filter(Booking.created_at <= end_date)
+        
+    payments = query.order_by(Booking.created_at.desc()).all()
+
+    # 2. Calculate Summaries
+    total = sum(p.total_amount for p in payments)
+    
+    # Example grouping by payment method
+    summary = {
+        "total": float(total),
+        "Cash": float(sum(p.total_amount for p in payments if p.payment_method == "Cash")),
+        "Transfer": float(sum(p.total_amount for p in payments if p.payment_method == "Transfer")),
+        "POS": float(sum(p.total_amount for p in payments if p.payment_method == "POS"))
+    }
+
+    return {
+        "payments": [
+            {
+                "created_at": p.created_at.isoformat(),
+                "notes": p.booking_code,
+                "method": p.payment_method or "Unknown",
+                "amount": float(p.total_amount),
+                "created_by_name": p.referrer_name or "Walk-in"
+            } for p in payments
+        ],
+        "summary": summary
+    }
