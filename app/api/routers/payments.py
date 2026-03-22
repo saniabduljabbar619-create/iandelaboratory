@@ -10,7 +10,7 @@ from app.api.deps import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.booking import Booking
-from app.schemas.payment import PaymentCreate, PaymentOut
+from app.schemas.payment import PaymentCreate, PaymentOut, PaymentReconcileOut
 from app.services.payment_service import PaymentService
 
 router = APIRouter()
