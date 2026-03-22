@@ -54,7 +54,7 @@
         const start = document.getElementById('startDate').value;
         const end = document.getElementById('endDate').value;
         
-        let url = '/admin/payments/reconcile/data';
+        let url = '/admin/payments/reconcile';
         const params = new URLSearchParams();
         if (start) params.append('start_date', start);
         if (end) params.append('end_date', end);
@@ -70,24 +70,34 @@
     }
 
     function renderUI(data) {
-        // Update Summary
-        document.getElementById('totalAmount').innerText = `₦${data.summary.total.toLocaleString()}`;
-        document.getElementById('cashAmount').innerText = `₦${(data.summary.Cash || 0).toLocaleString()}`;
-        document.getElementById('transferAmount').innerText = `₦${((data.summary.Transfer || 0) + (data.summary.POS || 0)).toLocaleString()}`;
+    // Helper to get value regardless of case
+    const getVal = (key) => data.summary[key] || data.summary[key.toLowerCase()] || 0;
 
-        // Update Table
-        const tbody = document.getElementById('paymentTableBody');
-        tbody.innerHTML = data.payments.map(p => `
-            <tr>
-                <td>${new Date(p.created_at).toLocaleDateString()}</td>
-                <td><small>${p.notes || 'N/A'}</small></td>
-                <td><span class="badge ${p.method.toLowerCase()}">${p.method}</span></td>
-                <td><strong>₦${p.amount.toLocaleString()}</strong></td>
-                <td>${p.created_by_name || 'System'}</td>
-            </tr>
-        `).join('');
+    const total = data.summary.total || 0;
+    const cash = getVal('Cash');
+    const transfer = getVal('Transfer');
+    const pos = getVal('POS');
+
+    document.getElementById('totalAmount').innerText = `₦${total.toLocaleString()}`;
+    document.getElementById('cashAmount').innerText = `₦${cash.toLocaleString()}`;
+    document.getElementById('transferAmount').innerText = `₦${(transfer + pos).toLocaleString()}`;
+
+    const tbody = document.getElementById('paymentTableBody');
+    if (!data.payments || data.payments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No payments found for this range.</td></tr>';
+        return;
     }
 
+    tbody.innerHTML = data.payments.map(p => `
+        <tr>
+            <td>${new Date(p.created_at).toLocaleDateString()}</td>
+            <td><small>${p.reference || p.notes || 'N/A'}</small></td>
+            <td><span class="badge ${p.method.toLowerCase()}">${p.method}</span></td>
+            <td><strong>₦${(p.amount || 0).toLocaleString()}</strong></td>
+            <td>${p.staff_name || p.created_by_name || 'System'}</td>
+        </tr>
+    `).join('');
+}
     // Initial Load for today
     document.addEventListener('DOMContentLoaded', loadReconciliation);
 </script>
