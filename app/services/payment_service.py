@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-
+from sqlalchemy import func
 from app.models.payment import Payment
 from app.models.test_request import TestRequest
 from app.schemas.payment import PaymentCreate
@@ -276,3 +276,70 @@ class PaymentService:
         db.commit()
 
         return proof
+
+
+
+
+
+    def reconcile(
+            self, 
+            start_date: datetime | None = None, 
+            end_date: datetime | None = None, 
+            method: str | None = None
+        ) -> list[Payment]:
+            """
+            Retrieves payments for administrative reconciliation.
+            Filters by branch_id (auto-resolved), date range, and payment method.
+            """
+            query = self.db.query(Payment)
+    
+            # 1. Apply Branch Scope (Determined during __init__)
+            if self.branch_id:
+                query = query.filter(Payment.branch_id == self.branch_id)
+    
+            # 2. Date Range Filtering
+            if start_date:
+                query = query.filter(Payment.created_at >= start_date)
+            
+            if end_date:
+                # Ensure we include the entire end day if it's a date-only object
+                query = query.filter(Payment.created_at <= end_date)
+    
+            # 3. Method Filtering (Cash vs Transfer vs POS)
+            if method:
+                query = query.filter(Payment.method == method)
+    
+            return query.order_by(Payment.created_at.desc()).all()
+
+    def reconcile_summary(
+            self, 
+            start_date: datetime | None = None, 
+            end_date: datetime | None = None
+        ):
+            """
+            Returns a breakdown of total amounts grouped by payment method.
+            Example: {"Cash": 50000.0, "Transfer": 120000.0, "POS": 30000.0, "total": 200000.0}
+            """
+            query = self.db.query(
+                Payment.method, 
+                func.sum(Payment.amount).label("total_amount")
+            )
+    
+            # Apply Branch Scope
+            if self.branch_id:
+                query = query.filter(Payment.branch_id == self.branch_id)
+    
+            # Apply Date Range
+            if start_date:
+                query = query.filter(Payment.created_at >= start_date)
+            if end_date:
+                query = query.filter(Payment.created_at <= end_date)
+    
+            results = query.group_by(Payment.method).all()
+    
+            # Format into a clean dictionary
+            summary = {row.method: float(row.total_amount) for row in results}
+            summary["total"] = sum(summary.values())
+            
+            return summary
+
