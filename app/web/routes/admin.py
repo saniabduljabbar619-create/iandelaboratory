@@ -22,6 +22,7 @@ from app.services.dashboard_service import DashboardService
 from app.core.config import settings
 import datetime
 from fastapi import HTTPException
+from datetime import datetime, time # Add this import at the top
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/web/templates")
@@ -496,6 +497,7 @@ def reconciliation_page(
         {"request": request, "user": current_user}
     )
 
+
 @router.get("/payments/reconcile/data")
 def reconciliation_data(
     start_date: Optional[str] = None,
@@ -503,36 +505,37 @@ def reconciliation_data(
     current_user = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Provides the JSON data for the JS fetch call"""
-    # Initialize your service (assuming DashboardService handles this logic)
     service = DashboardService(db, current_user)
     
-    # 1. Fetch the payments (Filter by date if provided)
-    # This logic should match your specific DB schema for 'paid' bookings
-    query = db.query(Booking).filter(Booking.status == "paid")
+    # 1. Use the EXACT string from your DB (likely 'completed' or 'Paid')
+    # If you're unsure, check your DB table 'bookings' for the status column value
+    query = db.query(Booking).filter(Booking.status.in_(["paid", "Paid", "completed"]))
     
+    # 2. Convert strings to full datetime objects to include the entire day
     if start_date:
-        query = query.filter(Booking.created_at >= start_date)
+        start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d"), time.min)
+        query = query.filter(Booking.created_at >= start_dt)
+        
     if end_date:
-        query = query.filter(Booking.created_at <= end_date)
+        end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d"), time.max)
+        query = query.filter(Booking.created_at <= end_dt)
         
     payments = query.order_by(Booking.created_at.desc()).all()
 
-    # 2. Calculate Summaries
+    # 3. Use .get() or lowercase checks for payment methods to avoid KeyErrors
     total = sum(p.total_amount for p in payments)
     
-    # Example grouping by payment method
     summary = {
         "total": float(total),
-        "Cash": float(sum(p.total_amount for p in payments if p.payment_method == "Cash")),
-        "Transfer": float(sum(p.total_amount for p in payments if p.payment_method == "Transfer")),
-        "POS": float(sum(p.total_amount for p in payments if p.payment_method == "POS"))
+        "Cash": float(sum(p.total_amount for p in payments if str(p.payment_method).lower() == "cash")),
+        "Transfer": float(sum(p.total_amount for p in payments if str(p.payment_method).lower() == "transfer")),
+        "POS": float(sum(p.total_amount for p in payments if str(p.payment_method).lower() == "pos"))
     }
 
     return {
         "payments": [
             {
-                "created_at": p.created_at.isoformat(),
+                "created_at": p.created_at.strftime("%Y-%m-%d %H:%M"), # Prettier format
                 "notes": p.booking_code,
                 "method": p.payment_method or "Unknown",
                 "amount": float(p.total_amount),
