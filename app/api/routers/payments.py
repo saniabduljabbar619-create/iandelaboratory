@@ -84,33 +84,23 @@ def get_verified_bookings(
 
 
 
-# app/api/routers/payments.py
-
-@router.get("/reconcile", response_model=PaymentReconcileOut) # <-- Changed response_model
+@router.get("/reconcile", response_model=PaymentReconcileOut)
 def reconcile_payments(
     start_date: datetime = Query(None),
     end_date: datetime = Query(None),
     branch_id: int = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "super_admin")),
     db: Session = Depends(get_db),
 ):
+    if current_user.role != "super_admin":
+        branch_id = None
+
     svc = PaymentService(db, current_user, requested_branch_id=branch_id)
-    
-    # 1. Get the raw rows
+
     rows = svc.reconcile(start_date=start_date, end_date=end_date)
-    
-    # 2. Get the summary totals
     summary = svc.reconcile_summary(start_date=start_date, end_date=end_date)
 
-    # 3. Format the payments list
-    payments_out = []
-    for p in rows:
-        d = PaymentOut.model_validate(p).model_dump()
-        d["request_ids"] = PaymentService.parse_request_ids(p)
-        payments_out.append(PaymentOut(**d))
-
-    # 4. Return the combined object
     return {
-        "payments": payments_out,
+        "payments": [serialize_payment(p) for p in rows],
         "summary": summary
     }
