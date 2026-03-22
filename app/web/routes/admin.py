@@ -485,42 +485,26 @@ def settle_batch_payment(
 # PAYMENTS & RECONCILIATION
 # =========================================
 
-@router.get("/payments/reconcile", response_class=HTMLResponse)
-def reconciliation_page(
-    request: Request,
-    current_user = Depends(get_current_admin),
-    db: Session = Depends(get_db)
-):
-    """Serves the actual HTML page"""
-    return templates.TemplateResponse(
-        "admin/reconciliation.html", 
-        {"request": request, "user": current_user}
-    )
-
-
-# app/web/routes/admin.py
-
 # 1. Keep this for the HTML page
 @router.get("/payments/reconcile", response_class=HTMLResponse)
 def reconciliation_page(request: Request, current_user = Depends(get_current_admin)):
     return templates.TemplateResponse("admin/reconciliation.html", {"request": request, "user": current_user})
 
-# 2. CHANGE THIS PATH to /data so they don't collide
-@router.get("/payments/reconcile/data") 
+
+
+@router.get("/payments/reconcile/data")
 def reconciliation_data(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     current_user = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    # This points DIRECTLY to the Payments table via your Service
     service = PaymentService(db, current_user)
     
-    # Date parsing
+    # FIX: Use time.min and time.max for the 'combine' function
     start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d"), time.min) if start_date else None
     end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d"), time.max) if end_date else None
     
-    # Get rows from Payment table (ignores Bookings completely)
     payments = service.reconcile(start_date=start_dt, end_date=end_dt)
     summary = service.reconcile_summary(start_date=start_dt, end_date=end_dt)
 
@@ -528,10 +512,12 @@ def reconciliation_data(
         "payments": [
             {
                 "created_at": p.created_at.isoformat(),
-                "notes": p.notes,
                 "method": p.method,
                 "amount": float(p.amount),
-                "staff_name": p.created_by.username if p.created_by else "System" # Who took the money
+                "notes": p.notes or "",
+                # Now works because of the relationship fix above
+                "staff_name": p.created_by.username if p.created_by else "System",
+                "branch_name": p.branch.name if p.branch else "N/A"
             } for p in payments
         ],
         "summary": summary
