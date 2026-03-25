@@ -4,6 +4,7 @@ uvicorn[standard]==0.32.1
 SQLAlchemy==2.0.36
 alembic==1.14.0
 pymysql==1.1.1
+cryptography
 
 pydantic==2.10.3
 pydantic-settings==2.6.1
