@@ -121,3 +121,55 @@ def referrer_login(payload: dict, db: Session = Depends(get_db)):
 @router.get("/login-test")
 def login_test(phone: str, db: Session = Depends(get_db)):
     return referrer_login({"phone": phone}, db)
+
+
+
+# --- REFERRAL BATCH SYNC (New Smart Integration) ---
+
+@router.post("/sync-batch")
+async def sync_referral_batch(
+    payload: dict, 
+    db: Session = Depends(get_db)
+):
+    """
+    Core synchronization endpoint for the Referral Wizard.
+    Receives grouped patients, sample types, and tests to bridge 
+    with stable clinical tables and the new parallel ledger.
+    """
+    from app.services.referrer_service import ReferrerService
+    
+    try:
+        # Step 1: Execute the atomic service logic
+        # This calls your existing stable services for patients and tests
+        batch_record = await ReferrerService.create_referral_batch_sync(db, payload)
+        
+        return {
+            "status": "success",
+            "message": "Referral batch successfully synchronized and dispatched to lab.",
+            "batch_uid": batch_record.batch_uid
+        }
+    except Exception as e:
+        # Rollback is handled inside the Service's atomic transaction, 
+        # but we catch and report the error to the UI here.
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Batch synchronization failed: {str(e)}"
+        )
+
+@router.get("/active-batches")
+def get_active_referral_batches(
+    referrer_id: int | None = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves all non-completed referral batches. 
+    Filterable by referrer_id for specific hospital dashboards.
+    """
+    from app.models.referral_batch import ReferralBatch
+    
+    query = db.query(ReferralBatch).filter(ReferralBatch.status != "Completed")
+    
+    if referrer_id:
+        query = query.filter(ReferralBatch.referrer_id == referrer_id)
+        
+    return query.order_by(ReferralBatch.created_at.desc()).all()
