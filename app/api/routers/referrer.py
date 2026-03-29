@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
+from app.services.referrer_service import ReferrerService
 from app.api.deps import get_db
 from app.models.booking import Booking
 from app.models.referrer import Referrer
@@ -173,3 +173,32 @@ def get_active_referral_batches(
         query = query.filter(ReferralBatch.referrer_id == referrer_id)
         
     return query.order_by(ReferralBatch.created_at.desc()).all()
+
+
+@router.post("/create")
+def create_referrer_profile(payload: dict, db: Session = Depends(get_db)):
+    """
+    Endpoint to register a new Hospital or Doctor profile
+    """
+    name = payload.get("name")
+    phone = payload.get("phone")
+    email = payload.get("email")
+    credit_limit = payload.get("credit_limit", 0)
+
+    if not name or not phone:
+        raise HTTPException(status_code=400, detail="Name and Phone are required")
+
+    return ReferrerService.create_referrer(
+        db=db, 
+        name=name, 
+        phone=phone, 
+        email=email, 
+        credit_limit=credit_limit
+    )
+
+@router.get("/list")
+def list_referrers(db: Session = Depends(get_db)):
+    """
+    Helper to fetch all active referrers for your dropdown selector
+    """
+    return db.query(Referrer).filter(Referrer.is_active == True).all()

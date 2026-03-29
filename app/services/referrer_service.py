@@ -1,6 +1,11 @@
 # app/services/referrer_service.py
 from sqlalchemy import func
 from app.models.booking import Booking
+
+from app.models.referrer import Referrer
+from sqlalchemy.orm import Session
+from fastapi import HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 from app.models.referral_batch import ReferralBatch
 from app.models.referral_bridge import ReferralBridge
 from app.models.referral_ledger import ReferralLedger
@@ -130,3 +135,27 @@ class ReferrerService:
         db.commit()
         db.refresh(batch)
         return batch
+    
+
+    @staticmethod
+    def create_referrer(db: Session, name: str, phone: str, email: str = None, credit_limit: float = 0):
+        """
+        Creates a new Referrer profile (Hospital, Doctor, etc.)
+        """
+        # Check if phone already exists to maintain consistency
+        existing = db.query(Referrer).filter(Referrer.phone == phone).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Referrer with this phone number already exists")
+
+        new_referrer = Referrer(
+            name=name,
+            phone=phone,
+            email=email,
+            credit_limit=credit_limit,
+            is_active=True
+        )
+        
+        db.add(new_referrer)
+        db.commit()
+        db.refresh(new_referrer)
+        return new_referrer
