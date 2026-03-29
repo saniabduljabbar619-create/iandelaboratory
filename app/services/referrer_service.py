@@ -11,15 +11,18 @@ from app.models.referral_batch import ReferralBatch
 from app.models.referral_bridge import ReferralBridge
 from app.models.referral_ledger import ReferralLedger
 
-# Import Classes to avoid Circular Dependency and ImportErrors
+# Services
 from app.services.patient_service import PatientService 
 from app.services.test_request_service import TestRequestService
 
+
 class ReferrerService:
 
+    # ==============================================================
+    # DASHBOARD
+    # ==============================================================
     @staticmethod
     def get_dashboard(db: Session, referrer_id: int):
-        """ Fetches financial totals and grouped bookings for a referrer. """
         total_credit = (
             db.query(func.coalesce(func.sum(Booking.total_amount), 0))
             .filter(
@@ -28,6 +31,7 @@ class ReferrerService:
             )
             .scalar()
         )
+
         grouped = (
             db.query(
                 Booking.booking_code,
@@ -43,6 +47,7 @@ class ReferrerService:
             .order_by(func.max(Booking.created_at).desc())
             .all()
         )
+
         bookings = [
             {
                 "booking_code": g.booking_code,
@@ -52,14 +57,17 @@ class ReferrerService:
             }
             for g in grouped
         ]
+
         return {
             "total_credit": float(total_credit),
             "bookings": bookings
         }
 
+    # ==============================================================
+    # DRILL DOWN
+    # ==============================================================
     @staticmethod
     def get_booking_details(db: Session, booking_code: str, referrer_id: int):
-        """ DRILL DOWN: Fetches patient list for a specific booking code. """
         rows = (
             db.query(Booking)
             .filter(
@@ -69,6 +77,7 @@ class ReferrerService:
             )
             .all()
         )
+
         return [
             {
                 "full_name": r.full_name,
@@ -80,82 +89,161 @@ class ReferrerService:
         ]
 
     # ==============================================================
-    # THE SMART SYNC INTEGRATION (FULL THROTTLE)
+    # SMART SYNC (HARDENED)
     # ==============================================================
     @staticmethod
-    async def create_referral_batch_sync(db: Session, batch_data: dict, current_user):
+    def create_referral_batch_sync(db: Session, batch_data: dict, current_user):
         """
-        Atomically creates a batch and passes current_user.id 
-        to maintain clinical audit logs.
+        Fully atomic batch creation:
+        - Safe transaction (rollback on failure)
+        - Server-side financial integrity
+        - Strict validation
         """
-        p_service = PatientService(db, current_user)
-        tr_service = TestRequestService(db, current_user)
 
-        # 1. Create Logistical Header
-        batch = ReferralBatch(
-            batch_uid=batch_data['batch_uid'],
-            referrer_id=batch_data['referrer_id'],
-            date_received=batch_data['date_received'],
-            date_due=batch_data['date_due'],
-            status="Pending"
-        )
-        db.add(batch)
-        
-        # 2. Process patients and tests
-        for row in batch_data['patients']:
-            # Create the clinical patient record
-            new_patient = p_service.create(row['patient_info'])
-            
-            # Inside ReferrerService.create_referral_batch_sync
-            for test_type_id in row['test_ids']:
-                # Match the positional arguments exactly: (patient_id, test_type_id)
-                # The 'self' argument is handled automatically by the instance 'tr_service'
-                live_request = await tr_service.create_request(
-                    patient_id=new_patient.id, 
-                    test_type_id=test_type_id
-                )
+        # -----------------------------
+        # 1. VALIDATION
+        # -----------------------------
+        if not batch_data.get("batch_uid"):
+            raise HTTPException(400, "Missing batch_uid")
 
-                # 3. Create the Smart Bridge Link
-                bridge = ReferralBridge(
-                    batch_uid=batch.batch_uid,
-                    test_request_id=live_request.id,
-                    patient_name=new_patient.full_name,
-                    sample_type=row['sample_type']
-                )
-                db.add(bridge)
+        if not batch_data.get("referrer_id"):
+            raise HTTPException(400, "Missing referrer_id")
 
-        # 4. Finalize Ledger and Commit
-        ledger = ReferralLedger(
-            batch_uid=batch.batch_uid,
-            referrer_id=batch.referrer_id,
-            gross_total=batch_data['financials']['gross'],
-            discount_percent=batch_data['financials']['discount'],
-            net_payable=batch_data['financials']['net'],
-            is_settled=batch_data['financials']['is_paid'],
-            payment_method=batch_data['financials'].get('method')
-        )
-        db.add(ledger)
-        
-        db.commit()
-        db.refresh(batch)
-        return batch
+        if not batch_data.get("patients"):
+            raise HTTPException(400, "No patients provided")
 
+        if not batch_data.get("financials"):
+            raise HTTPException(400, "Missing financials block")
+
+        try:
+            p_service = PatientService(db, current_user)
+            tr_service = TestRequestService(db, current_user)
+
+            # -----------------------------
+            # 2. CREATE BATCH HEADER
+            # -----------------------------
+            batch = ReferralBatch(
+                batch_uid=batch_data["batch_uid"],
+                referrer_id=batch_data["referrer_id"],
+                date_received=batch_data.get("date_received"),
+                date_due=batch_data.get("date_due"),
+                status="Pending"
+            )
+            db.add(batch)
+
+            computed_gross = 0.0
+
+            # -----------------------------
+            # 3. PROCESS PATIENTS
+            # -----------------------------
+            for row in batch_data["patients"]:
+
+                patient_info = row.get("patient_info")
+                test_ids = row.get("test_ids", [])
+
+                if not patient_info:
+                    continue
+
+                # Create patient
+                new_patient = p_service.create(patient_info)
+
+                # Process test requests
+                for test_type_id in test_ids:
+                    if not test_type_id:
+                        continue
+
+                    live_request = tr_service.create_request(
+                        patient_id=new_patient.id,
+                        test_type_id=test_type_id
+                    )
+
+                    # 🔐 Compute pricing server-side (IMPORTANT)
+                    test_price = getattr(live_request, "price", 0.0) or 0.0
+                    computed_gross += float(test_price)
+
+                    # Bridge linkage
+                    bridge = ReferralBridge(
+                        batch_uid=batch.batch_uid,
+                        test_request_id=live_request.id,
+                        patient_name=new_patient.full_name,
+                        sample_type=row.get("sample_type")
+                    )
+                    db.add(bridge)
+
+            # -----------------------------
+            # 4. FINANCIAL COMPUTATION
+            # -----------------------------
+            discount_percent = float(batch_data["financials"].get("discount", 0))
+            discount_ratio = discount_percent / 100
+
+            computed_net = computed_gross * (1 - discount_ratio)
+
+            is_paid = bool(batch_data["financials"].get("is_paid", False))
+            method = batch_data["financials"].get("method") if is_paid else None
+
+            # -----------------------------
+            # 5. LEDGER ENTRY
+            # -----------------------------
+            ledger = ReferralLedger(
+                batch_uid=batch.batch_uid,
+                referrer_id=batch.referrer_id,
+                gross_total=computed_gross,
+                discount_percent=discount_percent,
+                net_payable=computed_net,
+                is_settled=is_paid,
+                payment_method=method
+            )
+            db.add(ledger)
+
+            # -----------------------------
+            # 6. COMMIT (ATOMIC)
+            # -----------------------------
+            db.commit()
+            db.refresh(batch)
+
+            return batch
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+
+    # ==============================================================
+    # CREATE REFERRER
+    # ==============================================================
     @staticmethod
-    def create_referrer(db: Session, name: str, phone: str, email: str = None, credit_limit: float = 0):
-        """ Creates a new Referrer profile (Hospital, Doctor, etc). """
+    def create_referrer(
+        db: Session,
+        name: str,
+        phone: str,
+        email: str = None,
+        credit_limit: float = 0
+    ):
         existing = db.query(Referrer).filter(Referrer.phone == phone).first()
         if existing:
-            raise HTTPException(status_code=400, detail="Referrer with this phone already exists")
+            raise HTTPException(
+                status_code=400,
+                detail="Referrer with this phone already exists"
+            )
 
-        new_referrer = Referrer(
-            name=name,
-            phone=phone,
-            email=email,
-            credit_limit=credit_limit,
-            is_active=True
-        )
-        
-        db.add(new_referrer)
-        db.commit()
-        db.refresh(new_referrer)
-        return new_referrer
+        try:
+            new_referrer = Referrer(
+                name=name,
+                phone=phone,
+                email=email,
+                credit_limit=credit_limit,
+                is_active=True
+            )
+
+            db.add(new_referrer)
+            db.commit()
+            db.refresh(new_referrer)
+
+            return new_referrer
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=str(e))
