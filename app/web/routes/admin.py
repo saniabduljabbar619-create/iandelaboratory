@@ -22,7 +22,7 @@ from app.services.dashboard_service import DashboardService
 from app.core.config import settings
 from datetime import datetime
 from fastapi import HTTPException
-from datetime import datetime, time # Add this import at the top
+from datetime import datetime, time, timezone # Add this import at the top
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/web/templates")
@@ -423,7 +423,7 @@ def approve_credit_booking(
     # Update Status
     booking.status = "approved_credit"
     booking.approved_by_user_id = current_user.id
-    booking.approved_at = datetime.datetime.utcnow()
+    booking.approved_at = datetime.now(timezone.utc)
     db.commit()
 
     # Create the 'Smart' Notification that the Dashboard uses for Debt tracking
