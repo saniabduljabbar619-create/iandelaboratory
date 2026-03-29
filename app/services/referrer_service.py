@@ -106,12 +106,13 @@ class ReferrerService:
             # Create the clinical patient record
             new_patient = p_service.create(row['patient_info'])
             
+            # Inside ReferrerService.create_referral_batch_sync
             for test_type_id in row['test_ids']:
-                # CRITICAL FIX: Pass current_user.id as created_by_id
+                # Match the positional arguments exactly: (patient_id, test_type_id)
+                # The 'self' argument is handled automatically by the instance 'tr_service'
                 live_request = await tr_service.create_request(
                     patient_id=new_patient.id, 
-                    test_type_id=test_type_id,
-                    created_by_id=current_user.id  # Tracking the cashier who committed the batch
+                    test_type_id=test_type_id
                 )
 
                 # 3. Create the Smart Bridge Link
