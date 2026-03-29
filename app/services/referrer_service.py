@@ -85,37 +85,36 @@ class ReferrerService:
     @staticmethod
     async def create_referral_batch_sync(db: Session, batch_data: dict, current_user):
         """
-        Atomically creates a batch by bridging stable clinical logic 
-        with parallel referral tracking tables.
+        Atomically creates a batch and passes current_user.id 
+        to maintain clinical audit logs.
         """
-        # 1. Initialize stable services with user context for branch-scoping
         p_service = PatientService(db, current_user)
         tr_service = TestRequestService(db, current_user)
 
-        # 2. Create the Logistical Envelope
+        # 1. Create Logistical Header
         batch = ReferralBatch(
             batch_uid=batch_data['batch_uid'],
             referrer_id=batch_data['referrer_id'],
             date_received=batch_data['date_received'],
             date_due=batch_data['date_due'],
-            courier_name=batch_data.get('courier_name'),
             status="Pending"
         )
         db.add(batch)
         
-        # 3. Process patients through STABLE pipelines
+        # 2. Process patients and tests
         for row in batch_data['patients']:
-            # Call 'create' method as defined in your PatientService
+            # Create the clinical patient record
             new_patient = p_service.create(row['patient_info'])
             
             for test_type_id in row['test_ids']:
-                # Reusing stable test request logic
+                # CRITICAL FIX: Pass current_user.id as created_by_id
                 live_request = await tr_service.create_request(
                     patient_id=new_patient.id, 
-                    test_type_id=test_type_id
+                    test_type_id=test_type_id,
+                    created_by_id=current_user.id  # Tracking the cashier who committed the batch
                 )
 
-                # 4. Create the Smart Bridge Link
+                # 3. Create the Smart Bridge Link
                 bridge = ReferralBridge(
                     batch_uid=batch.batch_uid,
                     test_request_id=live_request.id,
@@ -124,7 +123,7 @@ class ReferrerService:
                 )
                 db.add(bridge)
 
-        # 5. Create Parallel Ledger Record
+        # 4. Finalize Ledger and Commit
         ledger = ReferralLedger(
             batch_uid=batch.batch_uid,
             referrer_id=batch.referrer_id,
