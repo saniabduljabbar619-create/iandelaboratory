@@ -1,22 +1,25 @@
-# app/services/referrer_service.py
+# -*- coding: utf-8 -*-
 from sqlalchemy import func
-from app.models.booking import Booking
-
-from app.models.referrer import Referrer
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
+
+# Models
+from app.models.booking import Booking
+from app.models.referrer import Referrer
 from app.models.referral_batch import ReferralBatch
 from app.models.referral_bridge import ReferralBridge
 from app.models.referral_ledger import ReferralLedger
-from app.services.patient_service import patient_service
-from app.services.test_request_service import test_request_service
+
+# Import Classes to avoid Circular Dependency and ImportErrors
+from app.services.patient_service import PatientService 
+from app.services.test_request_service import TestRequestService
 
 class ReferrerService:
 
     @staticmethod
-    def get_dashboard(db, referrer_id: int):
-        # ... (Your existing get_dashboard code remains same) ...
+    def get_dashboard(db: Session, referrer_id: int):
+        """ Fetches financial totals and grouped bookings for a referrer. """
         total_credit = (
             db.query(func.coalesce(func.sum(Booking.total_amount), 0))
             .filter(
@@ -55,8 +58,8 @@ class ReferrerService:
         }
 
     @staticmethod
-    def get_booking_details(db, booking_code: str, referrer_id: int):
-        # ... (Your existing get_booking_details code remains same) ...
+    def get_booking_details(db: Session, booking_code: str, referrer_id: int):
+        """ DRILL DOWN: Fetches patient list for a specific booking code. """
         rows = (
             db.query(Booking)
             .filter(
@@ -80,37 +83,39 @@ class ReferrerService:
     # THE SMART SYNC INTEGRATION (FULL THROTTLE)
     # ==============================================================
     @staticmethod
-    async def create_referral_batch_sync(db, batch_data: dict):
+    async def create_referral_batch_sync(db: Session, batch_data: dict, current_user):
         """
         Atomically creates a batch by bridging stable clinical logic 
-        with the new parallel referral tracking tables.
+        with parallel referral tracking tables.
         """
-        # 1. Create the Logistical Envelope
+        # 1. Initialize stable services with user context for branch-scoping
+        p_service = PatientService(db, current_user)
+        tr_service = TestRequestService(db, current_user)
+
+        # 2. Create the Logistical Envelope
         batch = ReferralBatch(
             batch_uid=batch_data['batch_uid'],
             referrer_id=batch_data['referrer_id'],
             date_received=batch_data['date_received'],
             date_due=batch_data['date_due'],
-            courier_info=batch_data.get('courier_info'),
+            courier_name=batch_data.get('courier_name'),
             status="Pending"
         )
         db.add(batch)
         
-        # 2. Process patients through STABLE pipelines
+        # 3. Process patients through STABLE pipelines
         for row in batch_data['patients']:
-            # Call your LIVE patient registration logic
-            new_patient = await patient_service.create_patient(db, row['patient_info'])
+            # Call 'create' method as defined in your PatientService
+            new_patient = p_service.create(row['patient_info'])
             
-            # Call your LIVE test request logic
-            # This ensures results, snapshots, and logs are generated normally
             for test_type_id in row['test_ids']:
-                live_request = await test_request_service.create_request(
-                    db, 
+                # Reusing stable test request logic
+                live_request = await tr_service.create_request(
                     patient_id=new_patient.id, 
                     test_type_id=test_type_id
                 )
 
-                # 3. Create the Smart Bridge Link
+                # 4. Create the Smart Bridge Link
                 bridge = ReferralBridge(
                     batch_uid=batch.batch_uid,
                     test_request_id=live_request.id,
@@ -119,7 +124,7 @@ class ReferrerService:
                 )
                 db.add(bridge)
 
-        # 4. Create Parallel Ledger Record
+        # 5. Create Parallel Ledger Record
         ledger = ReferralLedger(
             batch_uid=batch.batch_uid,
             referrer_id=batch.referrer_id,
@@ -131,21 +136,16 @@ class ReferrerService:
         )
         db.add(ledger)
         
-        # Atomic Commit: If any step fails, nothing is saved.
         db.commit()
         db.refresh(batch)
         return batch
-    
 
     @staticmethod
     def create_referrer(db: Session, name: str, phone: str, email: str = None, credit_limit: float = 0):
-        """
-        Creates a new Referrer profile (Hospital, Doctor, etc.)
-        """
-        # Check if phone already exists to maintain consistency
+        """ Creates a new Referrer profile (Hospital, Doctor, etc). """
         existing = db.query(Referrer).filter(Referrer.phone == phone).first()
         if existing:
-            raise HTTPException(status_code=400, detail="Referrer with this phone number already exists")
+            raise HTTPException(status_code=400, detail="Referrer with this phone already exists")
 
         new_referrer = Referrer(
             name=name,
