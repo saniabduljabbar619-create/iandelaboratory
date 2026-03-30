@@ -160,34 +160,35 @@ class ReferrerService:
                     for tid in test_ids
                 ]
 
-                # app/services/referrer_service.py
 
-# ... inside the 'for row in batch_data["patients"]:' loop ...
 
-                # 1. Create the booking using your core method
+                # 1. Create the booking (this creates the Booking and BookingItems)
                 booking = booking_service.create_booking(
                     booking_type="referral",
                     referrer_name=batch_data.get("referrer_name"),
                     referrer_phone=new_patient.phone,
-                    email=None,
                     items=booking_items,
                     billing_mode="credit",
                     referrer_id=batch.referrer_id
                 )
                 
-                # 2. Pre-approve for the Admin Debt Ledger
                 booking.status = "approved_credit"
-                
                 computed_gross += float(booking.total_amount)
                 booking_refs.append(booking.booking_code)
 
-                # 3. FIX: Link using booking_id instead of booking_code
-                db.add(ReferralBridge(
-                    batch_uid=batch.batch_uid,
-                    booking_id=booking.id,  # <--- FIXED: Map to the ID primary key
-                    patient_name=new_patient.full_name,
-                    sample_type=row.get("sample_type")
-                ))
+                # 2. FIX: Link to the Bridge using 'test_request_id'
+                # Your BookingService likely creates entries in a 'test_requests' table 
+                # or links them in BookingItem. 
+                
+                for item in booking.items:
+                    # We assume your BookingItem model has a 'test_request_id' 
+                    # that was generated during create_booking.
+                    db.add(ReferralBridge(
+                        batch_uid=batch.batch_uid,
+                        test_request_id=item.id, # Map to the bridge's required column
+                        patient_name=new_patient.full_name,
+                        sample_type=row.get("sample_type")
+                    ))
             # -----------------------------
             # 3. FINANCIAL COMPUTATION
             # -----------------------------
