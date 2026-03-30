@@ -135,25 +135,34 @@ class ReferrerService:
             # -----------------------------
             # 2. PROCESS PATIENTS
             # -----------------------------
+            
             for row in batch_data["patients"]:
-                patient_info = row.get("patient_info")
+                patient_info = row.get("patient_info") # This is a dict from Wizard
                 test_ids = row.get("test_ids", [])
 
                 if not patient_info:
                     continue
 
-                # Create patient
-                new_patient = p_service.create(patient_info)
+                # ✅ FIX: Wrap dict in Pydantic model to satisfy PatientService.create
+                from app.schemas.patient import PatientCreate
+                p_model = PatientCreate(**patient_info)
+                new_patient = p_service.create(p_model)
 
-                # Create Booking for patient
+                # ✅ FIX: Create and force 'approved_credit' status
                 booking = booking_service.create_booking_for_referral(
                     patient_id=new_patient.id,
                     referrer_id=batch.referrer_id,
                     test_type_ids=test_ids,
                     batch_uid=batch.batch_uid
                 )
+                
+                # Force status so it hits the Admin Dashboard instantly
+                booking.status = "approved_credit"
+                booking.billing_mode = "credit"
+
                 computed_gross += float(booking.total_amount)
                 booking_refs.append(booking.booking_code)
+                
 
                 # Bridge linkage
                 bridge = ReferralBridge(
