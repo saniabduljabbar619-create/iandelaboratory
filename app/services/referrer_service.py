@@ -90,48 +90,23 @@ class ReferrerService:
     # ==============================================================    
     # SMART BATCH SYNC (ATOMIC)
     # ==============================================================
+
     @staticmethod
     def create_referral_batch_sync(db: Session, batch_data: dict, current_user):
-        """
-        Atomic referral batch creation using BookingService as pricing source:
-        - Batch header
-        - Patients + Booking creation (pricing canonical)
-        - Bridge linkage
-        - Ledger entry
-        """
-
-        # -----------------------------
-        # VALIDATION
-        # -----------------------------
-        if not batch_data.get("batch_uid"):
-            raise HTTPException(400, "Missing batch_uid")
-        if not batch_data.get("referrer_id"):
-            raise HTTPException(400, "Missing referrer_id")
-        if not batch_data.get("patients"):
-            raise HTTPException(400, "No patients provided")
-        if not batch_data.get("financials"):
-            raise HTTPException(400, "Missing financials block")
+        from app.services.booking_service import BookingService
+        from app.services.booking_conversion_service import BookingConversionService
+        from app.models.test_request import TestRequest
+        
+        p_service = PatientService(db, current_user)
+        booking_service = BookingService(db)
 
         try:
-            from app.services.booking_service import BookingService
-            p_service = PatientService(db, current_user)
-            booking_service = BookingService(db)
-
-
-            # -----------------------------
             # 1. CREATE BATCH HEADER
-            # -----------------------------
             batch = ReferralBatch(
                 batch_uid=batch_data["batch_uid"],
                 referrer_id=batch_data["referrer_id"],
-                
-                # Ensure we parse the strings into DateTime objects if your 
-                # SQLAlchemy setup doesn't do it automatically, or just pass the keys:
                 date_received=batch_data.get("date_received"),
-                
-                # FIX: Explicitly pull date_due and fallback to date_received if Null
                 date_due=batch_data.get("date_due") or batch_data.get("date_received"),
-                
                 status="Pending"
             )
             db.add(batch)
@@ -139,93 +114,84 @@ class ReferrerService:
             computed_gross = 0.0
             booking_refs = []
 
-            # -----------------------------
-            # 2. PROCESS PATIENTS
-            # -----------------------------
+            # 2. PROCESS PATIENTS & SILENT CONVERSION
             for row in batch_data["patients"]:
                 patient_info = row.get("patient_info")
                 test_ids = row.get("test_ids", [])
+                if not patient_info: continue
 
-                if not patient_info:
-                    continue
-
-                # Create Clinical Patient
+                # A. Create Clinical Patient
                 from app.schemas.patient import PatientCreate
                 new_patient = p_service.create(PatientCreate(**patient_info))
 
-                # FIX: Map Wizard data to your BookingService.create_booking parameters
-                # We format the 'items' list to match what create_booking expects
+                # B. Build Booking Items
                 booking_items = [
                     {"test_type_id": tid, "patient_name": new_patient.full_name, "patient_phone": new_patient.phone}
                     for tid in test_ids
                 ]
 
-
-
-                # 1. Create the booking (this creates the Booking and BookingItems)
+                # C. Create the Booking (Financial Record)
                 booking = booking_service.create_booking(
-                    "referral",                       # 1. booking_type
-                    batch_data.get("referrer_name"),  # 2. referrer_name
-                    new_patient.phone,                # 3. referrer_phone
-                    None,                             # 4. email (THIS WAS MISSING)
-                    booking_items,                    # 5. items
-                    billing_mode="credit",            # keyword arg
-                    referrer_id=batch.referrer_id     # keyword arg
+                    "referral",
+                    batch_data.get("referrer_name"),
+                    new_patient.phone,
+                    None,
+                    booking_items,
+                    billing_mode="credit",
+                    referrer_id=batch.referrer_id
                 )
                 
+                # Critical: Set status so conversion service accepts it
                 booking.status = "approved_credit"
+                db.flush() # Sync state to DB to get booking.id
+
+                # ------------------------------------------------------
+                # D. SILENT CONVERSION (THE "BYPASS")
+                # ------------------------------------------------------
+                # This populates the Lab Worklist instantly
+                created_requests = BookingConversionService.convert_patient(
+                    db=db,
+                    booking_id=booking.id,
+                    patient_name=new_patient.full_name,
+                    branch_id=current_user.branch_id,
+                    cashier_name=f"{current_user.full_name} (Auto-Sync)"
+                )
+                
                 computed_gross += float(booking.total_amount)
                 booking_refs.append(booking.booking_code)
 
-                # 2. FIX: Link to the Bridge using 'test_request_id'
-                # Your BookingService likely creates entries in a 'test_requests' table 
-                # or links them in BookingItem. 
-                
-                for item in booking.items:
-                    # We assume your BookingItem model has a 'test_request_id' 
-                    # that was generated during create_booking.
+                # E. BRIDGE LINKAGE
+                # We link the actually created TestRequests to the Batch UID
+                for req in created_requests:
                     db.add(ReferralBridge(
                         batch_uid=batch.batch_uid,
-                        test_request_id=item.id, # Map to the bridge's required column
+                        test_request_id=req.id,
                         patient_name=new_patient.full_name,
                         sample_type=row.get("sample_type")
                     ))
-            # -----------------------------
-            # 3. FINANCIAL COMPUTATION
-            # -----------------------------
-            discount_percent = float(batch_data["financials"].get("discount", 0))
-            discount_ratio = discount_percent / 100
-            computed_net = computed_gross * (1 - discount_ratio)
-            is_paid = bool(batch_data["financials"].get("is_paid", False))
-            method = batch_data["financials"].get("method") if is_paid else None
 
-            # -----------------------------
-            # 4. LEDGER ENTRY
-            # -----------------------------
+            # 3. FINANCIALS & LEDGER (Same as before)
+            discount_percent = float(batch_data["financials"].get("discount", 0))
+            computed_net = computed_gross * (1 - (discount_percent / 100))
+            
             ledger = ReferralLedger(
                 batch_uid=batch.batch_uid,
                 referrer_id=batch.referrer_id,
                 gross_total=computed_gross,
                 discount_percent=discount_percent,
                 net_payable=computed_net,
-                is_settled=is_paid,
-                payment_method=method,
+                is_settled=bool(batch_data["financials"].get("is_paid", False)),
+                payment_method=batch_data["financials"].get("method")
             )
             db.add(ledger)
 
-            # -----------------------------
-            # 5. COMMIT TRANSACTION
-            # -----------------------------
             db.commit()
             db.refresh(batch)
             return batch
 
-        except SQLAlchemyError as e:
-            db.rollback()
-            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Bypass Sync Failed: {str(e)}")
 
     # ==============================================================
     # CREATE REFERRER
