@@ -160,31 +160,34 @@ class ReferrerService:
                     for tid in test_ids
                 ]
 
-                # Use your existing create_booking method (This handles snapshots and notifications)
+                # app/services/referrer_service.py
+
+# ... inside the 'for row in batch_data["patients"]:' loop ...
+
+                # 1. Create the booking using your core method
                 booking = booking_service.create_booking(
                     booking_type="referral",
                     referrer_name=batch_data.get("referrer_name"),
-                    referrer_phone=new_patient.phone, # Wizard uses referrer phone for patients
+                    referrer_phone=new_patient.phone,
                     email=None,
                     items=booking_items,
                     billing_mode="credit",
                     referrer_id=batch.referrer_id
                 )
                 
-                # Update status so it is immediately visible in the debt ledger
+                # 2. Pre-approve for the Admin Debt Ledger
                 booking.status = "approved_credit"
                 
                 computed_gross += float(booking.total_amount)
                 booking_refs.append(booking.booking_code)
 
-                # Bridge linkage
+                # 3. FIX: Link using booking_id instead of booking_code
                 db.add(ReferralBridge(
                     batch_uid=batch.batch_uid,
-                    booking_code=booking.booking_code,
+                    booking_id=booking.id,  # <--- FIXED: Map to the ID primary key
                     patient_name=new_patient.full_name,
                     sample_type=row.get("sample_type")
                 ))
-
             # -----------------------------
             # 3. FINANCIAL COMPUTATION
             # -----------------------------
