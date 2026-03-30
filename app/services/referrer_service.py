@@ -13,7 +13,7 @@ from app.models.referral_ledger import ReferralLedger
 
 # Services
 from app.services.patient_service import PatientService 
-from app.services.test_request_service import TestRequestService
+from app.services.booking_service import BookingService
 
 
 class ReferrerService:
