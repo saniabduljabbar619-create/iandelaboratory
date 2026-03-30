@@ -13,7 +13,6 @@ from app.models.referral_ledger import ReferralLedger
 
 # Services
 from app.services.patient_service import PatientService 
-from app.services.booking_service import BookingService
 
 
 class ReferrerService:
@@ -114,6 +113,7 @@ class ReferrerService:
             raise HTTPException(400, "Missing financials block")
 
         try:
+            from app.services.booking_service import BookingService
             p_service = PatientService(db, current_user)
             booking_service = BookingService(db, current_user)
 
