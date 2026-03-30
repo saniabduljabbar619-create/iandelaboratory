@@ -115,7 +115,7 @@ class ReferrerService:
         try:
             from app.services.booking_service import BookingService
             p_service = PatientService(db, current_user)
-            booking_service = BookingService(db, current_user)
+            booking_service = BookingService(db)
 
             # -----------------------------
             # 1. CREATE BATCH HEADER
