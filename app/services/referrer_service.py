@@ -142,43 +142,48 @@ class ReferrerService:
             # -----------------------------
             # 2. PROCESS PATIENTS
             # -----------------------------
-            
             for row in batch_data["patients"]:
-                patient_info = row.get("patient_info") # This is a dict from Wizard
+                patient_info = row.get("patient_info")
                 test_ids = row.get("test_ids", [])
 
                 if not patient_info:
                     continue
 
-                # ✅ FIX: Wrap dict in Pydantic model to satisfy PatientService.create
+                # Create Clinical Patient
                 from app.schemas.patient import PatientCreate
-                p_model = PatientCreate(**patient_info)
-                new_patient = p_service.create(p_model)
+                new_patient = p_service.create(PatientCreate(**patient_info))
 
-                # ✅ FIX: Create and force 'approved_credit' status
-                booking = booking_service.create_booking_for_referral(
-                    patient_id=new_patient.id,
-                    referrer_id=batch.referrer_id,
-                    test_type_ids=test_ids,
-                    batch_uid=batch.batch_uid
+                # FIX: Map Wizard data to your BookingService.create_booking parameters
+                # We format the 'items' list to match what create_booking expects
+                booking_items = [
+                    {"test_type_id": tid, "patient_name": new_patient.full_name, "patient_phone": new_patient.phone}
+                    for tid in test_ids
+                ]
+
+                # Use your existing create_booking method (This handles snapshots and notifications)
+                booking = booking_service.create_booking(
+                    booking_type="referral",
+                    referrer_name=batch_data.get("referrer_name"),
+                    referrer_phone=new_patient.phone, # Wizard uses referrer phone for patients
+                    email=None,
+                    items=booking_items,
+                    billing_mode="credit",
+                    referrer_id=batch.referrer_id
                 )
                 
-                # Force status so it hits the Admin Dashboard instantly
+                # Update status so it is immediately visible in the debt ledger
                 booking.status = "approved_credit"
-                booking.billing_mode = "credit"
-
+                
                 computed_gross += float(booking.total_amount)
                 booking_refs.append(booking.booking_code)
-                
 
                 # Bridge linkage
-                bridge = ReferralBridge(
+                db.add(ReferralBridge(
                     batch_uid=batch.batch_uid,
                     booking_code=booking.booking_code,
                     patient_name=new_patient.full_name,
                     sample_type=row.get("sample_type")
-                )
-                db.add(bridge)
+                ))
 
             # -----------------------------
             # 3. FINANCIAL COMPUTATION
