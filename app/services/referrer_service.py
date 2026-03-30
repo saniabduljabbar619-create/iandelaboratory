@@ -210,7 +210,6 @@ class ReferrerService:
                 net_payable=computed_net,
                 is_settled=is_paid,
                 payment_method=method,
-                booking_codes=",".join(booking_refs)
             )
             db.add(ledger)
 
