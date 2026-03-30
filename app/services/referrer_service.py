@@ -149,26 +149,42 @@ class ReferrerService:
                 # D. SILENT CONVERSION (THE "BYPASS")
                 # ------------------------------------------------------
                 # This populates the Lab Worklist instantly
-                created_requests = BookingConversionService.convert_patient(
-                    db=db,
-                    booking_id=booking.id,
-                    patient_name=new_patient.full_name,
-                    branch_id=current_user.branch_id,
-                    cashier_name=f"{current_user.full_name} (Auto-Sync)"
-                )
-                
-                computed_gross += float(booking.total_amount)
-                booking_refs.append(booking.booking_code)
+                # app/services/referrer_service.py
 
-                # E. BRIDGE LINKAGE
-                # We link the actually created TestRequests to the Batch UID
-                for req in created_requests:
-                    db.add(ReferralBridge(
-                        batch_uid=batch.batch_uid,
-                        test_request_id=req.id,
+# ... inside create_referral_batch_sync patient loop ...
+
+                # ------------------------------------------------------
+                # SILENT CONVERSION (PHASE 2)
+                # ------------------------------------------------------
+                try:
+                    from app.services.booking_conversion_service import BookingConversionService
+                    
+                    # Using current_user.username (from your User model)
+                    created_requests = BookingConversionService.convert_patient(
+                        db=db,
+                        booking_id=booking.id,
                         patient_name=new_patient.full_name,
-                        sample_type=row.get("sample_type")
-                    ))
+                        branch_id=current_user.branch_id or 1, # Fallback to 1 if user has no branch
+                        cashier_name=f"{current_user.username} (Auto-Sync)"
+                    )
+                    
+                    # ------------------------------------------------------
+                    # BRIDGE LINKAGE
+                    # ------------------------------------------------------
+                    # We link the newly created clinical TestRequests to the Batch
+                    for req in created_requests:
+                        db.add(ReferralBridge(
+                            batch_uid=batch.batch_uid,
+                            test_request_id=req.id,
+                            patient_name=new_patient.full_name,
+                            sample_type=row.get("sample_type")
+                        ))
+                        
+                except Exception as conv_err:
+                    # Log the specific error but don't break the whole batch sync
+                    print(f"SILENT CONVERSION ERROR: {str(conv_err)}")
+                    raise HTTPException(status_code=500, detail=f"Conversion failed: {str(conv_err)}")
+
 
             # 3. FINANCIALS & LEDGER (Same as before)
             discount_percent = float(batch_data["financials"].get("discount", 0))
