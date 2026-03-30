@@ -8,6 +8,7 @@ from app.models.booking import Booking
 from app.models.referrer import Referrer
 from fastapi import HTTPException
 
+from app.core.dependencies import get_db, get_current_user
 
 router = APIRouter(prefix="/api/referrer", tags=["Referrer"])
 
@@ -126,10 +127,12 @@ def login_test(phone: str, db: Session = Depends(get_db)):
 
 # --- REFERRAL BATCH SYNC (New Smart Integration) ---
 
+# --- REFERRAL BATCH SYNC (New Smart Integration) ---
 @router.post("/sync-batch")
-async def sync_referral_batch(
+def sync_referral_batch(
     payload: dict, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
 ):
     """
     Core synchronization endpoint for the Referral Wizard.
@@ -137,11 +140,10 @@ async def sync_referral_batch(
     with stable clinical tables and the new parallel ledger.
     """
     from app.services.referrer_service import ReferrerService
-    
+
     try:
-        # Step 1: Execute the atomic service logic
-        # This calls your existing stable services for patients and tests
-        batch_record = await ReferrerService.create_referral_batch_sync(db, payload)
+        # Pass current_user to the service to satisfy the required argument
+        batch_record = ReferrerService.create_referral_batch_sync(db, payload, current_user)
         
         return {
             "status": "success",
@@ -149,13 +151,13 @@ async def sync_referral_batch(
             "batch_uid": batch_record.batch_uid
         }
     except Exception as e:
-        # Rollback is handled inside the Service's atomic transaction, 
-        # but we catch and report the error to the UI here.
+        # Rollback is already handled inside the Service
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Batch synchronization failed: {str(e)}"
         )
 
+# --- ACTIVE BATCHES ---
 @router.get("/active-batches")
 def get_active_referral_batches(
     referrer_id: int | None = None,
@@ -166,7 +168,7 @@ def get_active_referral_batches(
     Filterable by referrer_id for specific hospital dashboards.
     """
     from app.models.referral_batch import ReferralBatch
-    
+
     query = db.query(ReferralBatch).filter(ReferralBatch.status != "Completed")
     
     if referrer_id:
@@ -174,12 +176,18 @@ def get_active_referral_batches(
         
     return query.order_by(ReferralBatch.created_at.desc()).all()
 
-
+# --- CREATE REFERRER ---
 @router.post("/create")
-def create_referrer_profile(payload: dict, db: Session = Depends(get_db)):
+def create_referrer_profile(
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
     """
     Endpoint to register a new Hospital or Doctor profile
     """
+    from app.services.referrer_service import ReferrerService
+
     name = payload.get("name")
     phone = payload.get("phone")
     email = payload.get("email")
@@ -189,13 +197,14 @@ def create_referrer_profile(payload: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Name and Phone are required")
 
     return ReferrerService.create_referrer(
-        db=db, 
-        name=name, 
-        phone=phone, 
-        email=email, 
+        db=db,
+        name=name,
+        phone=phone,
+        email=email,
         credit_limit=credit_limit
     )
 
+# --- LIST REFERRERS ---
 @router.get("/list")
 def list_referrers(db: Session = Depends(get_db)):
     """
