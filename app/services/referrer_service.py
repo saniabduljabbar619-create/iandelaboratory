@@ -164,12 +164,13 @@ class ReferrerService:
 
                 # 1. Create the booking (this creates the Booking and BookingItems)
                 booking = booking_service.create_booking(
-                    booking_type="referral",
-                    referrer_name=batch_data.get("referrer_name"),
-                    referrer_phone=new_patient.phone,
-                    items=booking_items,
-                    billing_mode="credit",
-                    referrer_id=batch.referrer_id
+                    "referral",                       # 1. booking_type
+                    batch_data.get("referrer_name"),  # 2. referrer_name
+                    new_patient.phone,                # 3. referrer_phone
+                    None,                             # 4. email (THIS WAS MISSING)
+                    booking_items,                    # 5. items
+                    billing_mode="credit",            # keyword arg
+                    referrer_id=batch.referrer_id     # keyword arg
                 )
                 
                 booking.status = "approved_credit"
