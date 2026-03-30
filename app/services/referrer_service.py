@@ -117,14 +117,21 @@ class ReferrerService:
             p_service = PatientService(db, current_user)
             booking_service = BookingService(db)
 
+
             # -----------------------------
             # 1. CREATE BATCH HEADER
             # -----------------------------
             batch = ReferralBatch(
                 batch_uid=batch_data["batch_uid"],
                 referrer_id=batch_data["referrer_id"],
+                
+                # Ensure we parse the strings into DateTime objects if your 
+                # SQLAlchemy setup doesn't do it automatically, or just pass the keys:
                 date_received=batch_data.get("date_received"),
-                date_due=batch_data.get("date_due"),
+                
+                # FIX: Explicitly pull date_due and fallback to date_received if Null
+                date_due=batch_data.get("date_due") or batch_data.get("date_received"),
+                
                 status="Pending"
             )
             db.add(batch)
