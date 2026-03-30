@@ -88,26 +88,34 @@ class ReferrerService:
             for r in rows
         ]
 
-    # ==============================================================
-    # SMART SYNC (HARDENED)
+    # ==============================================================    
+    # SMART BATCH SYNC (ATOMIC)
     # ==============================================================
     @staticmethod
     def create_referral_batch_sync(db: Session, batch_data: dict, current_user):
+        """
+        Atomic referral batch creation using BookingService as pricing source:
+        - Batch header
+        - Patients + Booking creation (pricing canonical)
+        - Bridge linkage
+        - Ledger entry
+        """
 
+        # -----------------------------
+        # VALIDATION
+        # -----------------------------
         if not batch_data.get("batch_uid"):
             raise HTTPException(400, "Missing batch_uid")
-
         if not batch_data.get("referrer_id"):
             raise HTTPException(400, "Missing referrer_id")
-
         if not batch_data.get("patients"):
             raise HTTPException(400, "No patients provided")
+        if not batch_data.get("financials"):
+            raise HTTPException(400, "Missing financials block")
 
         try:
-            from app.services.booking_service import BookingService
-            from app.services.booking_conversion_service import BookingConversionService
-
-            booking_service = BookingService(db)
+            p_service = PatientService(db, current_user)
+            booking_service = BookingService(db, current_user)
 
             # -----------------------------
             # 1. CREATE BATCH HEADER
@@ -120,13 +128,13 @@ class ReferrerService:
                 status="Pending"
             )
             db.add(batch)
-            db.flush()
+
+            computed_gross = 0.0
+            booking_refs = []
 
             # -----------------------------
-            # 2. PREPARE BOOKING ITEMS
+            # 2. PROCESS PATIENTS
             # -----------------------------
-            items = []
-
             for row in batch_data["patients"]:
                 patient_info = row.get("patient_info")
                 test_ids = row.get("test_ids", [])
@@ -134,115 +142,65 @@ class ReferrerService:
                 if not patient_info:
                     continue
 
-                for test_id in test_ids:
-                    items.append({
-                        "patient_name": patient_info.get("full_name"),
-                        "patient_phone": patient_info.get("phone"),
-                        "dob": patient_info.get("date_of_birth"),
-                        "gender": patient_info.get("gender"),
-                        "test_type_id": test_id
-                    })
+                # Create patient
+                new_patient = p_service.create(patient_info)
 
-            if not items:
-                raise HTTPException(400, "No valid test items")
-
-            # -----------------------------
-            # 3. CREATE BOOKING (CORE)
-            # -----------------------------
-            booking = booking_service.create_group_booking(
-                referrer_name=None,
-                referrer_phone=None,
-                email=None,
-                items=items,
-                billing_mode="credit",
-                referrer_id=batch.referrer_id
-            )
-
-            # -----------------------------
-            # 4. AUTO APPROVE CREDIT
-            # -----------------------------
-            booking.status = "approved_credit"
-            db.flush()
-
-            # -----------------------------
-            # 5. CONVERT ALL PATIENTS
-            # -----------------------------
-            patients = set()
-
-            for item in items:
-                patients.add(item["patient_phone"])
-
-            created_requests = []
-
-            for phone in patients:
-                reqs = BookingConversionService.convert_patient(
-                    db=db,
-                    booking_id=booking.id,
-                    patient_name=None,  # ⚠️ will fix below
-                    branch_id=current_user.branch_id,
-                    cashier_name=current_user.full_name
+                # Create Booking for patient
+                booking = booking_service.create_booking_for_referral(
+                    patient_id=new_patient.id,
+                    referrer_id=batch.referrer_id,
+                    test_type_ids=test_ids,
+                    batch_uid=batch.batch_uid
                 )
-                created_requests.extend(reqs)
+                computed_gross += float(booking.total_amount)
+                booking_refs.append(booking.booking_code)
 
-            # -----------------------------
-            # ⚠️ IMPORTANT FIX (GROUP BY PHONE)
-            # -----------------------------
-            # Replace convert logic to use patient_phone internally
-            # (You already agreed earlier)
-
-            # -----------------------------
-            # 6. CREATE BRIDGE
-            # -----------------------------
-            for req in created_requests:
+                # Bridge linkage
                 bridge = ReferralBridge(
                     batch_uid=batch.batch_uid,
-                    test_request_id=req.id,
-                    patient_name="",  # optional
-                    sample_type=None
+                    booking_code=booking.booking_code,
+                    patient_name=new_patient.full_name,
+                    sample_type=row.get("sample_type")
                 )
                 db.add(bridge)
 
             # -----------------------------
-            # 7. LEDGER (FROM BOOKING)
+            # 3. FINANCIAL COMPUTATION
             # -----------------------------
-            discount_percent = float(
-                batch_data.get("financials", {}).get("discount", 0)
-            )
-
+            discount_percent = float(batch_data["financials"].get("discount", 0))
             discount_ratio = discount_percent / 100
+            computed_net = computed_gross * (1 - discount_ratio)
+            is_paid = bool(batch_data["financials"].get("is_paid", False))
+            method = batch_data["financials"].get("method") if is_paid else None
 
-            gross = float(booking.total_amount)
-            net = gross * (1 - discount_ratio)
-
-            is_paid = bool(batch_data.get("financials", {}).get("is_paid", False))
-            method = batch_data.get("financials", {}).get("method") if is_paid else None
-
+            # -----------------------------
+            # 4. LEDGER ENTRY
+            # -----------------------------
             ledger = ReferralLedger(
                 batch_uid=batch.batch_uid,
                 referrer_id=batch.referrer_id,
-                gross_total=gross,
+                gross_total=computed_gross,
                 discount_percent=discount_percent,
-                net_payable=net,
+                net_payable=computed_net,
                 is_settled=is_paid,
-                payment_method=method
+                payment_method=method,
+                booking_codes=",".join(booking_refs)
             )
             db.add(ledger)
 
             # -----------------------------
-            # 8. FINAL COMMIT
+            # 5. COMMIT TRANSACTION
             # -----------------------------
             db.commit()
             db.refresh(batch)
-
             return batch
 
         except SQLAlchemyError as e:
             db.rollback()
-            raise HTTPException(500, f"Database error: {str(e)}")
-
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
         except Exception as e:
             db.rollback()
-            raise HTTPException(500, f"Processing error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
     # ==============================================================
     # CREATE REFERRER
