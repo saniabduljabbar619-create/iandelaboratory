@@ -95,7 +95,6 @@ class ReferrerService:
     def create_referral_batch_sync(db: Session, batch_data: dict, current_user):
         from app.services.booking_service import BookingService
         from app.services.booking_conversion_service import BookingConversionService
-        from app.models.test_request import TestRequest
         
         p_service = PatientService(db, current_user)
         booking_service = BookingService(db)
@@ -111,83 +110,81 @@ class ReferrerService:
             )
             db.add(batch)
 
-            computed_gross = 0.0
-            booking_refs = []
+            # ---------------------------------------------------------
+            # 2. THE COLLECTOR PHASE (PRE-BOOKING)
+            # ---------------------------------------------------------
+            master_booking_items = []
+            patient_conversion_map = [] # To store (patient_obj, original_row_data)
 
-            # 2. PROCESS PATIENTS & SILENT CONVERSION
             for row in batch_data["patients"]:
                 patient_info = row.get("patient_info")
                 test_ids = row.get("test_ids", [])
                 if not patient_info: continue
 
-                # A. Create Clinical Patient
+                # Create/Resolve the Clinical Patient
                 from app.schemas.patient import PatientCreate
                 new_patient = p_service.create(PatientCreate(**patient_info))
 
-                # B. Build Booking Items
-                booking_items = [
-                    {"test_type_id": tid, "patient_name": new_patient.full_name, "patient_phone": new_patient.phone}
-                    for tid in test_ids
-                ]
+                # Add every test for this patient to the MASTER list
+                for tid in test_ids:
+                    master_booking_items.append({
+                        "test_type_id": tid, 
+                        "patient_name": new_patient.full_name, 
+                        "patient_phone": new_patient.phone
+                    })
+                
+                # Keep reference for the conversion step later
+                patient_conversion_map.append({
+                    "patient": new_patient, 
+                    "sample_type": row.get("sample_type")
+                })
 
-                # C. Create the Booking (Financial Record)
-                booking = booking_service.create_booking(
-                    "referral",
-                    batch_data.get("referrer_name"),
-                    new_patient.phone,
-                    None,
-                    booking_items,
-                    billing_mode="credit",
-                    referrer_id=batch.referrer_id
+            # ---------------------------------------------------------
+            # 3. SINGLE FINANCIAL BOOKING (ONE CODE GENERATED)
+            # ---------------------------------------------------------
+            # We call this ONCE with all items from all patients
+            booking = booking_service.create_booking(
+                "referral",
+                batch_data.get("referrer_name"),
+                batch_data.get("referrer_phone") or current_user.username,
+                None,
+                master_booking_items,
+                billing_mode="credit",
+                referrer_id=batch.referrer_id
+            )
+            
+            booking.status = "approved_credit"
+            db.flush() # Secure the booking.id
+
+            # ---------------------------------------------------------
+            # 4. MULTI-PATIENT SILENT CONVERSION
+            # ---------------------------------------------------------
+            # Now we loop through our saved patient map to "promote" them to Lab
+            for entry in patient_conversion_map:
+                p_obj = entry["patient"]
+                
+                # Conversion logic groups items by patient_name automatically
+                created_requests = BookingConversionService.convert_patient(
+                    db=db,
+                    booking_id=booking.id,
+                    patient_name=p_obj.full_name,
+                    branch_id=current_user.branch_id or 1,
+                    cashier_name=f"{current_user.username} (Batch-Sync)"
                 )
                 
-                # Critical: Set status so conversion service accepts it
-                booking.status = "approved_credit"
-                db.flush() # Sync state to DB to get booking.id
+                # Link these specific Lab Requests to the Batch UID via Bridge
+                for req in created_requests:
+                    db.add(ReferralBridge(
+                        batch_uid=batch.batch_uid,
+                        test_request_id=req.id,
+                        patient_name=p_obj.full_name,
+                        sample_type=entry["sample_type"]
+                    ))
 
-                # ------------------------------------------------------
-                # D. SILENT CONVERSION (THE "BYPASS")
-                # ------------------------------------------------------
-                # This populates the Lab Worklist instantly
-                # app/services/referrer_service.py
-
-# ... inside create_referral_batch_sync patient loop ...
-
-                # ------------------------------------------------------
-                # SILENT CONVERSION (PHASE 2)
-                # ------------------------------------------------------
-                try:
-                    from app.services.booking_conversion_service import BookingConversionService
-                    
-                    # Using current_user.username (from your User model)
-                    created_requests = BookingConversionService.convert_patient(
-                        db=db,
-                        booking_id=booking.id,
-                        patient_name=new_patient.full_name,
-                        branch_id=current_user.branch_id or 1, # Fallback to 1 if user has no branch
-                        cashier_name=f"{current_user.username} (Auto-Sync)"
-                    )
-                    
-                    # ------------------------------------------------------
-                    # BRIDGE LINKAGE
-                    # ------------------------------------------------------
-                    # We link the newly created clinical TestRequests to the Batch
-                    for req in created_requests:
-                        db.add(ReferralBridge(
-                            batch_uid=batch.batch_uid,
-                            test_request_id=req.id,
-                            patient_name=new_patient.full_name,
-                            sample_type=row.get("sample_type")
-                        ))
-                        
-                except Exception as conv_err:
-                    # Log the specific error but don't break the whole batch sync
-                    print(f"SILENT CONVERSION ERROR: {str(conv_err)}")
-                    raise HTTPException(status_code=500, detail=f"Conversion failed: {str(conv_err)}")
-
-
-            # 3. FINANCIALS & LEDGER (Same as before)
+            # 5. FINAL FINANCIALS & LEDGER
+            # Use the single booking's total for the ledger
             discount_percent = float(batch_data["financials"].get("discount", 0))
+            computed_gross = float(booking.total_amount)
             computed_net = computed_gross * (1 - (discount_percent / 100))
             
             ledger = ReferralLedger(
@@ -207,8 +204,8 @@ class ReferrerService:
 
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"Bypass Sync Failed: {str(e)}")
-
+            raise HTTPException(status_code=500, detail=f"Consolidated Sync Failed: {str(e)}")
+        
     # ==============================================================
     # CREATE REFERRER
     # ==============================================================
