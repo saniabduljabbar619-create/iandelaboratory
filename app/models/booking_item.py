@@ -21,6 +21,11 @@ class BookingItem(Base):
     booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False)
 
     patient_name = Column(String(255), nullable=False)
+
+    patient_identifier = Column(String(100), nullable=True, index=True)
+
+    patient_id = Column(Integer, nullable=True, index=True)
+
     patient_phone = Column(String(20), nullable=False)
     dob = Column(Date, nullable=True)
     gender = Column(String(20), nullable=True)

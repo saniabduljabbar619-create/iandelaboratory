@@ -126,9 +126,11 @@ class ReferrerService:
                 new_patient = p_service.create(PatientCreate(**patient_info))
 
                 # Add every test for this patient to the MASTER list
+                
                 for tid in test_ids:
                     master_booking_items.append({
                         "test_type_id": tid, 
+                        "patient_id": new_patient.id,   # ✅ CRITICAL
                         "patient_name": new_patient.full_name, 
                         "patient_phone": new_patient.phone
                     })
@@ -164,10 +166,11 @@ class ReferrerService:
                 p_obj = entry["patient"]
                 
                 # Conversion logic groups items by patient_name automatically
+                
                 created_requests = BookingConversionService.convert_patient(
                     db=db,
                     booking_id=booking.id,
-                    patient_name=p_obj.full_name,
+                    patient_id=p_obj.id,
                     branch_id=current_user.branch_id or 1,
                     cashier_name=f"{current_user.username} (Batch-Sync)"
                 )

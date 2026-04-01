@@ -135,6 +135,7 @@ class BookingService:
 
                 item = BookingItem(
                     booking_id=booking.id,
+                    patient_id=entry.get("patient_id"),   # ✅ NEW
                     patient_name=entry["patient_name"],
                     patient_phone=entry["patient_phone"],
                     dob=entry.get("dob"),

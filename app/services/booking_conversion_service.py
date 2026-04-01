@@ -15,7 +15,7 @@ class BookingConversionService:
     def convert_patient(
         db: Session,
         booking_id: int,
-        patient_name: str,
+        patient_id: int,   # 🔥 CHANGE HERE
         branch_id: int,
         cashier_name: str
     ):
@@ -43,7 +43,7 @@ class BookingConversionService:
 
         items = db.query(BookingItem).filter(
             BookingItem.booking_id == booking_id,
-            BookingItem.patient_name == patient_name,
+            BookingItem.patient_id == patient_id,
             BookingItem.converted == False
         ).all()
 
@@ -68,26 +68,13 @@ class BookingConversionService:
         # RESOLVE PATIENT
         # --------------------------------------
 
-        first = items[0]
-
         patient = db.query(Patient).filter(
-            Patient.phone == first.patient_phone
+            Patient.id == patient_id
         ).first()
 
         if not patient:
-            from app.utils.patient_no_generator import generate_patient_no
+            raise Exception("Patient not found for conversion")
 
-            patient = Patient(
-                patient_no=generate_patient_no(db),
-                full_name=first.patient_name,
-                phone=first.patient_phone,
-                date_of_birth=first.dob,
-                gender=first.gender,
-                branch_id=branch_id
-            )
-
-            db.add(patient)
-            db.flush()
 
         # --------------------------------------
         # CREATE TEST REQUESTS
