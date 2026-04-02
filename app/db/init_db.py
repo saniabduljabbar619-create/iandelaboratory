@@ -35,8 +35,8 @@ def bootstrap(db: Session):
 
     if db.query(User).count() == 0:
         admin = User(
-            username="Abdoull",
-            password_hash=hash_password("Abdoull@$2020"),
+            username="AdminI&E",
+            password_hash=hash_password("Admin@2026"),
             role="super_admin",
             branch_id=None,
         )
