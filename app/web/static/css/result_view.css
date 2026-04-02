@@ -1,240 +1,202 @@
 /* ==================================
-   RESULT VIEW PAGE
+   ENTERPRISE RESULT VIEW (REFACTORED 2026)
+   Focus: Clinical Clarity & Modern Shadows
 ================================== */
 
-.slx-result-view{
-padding:100px 0;
+:root {
+    --sx-slate-50: #f8fafc;
+    --sx-slate-100: #f1f5f9;
+    --sx-slate-200: #e2e8f0;
+    --sx-slate-600: #475569;
+    --sx-slate-900: #0f172a;
+    --sx-primary: #2563eb;
+    --sx-success: #059669;
+    --sx-danger: #dc2626;
+    --sx-warning: #d97706;
 }
 
+.slx-result-view {
+    padding: 60px 20px;
+    background-image: radial-gradient(#e2e8f0 0.5px, transparent 0.5px);
+    background-size: 20px 20px; /* Subtle grid background */
+    min-height: 100vh;
+}
 
 /* ==================================
-   HEADER
+   CLINICAL HEADER
 ================================== */
-
-.slx-result-header{
-text-align:center;
-margin-bottom:40px;
+.slx-result-header {
+    text-align: center;
+    margin-bottom: 50px;
 }
 
-.slx-result-header h2{
-font-size:28px;
-color:var(--sx-deep-green);
-margin-bottom:8px;
+.slx-result-header h2 {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--sx-slate-900);
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
 }
 
-.slx-result-header p{
-font-size:14px;
-color:var(--sx-text-soft);
+.slx-result-header p {
+    font-size: 15px;
+    color: var(--sx-slate-600);
+    font-weight: 500;
 }
-
 
 /* ==================================
-   RESULT CARD
+   RESULT CARD (THE DOCUMENT)
 ================================== */
-
-.slx-result-card{
-
-background:var(--sx-white);
-border-radius:16px;
-border:1px solid var(--sx-border);
-box-shadow:0 20px 40px rgba(11,31,42,0.06);
-
-padding:35px;
-
-overflow-x:auto;
-
+.slx-result-card {
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid var(--sx-slate-200);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 45px;
+    position: relative;
 }
 
+/* Watermark or Top Ribbon for Authenticity */
+.slx-result-card::before {
+    content: "OFFICIAL DIAGNOSTIC REPORT";
+    position: absolute;
+    top: 20px;
+    right: -30px;
+    background: var(--sx-slate-900);
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 5px 40px;
+    transform: rotate(45deg);
+    display: none; /* Optional: Toggle on for "Official" look */
+}
 
 /* ==================================
-   RESULT TABLE
+   PATIENT MINI-DASHBOARD
 ================================== */
-
-.slx-result-table{
-
-width:100%;
-border-collapse:collapse;
-min-width:600px;
-
+.patient-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 2px dashed var(--sx-slate-100);
 }
 
-
-/* TABLE HEADER */
-
-.slx-result-table thead th{
-
-text-align:left;
-
-font-size:13px;
-font-weight:600;
-
-color:var(--sx-text-soft);
-
-padding:12px 14px;
-
-border-bottom:2px solid var(--sx-border);
-
-background:#f8fafc;
-
+.meta-item label {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--sx-slate-600);
+    text-transform: uppercase;
+    margin-bottom: 4px;
 }
 
-
-/* TABLE BODY */
-
-.slx-result-table tbody td{
-
-padding:14px;
-
-font-size:14px;
-
-border-bottom:1px solid var(--sx-border);
-
+.meta-item span {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--sx-slate-900);
 }
-
-
-/* PARAMETER COLUMN */
-
-.slx-result-table tbody td:first-child{
-
-font-weight:600;
-
-color:var(--sx-blue-black);
-
-}
-
-
-/* RESULT COLUMN */
-
-.slx-result-table tbody td:nth-child(2){
-
-font-weight:500;
-
-}
-
-
-/* FLAG COLUMN */
-
-.slx-result-table tbody td:last-child{
-
-font-weight:600;
-
-text-align:center;
-
-}
-
 
 /* ==================================
-   FLAG COLORS
+   CLINICAL DATA TABLE
 ================================== */
-
-.flag-high{
-
-color:#b91c1c;
-font-weight:700;
-
+.slx-result-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
-.flag-low{
-
-color:#2563eb;
-font-weight:700;
-
+.slx-result-table thead th {
+    background: var(--sx-slate-50);
+    color: var(--sx-slate-600);
+    font-weight: 800;
+    font-size: 12px;
+    text-transform: uppercase;
+    padding: 15px;
+    border-bottom: 2px solid var(--sx-slate-200);
 }
 
-.flag-normal{
+.slx-result-table thead th:first-child { border-radius: 8px 0 0 0; }
+.slx-result-table thead th:last-child { border-radius: 0 8px 0 0; }
 
-color:#059669;
-
+.slx-result-table tbody td {
+    padding: 18px 15px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--sx-slate-100);
 }
 
+.slx-result-table tbody tr:hover {
+    background-color: #fcfdfe;
+}
+
+/* Value Columns styling */
+.col-parameter { font-weight: 700; color: var(--sx-slate-900); }
+.col-result { font-weight: 800; font-size: 16px; color: var(--sx-primary); }
 
 /* ==================================
-   ACTION BUTTONS
+   MODERN STATUS PILLS (The "Flags")
 ================================== */
-
-.slx-result-actions{
-
-margin-top:35px;
-
-display:flex;
-justify-content:center;
-align-items:center;
-gap:20px;
-
-flex-wrap:wrap;
-
+.flag-pill {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
 }
 
-
-.btn-download{
-
-background:var(--sx-blue-black);
-color:white;
-
-padding:12px 18px;
-
-border-radius:10px;
-
-text-decoration:none;
-
-font-size:14px;
-
-transition:0.2s;
-
-}
-
-.btn-download:hover{
-
-background:#112E3A;
-
-}
-
-
-.btn-secondary{
-
-padding:12px 18px;
-
-border-radius:10px;
-
-background:#f3f5f6;
-
-color:#333;
-
-text-decoration:none;
-
-font-size:14px;
-
-transition:0.2s;
-
-}
-
-.btn-secondary:hover{
-
-background:#e6e9ec;
-
-}
-
+.flag-high { background: #fee2e2; color: var(--sx-danger); }
+.flag-low { background: #eff6ff; color: var(--sx-primary); }
+.flag-normal { background: #ecfdf5; color: var(--sx-success); }
 
 /* ==================================
-   MOBILE RESPONSIVE
+   ENTERPRISE FOOTER / SIGNATURE
 ================================== */
-
-@media (max-width:768px){
-
-.slx-result-view{
-padding:60px 0;
+.result-footer {
+    margin-top: 40px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--sx-slate-600);
 }
 
-.slx-result-card{
-padding:25px;
+/* ==================================
+   FLOATING ACTION BAR
+================================== */
+.slx-result-actions {
+    position: sticky;
+    bottom: 30px;
+    margin-top: 50px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 15px;
+    border-radius: 50px;
+    border: 1px solid var(--sx-slate-200);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    gap: 15px;
 }
 
-.slx-result-header h2{
-font-size:22px;
+.btn-download {
+    background: var(--sx-slate-900);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 30px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s;
 }
 
-.slx-result-table{
-min-width:500px;
-}
+.btn-download:hover { transform: translateY(-2px); background: #000; }
 
+@media (max-width: 768px) {
+    .slx-result-card { padding: 20px; border-radius: 0; }
+    .slx-result-actions { width: 90%; border-radius: 15px; }
 }

@@ -1,6 +1,6 @@
 {% extends "layouts/portal_base.html" %}
 
-{% block title %}Result Viewer – I & E Lab{% endblock %}
+{% block title %}Official Report - I & E Lab{% endblock %}
 
 {% block page_css %}
 <link rel="stylesheet" href="/static/css/result_view.css">
@@ -10,184 +10,117 @@
 
 <section class="slx-result-view">
 
-<div class="slx-container">
-
-<!-- ================= RESULT HEADER ================= -->
-
-<div class="slx-result-header">
-
-<h2>I & E Diagnostic Laboratory</h2>
-
-<p class="result-subtitle">
-Secure Diagnostic Result Viewer
-</p>
-
-</div>
-
-
-<!-- ================= PATIENT INFORMATION ================= -->
-
-<div class="slx-result-meta">
-
-<div class="meta-block">
-<strong>Patient Name:</strong>
-{{ result.patient.full_name }}
-</div>
-
-<div class="meta-block">
-<strong>Patient No:</strong>
-{{ result.patient.patient_no }}
-</div>
-
-<div class="meta-block">
-<strong>Sex:</strong>
-{{ result.patient.sex }}
-</div>
-
-<div class="meta-block">
-<strong>Age:</strong>
-{{ result.patient.age }}
-</div>
-
-<div class="meta-block">
-<strong>Test:</strong>
-{{ result.test_type.name if result.test_type else "Laboratory Test" }}
-</div>
-
-<div class="meta-block">
-<strong>Date:</strong>
-{{ result.created_at.strftime("%d %b %Y") if result.created_at else "-" }}
-</div>
-
-</div>
-
-
-
-<!-- ================= RESULT TABLE ================= -->
-
-<div class="slx-result-card">
-
-{% set values = result.values %}
-{% set flags = result.flags %}
-
-<table class="slx-result-table">
-
-
-{% if values and values.get('cells') %}
-
-<!-- GRID BASED RESULTS -->
-
-<thead>
-<tr>
-
-{% for col in values.cells[0] %}
-<th>{{ col }}</th>
-{% endfor %}
-
-</tr>
-</thead>
-
-<tbody>
-
-{% for row in values.cells[1:] %}
-
-<tr>
-
-{% for col in row %}
-<td>{{ col }}</td>
-{% endfor %}
-
-</tr>
-
-{% endfor %}
-
-</tbody>
-
-
-{% else %}
-
-<!-- FIELD BASED RESULTS -->
-
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Result</th>
-<th>Flag</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for key, value in values.items() %}
-
-<tr>
-
-<td>{{ key }}</td>
-
-<td>{{ value }}</td>
-
-<td>
-{{ flags[key] if flags and key in flags else "-" }}
-</td>
-
-</tr>
-
-{% endfor %}
-
-</tbody>
-
-{% endif %}
-
-</table>
-
-</div>
-
-
-
-<!-- ================= SCIENTIST SIGNATURE ================= -->
-
-<div class="slx-result-footer">
-
-<div>
-
-<strong>Released By:</strong>
-
-{{ result.released_by if result.released_by else "Laboratory Scientist" }}
-
-</div>
-
-<div>
-
-<strong>Date Released:</strong>
-
-{{ result.updated_at.strftime("%d %b %Y") if result.updated_at else "-" }}
-
-</div>
-
-</div>
-
-
-
-<!-- ================= ACTION BUTTONS ================= -->
-
-<div class="slx-result-actions">
-
-<a class="btn-download"
-href="/results/{{ result.id }}/download">
-
-Download Official PDF
-
-</a>
-
-<a href="/results" class="btn-secondary">
-
-Back to Results
-
-</a>
-
-</div>
-
-</div>
+    <div class="slx-container">
+
+        <div class="slx-result-header">
+            <h2>I & E Diagnostic Laboratory</h2>
+            <p>Secure Diagnostic Result Viewer</p>
+        </div>
+
+        <div class="slx-result-card">
+            
+            <div class="patient-meta-grid">
+                
+                <div class="meta-item">
+                    <label>Patient Name</label>
+                    <span>{{ result.patient.full_name }}</span>
+                </div>
+
+                <div class="meta-item">
+                    <label>Patient Number</label>
+                    <span>{{ result.patient.patient_no }}</span>
+                </div>
+
+                <div class="meta-item">
+                    <label>Investigation</label>
+                    <span>{{ result.test_request.test_type.name if result.test_request else "Laboratory Test" }}</span>
+                </div>
+
+                <div class="meta-item">
+                    <label>Report Date</label>
+                    <span>{{ result.created_at.strftime("%d %b %Y") if result.created_at else "-" }}</span>
+                </div>
+
+            </div>
+
+            <div class="table-responsive">
+                <table class="slx-result-table">
+                    {% set values = result.values %}
+                    {% set flags = result.flags %}
+
+                    {% if values and values.get('cells') %}
+                        <thead>
+                            <tr>
+                                {% for col in values.cells[0] %}
+                                    <th>{{ col }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in values.cells[1:] %}
+                            <tr>
+                                {% for col in row %}
+                                    <td class="{% if loop.first %}col-parameter{% elif loop.index0 == 1 %}col-result{% endif %}">
+                                        {{ col }}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    {% else %}
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Result</th>
+                                <th>Unit</th>
+                                <th>Ref. Range</th>
+                                <th style="text-align: center;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key, value in values.items() %}
+                            <tr>
+                                <td class="col-parameter">{{ key }}</td>
+                                <td class="col-result">{{ value }}</td>
+                                <td>{{ result.units.get(key, '-') if result.units else '-' }}</td>
+                                <td>{{ result.reference_ranges.get(key, '-') if result.reference_ranges else '-' }}</td>
+                                <td style="text-align: center;">
+                                    {% set f = flags[key]|upper if flags and key in flags else "NORMAL" %}
+                                    <span class="flag-pill {% if f == 'HIGH' %}flag-high{% elif f == 'LOW' %}flag-low{% else %}flag-normal{% endif %}">
+                                        {{ f }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    {% endif %}
+                </table>
+            </div>
+
+            <div class="result-footer">
+                <div class="signature-block">
+                    <label style="display:block; font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase;">Released By</label>
+                    <span style="font-weight:700; color:#0f172a;">{{ result.released_by if result.released_by else "Laboratory Scientist" }}</span>
+                </div>
+                <div class="date-block" style="text-align: right;">
+                    <label style="display:block; font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase;">Verified On</label>
+                    <span style="font-weight:700; color:#0f172a;">{{ result.updated_at.strftime("%d %b %Y") if result.updated_at else "-" }}</span>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="slx-result-actions">
+            <a href="/results/{{ result.id }}/download" class="btn-download">
+                Download Official PDF
+            </a>
+            <a href="/results" class="btn-secondary" style="text-decoration:none; font-weight:700; color:#475569; padding: 10px 20px;">
+                Back to List
+            </a>
+        </div>
+
+    </div>
 
 </section>
 
