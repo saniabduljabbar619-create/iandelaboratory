@@ -30,6 +30,11 @@
                     Dashboard
                 </a>
 
+                <a href="/admin/bookings"
+                   class="{% if request.url.path.startswith('/admin/dashboard') %}active{% endif %}">
+                    Booking Details
+                </a>
+
                 <a href="/admin/payments/reconcile"
                 class="{% if request.url.path.startswith('/admin/payments') %}active{% endif %}">
                     Payments & Reconciliation
