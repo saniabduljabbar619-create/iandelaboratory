@@ -1,12 +1,72 @@
 {% extends "layouts/portal_base.html" %}
 
 {% block content %}
+<style>
+    /* Modern Prefix Input Styling */
+    .input-group-prefix {
+        display: flex;
+        align-items: stretch;
+        background: #ffffff;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        height: 45px;
+    }
+
+    .input-group-prefix:focus-within {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .prefix-label {
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 800;
+        font-size: 14px;
+        border-right: 1px solid #cbd5e1;
+        user-select: none;
+    }
+
+    .input-group-prefix input {
+        border: none !important;
+        flex: 1;
+        padding: 0 12px;
+        font-weight: 600;
+        font-size: 15px;
+        color: #0f172a;
+        outline: none !important;
+    }
+
+    .input-group-prefix input::placeholder {
+        color: #94a3b8;
+        font-weight: 400;
+    }
+
+    /* Tighten up the form-group spacing */
+    .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 700;
+        font-size: 13px;
+        color: #475569;
+    }
+</style>
+
 <div class="portal-container">
 
     <div class="portal-card">
         <h2>Patient Result Portal</h2>
         <p class="subtitle">
-            Sign in using your registered phone number and patient number to access your released results.
+            Sign in using your registered phone number and the last 4 digits of your patient number.
         </p>
 
         <form method="post" action="/login" class="portal-form">
@@ -22,11 +82,16 @@
 
             <div class="form-group">
                 <label>Patient Number</label>
-                <input 
-                    type="password" 
-                    name="patient_no" 
-                    placeholder="Enter your patient number"
-                    required>
+                <div class="input-group-prefix">
+                    <span class="prefix-label" id="yearPrefix">IEL-26-</span>
+                    <input 
+                        type="text" 
+                        name="patient_suffix" 
+                        placeholder="e.g. 3150"
+                        maxlength="5"
+                        inputmode="numeric"
+                        required>
+                </div>
             </div>
 
             <button type="submit" class="btn-primary">
@@ -47,4 +112,13 @@
     </div>
 
 </div>
+
+<script>
+    // Automatically update the prefix year to match the current date
+    document.addEventListener('DOMContentLoaded', function() {
+        const year = new Date().getFullYear().toString().slice(-2);
+        document.getElementById('yearPrefix').textContent = `IEL-${year}-`;
+    });
+</script>
+
 {% endblock %}
