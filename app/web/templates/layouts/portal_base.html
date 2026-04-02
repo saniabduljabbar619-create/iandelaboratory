@@ -61,6 +61,11 @@ class="{% if 'tests' in request.url.path %}active{% endif %}">
 Tests
 </a>
 
+<a href="/referrer/login"
+class="{% if 'referrer_login' in request.url.path %}active{% endif %}">
+referrers
+</a>
+
 <a href="/book"
 class="{% if 'book' in request.url.path %}active{% endif %}">
 Book Test
