@@ -33,8 +33,9 @@
 
                 <div class="meta-item">
                     <label>Investigation</label>
-                    <span>{{ result.test_request.test_type.name if result.test_request else "Laboratory Test" }}</span>
+                    <span>{{ result.test_type.name if result.test_request else "Laboratory Test" }}</span>
                 </div>
+
 
                 <div class="meta-item">
                     <label>Report Date</label>
