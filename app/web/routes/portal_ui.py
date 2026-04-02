@@ -50,13 +50,21 @@ def login_page(request: Request):
 def login_action(
     request: Request,
     phone: str = Form(...),
-    patient_no: str = Form(...)
+    # Changed from patient_no to patient_suffix to match the new HTML
+    patient_suffix: str = Form(...) 
 ):
     db = next(get_db())
     service = PortalService(db, settings.PORTAL_SECRET)
 
+    # --- RECONSTRUCTION LOGIC ---
+    # Re-attach the IEL and current Year (e.g., 3150 -> IEL-26-3150)
+    current_year_yy = datetime.now().strftime("%y")
+    full_patient_no = f"IEL-{current_year_yy}-{patient_suffix.strip()}"
+    # ----------------------------
+
     try:
-        auth_data = service.login(phone=phone, patient_no=patient_no)
+        # Pass the RECONSTRUCTED number to your service
+        auth_data = service.login(phone=phone, patient_no=full_patient_no)
     except Exception:
         return templates.TemplateResponse(
             "portal/lookup.html",
@@ -73,10 +81,9 @@ def login_action(
         key="portal_token",
         value=token,
         httponly=True,
-        max_age=900
+        max_age=900 # 15 minutes session
     )
     return response
-
 
 # ===============================
 # HOME PAGE
