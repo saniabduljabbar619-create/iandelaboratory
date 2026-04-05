@@ -235,12 +235,8 @@ def download_result(request: Request, result_id: int):
     print("LOGO PATH:", logo_file)
     print("LOGO EXISTS:", logo_file.exists())
 
-    render_pdf(
-        output_path=output_path,
-        lab_profile=lab_profile,
-        patient_row=patient_row,
-        bundle_results=bundle_results,
-    )
+    from app.services.result_pdf_service import generate_result_pdf
+    output_path = generate_result_pdf(result)
 
     # ===============================
     # DOWNLOAD RESPONSE
