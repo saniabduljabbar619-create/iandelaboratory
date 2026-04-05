@@ -1,7 +1,10 @@
 from sqlalchemy.orm import Session
 
 from app.models.notification_model import Notification
-
+import requests
+import os
+from fastapi.requests import Request
+from fastapi.responses import JSONResponse
 
 class NotificationService:
 
