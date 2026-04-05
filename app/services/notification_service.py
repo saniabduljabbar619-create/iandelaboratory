@@ -64,3 +64,65 @@ class NotificationService:
             db.commit()
 
         return notification
+
+
+
+    # ==========================================================
+    # SMS DELIVERY LAYER
+    # ==========================================================
+    @staticmethod
+    def send_sms(phone: str, message: str) -> None:
+        """
+        Sends SMS via Termii.
+        Safe: will not crash main workflow.
+        """
+
+        api_key = os.getenv("TERMII_API_KEY")
+
+        if not api_key:
+            print("[SMS] Skipped: TERMII_API_KEY not set")
+            return
+
+        phone = NotificationService._normalize_phone(phone)
+
+        url = "https://api.ng.termii.com/api/sms/send"
+
+        payload = {
+            "to": phone,
+            "from": "IEDLABS",  # must match approved sender OR fallback
+            "sms": message,
+            "type": "plain",
+            "channel": "generic",
+            "api_key": api_key
+        }
+
+        try:
+            resp = requests.post(url, json=payload, timeout=10)
+
+            if resp.status_code != 200:
+                raise Exception(f"SMS Failed: {resp.text}")
+
+            print(f"[SMS SENT] -> {phone}")
+
+        except Exception as e:
+            # NEVER break main flow
+            print(f"[SMS ERROR] {e}")
+
+
+    # ==========================================================
+    # PHONE NORMALIZATION (Nigeria-safe)
+    # ==========================================================
+    @staticmethod
+    def _normalize_phone(phone: str) -> str:
+        if not phone:
+            return phone
+
+        phone = phone.strip()
+
+        if phone.startswith("0"):
+            return "234" + phone[1:]
+
+        if phone.startswith("+234"):
+            return phone[1:]
+
+        return phone

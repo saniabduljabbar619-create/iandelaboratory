@@ -1,3 +1,38 @@
+# ========================================
+# Solunex Bundle .gitignore
+# ========================================
+
+# --- Virtual Environments ---
 .venv/
+venv/
+env/
+
+# --- Python ---
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# --- Environment Variables & Secrets ---
 .env
+.env.local
+.env.*.local
+
+# --- PyInstaller & Inno Setup Build Artifacts ---
+# You mentioned building IELab.exe and IECashier.exe earlier
+build/
+dist/
+*.spec
+*.exe
+*.installer
+
+# --- IDEs and Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Logs and Databases ---
+*.log
+*.sqlite3

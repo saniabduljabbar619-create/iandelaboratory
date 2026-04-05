@@ -211,8 +211,10 @@ class ResultService:
                 .first()
             )
 
-            patient_name = patient.full_name if patient else "Unknown patient"
+            patient_name = patient.full_name if patient else "Patient"
+            phone = patient.phone if patient else None
 
+            # Notification (existing)
             NotificationService.create(
                 db=self.db,
                 type="result_ready",
@@ -221,6 +223,29 @@ class ResultService:
                 reference_type="test_result",
                 reference_id=r.id
             )
+
+            # -----------------------------------
+            # SMS DISPATCH (SAFE + OPTIONAL)
+            # -----------------------------------
+            if phone:
+                try:
+                    sms_message = (
+                        f"I&E Lab Result Ready\n\n"
+                        f"Dear {patient_name},\n\n"
+                        f"Your lab result is now available.\n\n"
+                        f"View and download: https://iandelaboratory.com/lookup?ref={r.id}\n\n"
+                        f"Thank you."
+                        f"I&E Diagnostic LLaboratory and Ultrasound LTD"
+                    )
+
+                    NotificationService.send_sms(
+                        phone=phone,
+                        message=sms_message
+                    )
+
+                except Exception as sms_error:
+                    # Do NOT break release flow
+                    print(f"[SMS ERROR] {sms_error}")
 
         return r
 
