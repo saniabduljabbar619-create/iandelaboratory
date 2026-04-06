@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from typing import Optional
 
+from fastapi.responses import FileResponse
+from fastapi import HTTPException
+from app.services.result_pdf_service import generate_result_pdf
+from app.models.test_result import ResultStatus
+
 from fastapi import APIRouter, Depends, Header, Query
 from sqlalchemy.orm import Session
 
@@ -96,3 +101,27 @@ def list_results(
         role=x_role,
     )
     return {"value": rows, "Count": total}
+
+
+
+@router.get("/{result_id}/reprint")
+def reprint_result(
+    result_id: int,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service = ResultService(db, current_user)
+    result = service.get(result_id)
+
+    # 🔒 Safety: only released results can be printed
+    if result.status != ResultStatus.released:
+        raise HTTPException(status_code=400, detail="Result not released")
+
+    # Generate PDF
+    output_path = generate_result_pdf(result)
+
+    return FileResponse(
+        path=output_path,
+        media_type="application/pdf",
+        filename=f"result_{result.id}.pdf",
+    )
