@@ -82,7 +82,7 @@ class NotificationService:
             "from": "IEDLABS",      # must match approved sender
             "sms": message,
             "type": "plain",
-            "channel": "transactional",  # ensures delivery to smartphones
+            "channel": "dnd",  # ensures delivery to smartphones
             "api_key": api_key
         }
 
