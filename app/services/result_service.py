@@ -230,12 +230,11 @@ class ResultService:
             if phone:
                 try:
                     sms_message = (
-                        f"I&E Lab Result Ready\n\n"
-                        f"Dear {patient_name},\n\n"
-                        f"Your lab result is now available.\n\n"
-                        f"View and download: https://iandelaboratory.com/lookup?ref={r.id}\n\n"
-                        f"Thank you."
-                        f"I&E Diagnostic Laboratory and Ultrasound LTD"
+                        f"I&E Diagnostic Lab:\n"
+                        f"Dear {patient_name}, your test result is ready.\n"
+                        f"Ref: {r.id}\n"
+                        f"Visit: iandelaboratory.com\n"
+                        f"For assistance call: 08063645308"
                     )
 
                     NotificationService.send_sms(
