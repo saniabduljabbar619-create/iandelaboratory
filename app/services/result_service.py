@@ -233,7 +233,7 @@ class ResultService:
                         f"I&E Diagnostic Lab:\n"
                         f"Dear {patient_name}, your test result is ready.\n"
                         f"Ref: {r.id}\n"
-                        f"Visit: iandelaboratory.com\n"
+                        
                         f"For assistance call: 08063645308"
                     )
 
