@@ -92,10 +92,10 @@ class NotificationService:
 
         payload = {
             "to": phone,
-            "from": "IEDLABS",  # must match approved sender OR fallback
+            "from": "IEDLABS",  
             "sms": message,
             "type": "plain",
-            "channel": "generic",
+            "channel": "transactional",
             "api_key": api_key
         }
 
@@ -123,9 +123,9 @@ class NotificationService:
         phone = phone.strip()
 
         if phone.startswith("0"):
-            return "234" + phone[1:]
+            return "+234" + phone[1:]  # keep the plus for Termii
 
         if phone.startswith("+234"):
-            return phone[1:]
+            return phone  # leave + intact
 
         return phone
