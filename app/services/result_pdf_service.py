@@ -2,8 +2,8 @@
 from pathlib import Path
 from datetime import datetime
 
-from app.services.portal_reports.bundle import build_bundle_result
-from app.services.portal_reports.pdf import render_pdf
+from app.services.portal_reports.builder import build_bundle_result
+from app.services.portal_reports.renderer import render_pdf
 from app.services.portal_reports.config import LAB_PROFILE
 
 

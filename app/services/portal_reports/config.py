@@ -11,8 +11,8 @@ print("LOGO PATH:", logo_path)
 print("LOGO EXISTS:", logo_path.exists())
 
 LAB_PROFILE = {
-    "lab_name": "I and E Diagnostic Laboratory and Ultra Sound Scan",
-    "address": "NO : 001 Na'ibawa, Kano - Zaria Road, Tarauni, Kano, Nigeria",
+    "lab_name": "I and E Diagnostic Laboratory and Ultrasound Scan",
+    "address": "NO : 514 Yar Akwa, Zaria Road, Opp First Bank, Kano State, Nigeria",
     "phone": "08063645308 |",
     "email": "iandelaboratory@yahoo.com",
 
