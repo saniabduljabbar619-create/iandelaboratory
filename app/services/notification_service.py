@@ -64,10 +64,10 @@ class NotificationService:
     @staticmethod
     def send_sms(phone: str, message: str) -> None:
         """
-        Sends SMS via Termii.
-        Safe: will not crash main workflow.
-        Works for feature phones and smartphones.
+        Smart SMS sender with channel failover.
+        Will NOT break workflow.
         """
+
         api_key = os.getenv("TERMII_API_KEY")
         if not api_key:
             print("[SMS] Skipped: TERMII_API_KEY not set")
@@ -77,28 +77,34 @@ class NotificationService:
 
         url = "https://api.ng.termii.com/api/sms/send"
 
-        payload = {
-            "to": phone,
-            "from": "IEDLABS",      # must match approved sender
-            "sms": message,
-            "type": "plain",
-            "channel": "dnd",  # ensures delivery to smartphones
-            "api_key": api_key
-        }
+        # Ordered fallback channels
+        channels = ["transactional", "dnd", "generic"]
 
-        try:
-            resp = requests.post(url, json=payload, timeout=10)
-            resp_data = resp.json() if resp.content else {}
+        for channel in channels:
+            payload = {
+                "to": phone,
+                "from": "IEDLABS",
+                "sms": message,
+                "type": "plain",
+                "channel": channel,
+                "api_key": api_key
+            }
 
-            if resp.status_code != 200 or resp_data.get("status") != "success":
-                raise Exception(f"SMS Failed: {resp.text} | {resp_data}")
+            try:
+                resp = requests.post(url, json=payload, timeout=10)
+                resp_data = resp.json() if resp.content else {}
 
-            print(f"[SMS SENT] -> {phone}")
+                if resp.status_code == 200 and resp_data.get("status") == "success":
+                    print(f"[SMS SENT - {channel}] -> {phone}")
+                    return
 
-        except Exception as e:
-            # Do not break main workflow
-            print(f"[SMS ERROR] {e}")
+                else:
+                    print(f"[SMS FAIL - {channel}] {resp.text}")
 
+            except Exception as e:
+                print(f"[SMS ERROR - {channel}] {e}")
+
+        print(f"[SMS FINAL FAIL] Could not deliver to {phone}")
     # ==========================================================
     # PHONE NORMALIZATION (Nigeria-safe, Termii-friendly)
     # ==========================================================
