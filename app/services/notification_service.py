@@ -94,7 +94,14 @@ class NotificationService:
                 resp = requests.post(url, json=payload, timeout=10)
                 resp_data = resp.json() if resp.content else {}
 
-                if resp.status_code == 200 and resp_data.get("status") == "success":
+                is_success = (
+                    resp.status_code == 200 and (
+                        resp_data.get("status") == "success" or
+                        resp_data.get("code") == "ok"
+                    )
+                )
+
+                if is_success:
                     print(f"[SMS SENT - {channel}] -> {phone}")
                     return
 
