@@ -235,7 +235,7 @@ class ResultService:
                         f"Your lab result is now available.\n\n"
                         f"View and download: https://iandelaboratory.com/lookup?ref={r.id}\n\n"
                         f"Thank you."
-                        f"I&E Diagnostic LLaboratory and Ultrasound LTD"
+                        f"I&E Diagnostic Laboratory and Ultrasound LTD"
                     )
 
                     NotificationService.send_sms(
