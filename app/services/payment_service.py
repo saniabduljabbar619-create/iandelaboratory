@@ -195,7 +195,7 @@ class PaymentService:
         # 🔥 BRANCH RESOLUTION LOGIC
         if admin_user.role == "super_admin":
             # Super admin operates globally → assign default operational branch
-            branch_id = 3  # ⚠️ your active branch (Head Office or main branch)
+            branch_id = 1  # ⚠️ your active branch (Head Office or main branch)
         else:
             if not admin_user.branch_id:
                 raise HTTPException(status_code=400, detail="Admin has no branch assigned")
