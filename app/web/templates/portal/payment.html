@@ -4,237 +4,444 @@
 Payment – Solunex Laboratory
 {% endblock %}
 
-
 {% block page_css %}
 <link rel="stylesheet" href="/static/css/payment.css">
-{% endblock %}
+<style>
+    /* =========================================================
+       ENTERPRISE PRO-GRADE OVERRIDES
+       ========================================================= */
+    :root {
+        --brand-primary: #0d9488; /* Deep Medical Teal */
+        --brand-primary-hover: #0f766e;
+        --brand-bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+        --radius: 12px;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05);
+        --success-bg: #ecfdf5;
+        --success-text: #065f46;
+        --success-border: #a7f3d0;
+    }
 
+    body {
+        background-color: var(--brand-bg);
+        color: var(--text-main);
+    }
+
+    .slx-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+    }
+
+    /* Header */
+    .slx-payment-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    .slx-payment-header h2 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 0.5rem;
+    }
+    .slx-payment-header p {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    /* Grid Layout */
+    .slx-payment-layout {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    /* Cards */
+    .slx-payment-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 1.5rem;
+    }
+    .slx-payment-card h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-main);
+    }
+
+    /* Tests Invoice List */
+    .slx-tests-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1.5rem 0;
+    }
+    .slx-test-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.85rem 0;
+        border-bottom: 1px dashed var(--border-color);
+        font-size: 1rem;
+    }
+    .slx-test-name {
+        color: var(--text-main);
+        font-weight: 500;
+    }
+    .slx-test-price {
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+    .slx-test-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 2px solid var(--text-main);
+        font-size: 1.25rem;
+    }
+    .slx-test-total strong {
+        font-size: 1.5rem;
+        color: var(--brand-primary);
+    }
+
+    /* Bank Transfer Details */
+    .slx-bank-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+    .slx-bank-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: var(--brand-bg);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+    .slx-bank-row span {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+    }
+    .slx-bank-row strong {
+        font-size: 1.05rem;
+        color: var(--text-main);
+    }
+    .copy-field {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .copy-field button {
+        background: #e2e8f0;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-main);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .copy-field button:hover {
+        background: #cbd5e1;
+    }
+    .copy-field button.copied {
+        background: var(--success-bg);
+        color: var(--success-text);
+        border: 1px solid var(--success-border);
+    }
+
+    /* Instructions */
+    .slx-payment-steps {
+        padding-left: 1.25rem;
+        margin: 0 0 1.5rem 0;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+    .slx-payment-steps li {
+        margin-bottom: 0.75rem;
+    }
+    .slx-payment-steps strong {
+        color: var(--text-main);
+    }
+    .slx-booking-code {
+        background: rgba(13, 148, 136, 0.05);
+        border: 1px dashed var(--brand-primary);
+        padding: 1.25rem;
+        text-align: center;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        color: var(--text-muted);
+    }
+    .slx-booking-code strong {
+        display: block;
+        font-size: 1.75rem;
+        color: var(--brand-primary);
+        margin-top: 0.5rem;
+        letter-spacing: 1px;
+    }
+
+    /* Upload Area */
+    .slx-upload-card {
+        border-top: 4px solid var(--brand-primary);
+    }
+    .slx-upload-card p {
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+    .slx-upload-form input[type="file"] {
+        display: block;
+        width: 100%;
+        padding: 1rem;
+        border: 1px dashed #cbd5e1;
+        border-radius: 8px;
+        background: var(--brand-bg);
+        margin-bottom: 1.5rem;
+        color: var(--text-muted);
+        cursor: pointer;
+    }
+    .slx-upload-form input[type="file"]::file-selector-button {
+        background: #e2e8f0;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        color: var(--text-main);
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 1rem;
+        transition: background 0.2s;
+    }
+    .slx-upload-form input[type="file"]::file-selector-button:hover {
+        background: #cbd5e1;
+    }
+
+    /* Success Message */
+    .slx-success-message {
+        background: var(--success-bg);
+        color: var(--success-text);
+        border: 1px solid var(--success-border);
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .slx-success-message::before {
+        content: "✓";
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background: var(--brand-primary);
+        color: #ffffff;
+        border: none;
+        padding: 0.85rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        font-size: 1rem;
+        width: 100%;
+        display: inline-block;
+        text-align: center;
+    }
+    .btn-primary:hover {
+        background: var(--brand-primary-hover);
+    }
+    .btn-secondary {
+        background: #ffffff;
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        padding: 0.85rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        width: 100%;
+        display: inline-block;
+        text-align: center;
+        text-decoration: none;
+    }
+    .btn-secondary:hover {
+        background: var(--brand-bg);
+        border-color: #cbd5e1;
+    }
+    
+    .slx-confirm-card p {
+        color: var(--text-muted);
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 960px) {
+        .slx-payment-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 
 <section class="slx-payment">
+    <div class="slx-container">
 
-<div class="slx-container">
-
-    <!-- ========================================= -->
-    <!-- PAGE HEADER -->
-    <!-- ========================================= -->
-    <div class="slx-payment-header">
-        <h2>Complete Your Booking</h2>
-        <p>
-            Transfer the amount below to our laboratory account
-            to confirm your booking.
-        </p>
-    </div>
-
-
-    <!-- ========================================= -->
-    <!-- PAYMENT LAYOUT -->
-    <!-- ========================================= -->
-    <div class="slx-payment-layout">
-
-
-        <!-- ========================================= -->
-        <!-- TESTS BOOKED SUMMARY -->
-        <!-- ========================================= -->
-        <div class="slx-payment-card">
-
-            <h3>Tests Booked</h3>
-
-            <ul class="slx-tests-list">
-
-                {% for item in items %}
-
-                <li class="slx-test-row">
-
-                    <div class="slx-test-name">
-                        {{ item.test_name_snapshot }}
-                    </div>
-
-                    <div class="slx-test-price">
-                        ₦{{ "{:,.2f}".format(item.price_snapshot) }}
-                    </div>
-
-                </li>
-
-                {% endfor %}
-
-            </ul>
-
-
-            <!-- TOTAL -->
-            <div class="slx-test-total">
-
-                <span>Total Amount</span>
-
-                <strong>
-                    ₦{{ "{:,.2f}".format(booking.total_amount) }}
-                </strong>
-
-            </div>
-
-        </div>
-
-
-
-        <!-- ========================================= -->
-        <!-- BANK TRANSFER DETAILS -->
-        <!-- ========================================= -->
-        <div class="slx-payment-card">
-
-            <h3>Bank Transfer Details</h3>
-
-            <div class="slx-bank-grid">
-
-                <div class="slx-bank-row">
-                    <span>Bank Name</span>
-                    <strong>Monie Point MFB</strong>
-                </div>
-
-                <div class="slx-bank-row">
-                    <span>Account Name</span>
-                    <strong>I and E diagnostic laboratory Ltd</strong>
-                </div>
-
-                <div class="slx-bank-row">
-                    <span>Account Number</span>
-
-                    <div class="copy-field">
-
-                        <strong id="accountNumber">
-                            8217735776
-                        </strong>
-
-                        <button onclick="copyAccount()">
-                            Copy
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- ========================================= -->
-        <!-- PAYMENT INSTRUCTIONS -->
-        <!-- ========================================= -->
-        <div class="slx-payment-card">
-
-            <h3>Payment Instructions</h3>
-
-            <ul class="slx-payment-steps">
-
-                <li>
-                    Transfer the exact amount to the bank account above.
-                </li>
-
-                <li>
-                    Use your <strong>Booking Code</strong> as the payment narration.
-                </li>
-
-                <li>
-                    After payment confirmation, your laboratory booking
-                    will be activated.
-                </li>
-
-            </ul>
-
-            <div class="slx-booking-code">
-
-                Use this narration:
-                <strong>{{ booking.booking_code }}</strong>
-
-            </div>
-
-        </div>
-
-
-
-    <div class="slx-payment-card slx-upload-card">
-
-<h3>Upload Payment Proof</h3>
-
-{% if request.query_params.get("uploaded") %}
-<div class="slx-success-message">
-    Payment proof uploaded successfully.
-    Our team will verify your payment shortly.
-</div>
-{% endif %}
-
-
-<p>
-After completing the bank transfer, upload your payment receipt
-or transfer confirmation below.
-</p>
-
-<form
-method="post"
-action="/payment/{{ booking.booking_code }}"
-enctype="multipart/form-data"
-class="slx-upload-form"
->
-
-<input
-type="file"
-name="proof"
-accept="image/*,application/pdf"
-required
->
-
-<button type="submit" class="btn-primary">
-Submit Payment Proof
-</button>
-
-</form>
-
-</div>
-
-        <!-- ========================================= -->
-        <!-- AFTER PAYMENT / CONFIRMATION -->
-        <!-- ========================================= -->
-        <div class="slx-payment-card slx-confirm-card">
-
-            <h3>After Payment</h3>
-
+        <div class="slx-payment-header">
+            <h2>Complete Your Booking</h2>
             <p>
-                Once your payment is verified, your test request
-                will be activated and processed at our laboratory.
+                Transfer the exact amount below to our laboratory account
+                to confirm and activate your booking.
             </p>
-
-            <a href="/" class="btn-secondary">
-                Return to Home
-            </a>
-
         </div>
 
+        <div class="slx-payment-layout">
 
-    </div> <!-- END payment layout -->
+            <div class="slx-layout-col">
+                
+                <div class="slx-payment-card">
+                    <h3>Tests Booked</h3>
+                    <ul class="slx-tests-list">
+                        {% for item in items %}
+                        <li class="slx-test-row">
+                            <div class="slx-test-name">
+                                {{ item.test_name_snapshot }}
+                            </div>
+                            <div class="slx-test-price">
+                                ₦{{ "{:,.2f}".format(item.price_snapshot) }}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
 
-</div> <!-- END container -->
+                    <div class="slx-test-total">
+                        <span>Total Amount</span>
+                        <strong>₦{{ "{:,.2f}".format(booking.total_amount) }}</strong>
+                    </div>
+                </div>
 
-</section>
+                <div class="slx-payment-card">
+                    <h3>Bank Transfer Details</h3>
+                    <div class="slx-bank-grid">
+                        <div class="slx-bank-row">
+                            <span>Bank Name</span>
+                            <strong>Monie Point MFB</strong>
+                        </div>
+                        <div class="slx-bank-row">
+                            <span>Account Name</span>
+                            <strong>I and E diagnostic laboratory Ltd</strong>
+                        </div>
+                        <div class="slx-bank-row">
+                            <span>Account Number</span>
+                            <div class="copy-field">
+                                <strong id="accountNumber">8217735776</strong>
+                                <button type="button" id="copyBtn" onclick="copyAccount()">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
+            </div>
 
+            <div class="slx-layout-col">
 
-<!-- ========================================= -->
-<!-- PAGE SCRIPTS -->
-<!-- ========================================= -->
+                <div class="slx-payment-card">
+                    <h3>Payment Instructions</h3>
+                    <ul class="slx-payment-steps">
+                        <li>Transfer the exact amount to the bank account provided.</li>
+                        <li>Use your <strong>Booking Code</strong> as the payment narration/remark.</li>
+                        <li>Upload your receipt below to activate your booking.</li>
+                    </ul>
+                    <div class="slx-booking-code">
+                        Use this narration:
+                        <strong>{{ booking.booking_code }}</strong>
+                    </div>
+                </div>
+
+                <div class="slx-payment-card slx-upload-card">
+                    <h3>Upload Payment Proof</h3>
+
+                    {% if request.query_params.get("uploaded") %}
+                    <div class="slx-success-message">
+                        Payment proof uploaded successfully. Our team will verify your payment shortly.
+                    </div>
+                    {% endif %}
+
+                    <p>
+                        After completing the bank transfer, upload your payment receipt
+                        or transfer screenshot below.
+                    </p>
+
+                    <form
+                        method="post"
+                        action="/payment/{{ booking.booking_code }}"
+                        enctype="multipart/form-data"
+                        class="slx-upload-form"
+                    >
+                        <input
+                            type="file"
+                            name="proof"
+                            accept="image/*,application/pdf"
+                            required
+                        >
+                        <button type="submit" class="btn-primary">
+                            Submit Payment Proof
+                        </button>
+                    </form>
+                </div>
+
+                <div class="slx-payment-card slx-confirm-card">
+                    <h3>After Payment</h3>
+                    <p>
+                        Once your payment is verified, your test request
+                        will be activated and processed at our laboratory.
+                    </p>
+                    <a href="/" class="btn-secondary">
+                        Return to Home
+                    </a>
+                </div>
+
+            </div>
+
+        </div> </div> </section>
+
 <script>
-
 function copyAccount() {
-
     const acc = document.getElementById("accountNumber").innerText;
-
-    navigator.clipboard.writeText(acc);
-
-    alert("Account number copied");
-
+    const btn = document.getElementById("copyBtn");
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(acc).then(() => {
+        // Visual feedback (Toast-style inline update)
+        btn.innerText = "Copied! ✓";
+        btn.classList.add("copied");
+        
+        // Reset after 2.5 seconds
+        setTimeout(() => {
+            btn.innerText = "Copy";
+            btn.classList.remove("copied");
+        }, 2500);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+        alert("Unable to copy to clipboard.");
+    });
 }
-
 </script>
-
 
 {% endblock %}
