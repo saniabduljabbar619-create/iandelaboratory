@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
-
+import uuid
 from sqlalchemy import (
     Column,
     Integer,
@@ -21,7 +21,7 @@ class TestType(Base):
     )
 
     id = Column(Integer, primary_key=True)
-
+    sync_id = Column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
     # short code e.g. FBC, LFT, RFT, MAL
     code = Column(String(50), nullable=False, index=True)
     name = Column(String(255), nullable=False, index=True)
