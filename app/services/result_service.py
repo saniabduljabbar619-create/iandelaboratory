@@ -65,20 +65,23 @@ class ResultService:
         return r
     
     def instantiate_from_snapshot(self, payload: ResultInstantiateFromSnapshot) -> TestResult:
-        if not self.branch_id:
+        # ✅ THE FIX: Prioritize branch_id from payload (for sync)
+        # Fall back to self.branch_id (resolved from current user)
+        effective_branch_id = payload.branch_id if hasattr(payload, 'branch_id') and payload.branch_id else self.branch_id
+
+        # Strict check: Fail if we still have no branch ID
+        if not effective_branch_id:
             raise HTTPException(status_code=400, detail="User not bound to branch")
         
+        # Branch-aware Patient lookup
         patient_query = self.db.query(Patient).filter(Patient.id == payload.patient_id)
-
-        if self.branch_id:
-            patient_query = patient_query.filter(Patient.branch_id == self.branch_id)
+        if effective_branch_id:
+            patient_query = patient_query.filter(Patient.branch_id == effective_branch_id)
 
         patient = patient_query.first()
-
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
 
-        # UIX-first: snapshot is the truth
         snapshot = payload.template_snapshot if isinstance(payload.template_snapshot, dict) else {}
         if not snapshot:
             raise HTTPException(status_code=400, detail="template_snapshot is required")
@@ -87,34 +90,33 @@ class ResultService:
         flags = ComputeService.compute_flags(snapshot, values)
 
         r = TestResult(
+            sync_id=payload.sync_id,  # ✅ Map the UUID
             patient_id=patient.id,
             test_type_id=payload.test_type_id,
-            template_id=payload.template_id,  # optional provenance (requires nullable column to be perfect)
-            status=ResultStatus.draft,
+            template_id=payload.template_id,
+            status=payload.status or ResultStatus.draft,
             template_snapshot=snapshot,
             values=values,
             flags=flags,
             notes=payload.notes,
-            branch_id=self.branch_id,  # ✅ CRITICAL
+            branch_id=effective_branch_id,  # ✅ Use the effective branch
         )
 
         self.db.add(r)
         self.db.commit()
         self.db.refresh(r)
 
-        # Audit log (consistent with your established pattern)
         AuditService(self.db).log(
-            actor_type="staff",
-            actor="labtech",          # or "system" if you prefer; keep consistent with your staff model
+            actor_type="system" if payload.sync_id else "staff",
+            actor="sync_engine" if payload.sync_id else "labtech",
             action="instantiate",
             entity="test_result",
             entity_id=r.id,
             ip=None,
-            meta={"source": "snapshot", "status": "draft"},
+            meta={"source": "snapshot", "status": r.status.value},
         )
 
         return r
-
 
     def get(self, result_id: int) -> TestResult:
         r = self.db.query(TestResult).filter(TestResult.id == result_id).first()
