@@ -52,3 +52,6 @@ class ResultInstantiateFromSnapshot(APIModel):
     values: Dict[str, Any] = Field(default_factory=dict)
     notes: str | None = None
     sync_id: str | None = Field(default=None, max_length=36)
+    branch_id: int | None = None 
+    # Optional: also add status if you want to sync pre-released results
+    status: str | None = None
