@@ -17,6 +17,8 @@ class PatientCreate(APIModel):
     # ✅ Added for Sync Engine: When the local Mini Server pushes an offline 
     # patient up to Aiven, it needs to be able to send the UUID it already generated.
     sync_id: str | None = Field(default=None, max_length=36)
+    # ✅ Add this so the Sync Engine can pass the branch link!
+    branch_id: int | None = None
 
 class PatientUpdate(APIModel):
     full_name: str | None = None
