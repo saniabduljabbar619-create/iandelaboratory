@@ -65,21 +65,18 @@ class PatientService:
     def create(self, payload: PatientCreate) -> Patient:
         data = payload.model_dump()
 
-        # Generate number if not provided
+        # 1. Handle patient_no generation
         patient_no = (data.get("patient_no") or "").strip()
         if not patient_no:
             patient_no = self._next_patient_no()
             data["patient_no"] = patient_no
 
-        # ✅ FIX: Use payload branch_id if provided (Sync Engine), 
-        # otherwise use the current user's resolved scope.
-        if not data.get("branch_id"):
+        # 2. THE FIX: If branch_id is in the payload (from Sync Engine), use it!
+        # Otherwise, fall back to the user's resolved scope.
+        if data.get("branch_id") is None:
             data["branch_id"] = self.branch_id
 
-        # Attach branch scope
-        data["branch_id"] = self.branch_id
-
-        # Safety check for duplicates
+        # 3. Double check for duplicates
         exists = self.db.query(Patient).filter(Patient.patient_no == patient_no).first()
         if exists:
             raise HTTPException(status_code=400, detail="Patient number already exists")
@@ -90,8 +87,10 @@ class PatientService:
             self.db.commit()
             self.db.refresh(p)
             return p
-        except IntegrityError:
+        except IntegrityError as e:
             self.db.rollback()
+            # Log the actual error to Render logs so we can see which column failed
+            print(f"DEBUG: IntegrityError during create: {str(e)}") 
             raise HTTPException(status_code=400, detail="Database integrity error")
 
     def get(self, patient_id: int) -> Patient:
