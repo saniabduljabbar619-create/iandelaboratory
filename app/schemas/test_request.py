@@ -16,6 +16,7 @@ class TestRequestCreate(BaseModel):
     test_type_id: int = Field(..., ge=1)
     requested_by: Optional[str] = None
     requested_note: Optional[str] = None
+    sync_id: str | None = Field(default=None, max_length=36)
 
 
 class TestRequestStatusUpdate(BaseModel):
@@ -25,6 +26,7 @@ class TestRequestStatusUpdate(BaseModel):
 
 class TestRequestOut(BaseModel):
     id: int
+    sync_id: str | None 
     patient_id: int
     test_type_id: int
     status: TestRequestStatus

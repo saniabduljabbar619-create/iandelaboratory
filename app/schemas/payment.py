@@ -18,6 +18,7 @@ class PaymentCreate(BaseModel):
     method: PaymentMethod
     request_ids: List[int] = Field(default_factory=list)
     notes: Optional[str] = None
+    sync_id: str | None = Field(default=None, max_length=36)
 
 
 class PaymentReconcileOut(BaseModel):
@@ -26,6 +27,7 @@ class PaymentReconcileOut(BaseModel):
 
 class PaymentOut(BaseModel):
     id: int
+    sync_id: str | None 
     patient_id: int
     amount: float
     method: PaymentMethod

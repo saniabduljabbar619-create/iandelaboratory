@@ -24,6 +24,8 @@ class TestResult(Base):
 
     id = Column(Integer, primary_key=True)
 
+    sync_id = Column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
+
     patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False, index=True)
     test_type_id = Column(Integer, ForeignKey("test_types.id"), nullable=False, index=True)
     template_id = Column(Integer, ForeignKey("test_templates.id"), nullable=True, index=True)

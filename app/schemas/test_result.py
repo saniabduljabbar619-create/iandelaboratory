@@ -13,6 +13,7 @@ class ResultInstantiate(APIModel):
     patient_id: int
     test_type_id: int
     template_id: int | None
+    sync_id: str | None = Field(default=None, max_length=36)
 
 class ResultUpdateValues(APIModel):
     values: dict = Field(default_factory=dict)
@@ -25,6 +26,7 @@ class ResultSetStatus(APIModel):
 
 class TestResultOut(APIModel):
     id: int
+    sync_id: str | None
     patient_id: int
     test_type_id: int
     template_id: int | None
@@ -49,3 +51,4 @@ class ResultInstantiateFromSnapshot(APIModel):
     template_snapshot: Dict[str, Any] = Field(default_factory=dict)
     values: Dict[str, Any] = Field(default_factory=dict)
     notes: str | None = None
+    sync_id: str | None = Field(default=None, max_length=36)

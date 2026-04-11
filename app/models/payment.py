@@ -16,6 +16,8 @@ class Payment(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
+    sync_id = Column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
+
     patient_id = Column(Integer, nullable=True, index=True)
 
     # For now we store request ids as comma string: "12,15,20"

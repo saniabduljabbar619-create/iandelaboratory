@@ -13,6 +13,8 @@ class Patient(Base):
 
     id = Column(Integer, primary_key=True)
 
+    sync_id = Column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
+
     # Patient ID Number (used as portal "password")
     patient_no = Column(String(50), unique=True, nullable=False, index=True)
 
