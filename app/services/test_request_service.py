@@ -22,24 +22,36 @@ class TestRequestService:
 
 
     def create(self, payload: TestRequestCreate) -> TestRequest:
-        # Branch-bound users must create inside their branch
-        if not self.branch_id:
+        # 1. Determine the effective Branch ID
+        # If payload provides a branch_id (from Sync Engine), use it.
+        # Otherwise, use the user's resolved branch scope.
+        effective_branch_id = payload.branch_id if hasattr(payload, 'branch_id') and payload.branch_id else self.branch_id
+
+        # 2. Strict check: Every request MUST belong to a branch
+        if not effective_branch_id:
             raise HTTPException(status_code=400, detail="Branch context required")
 
+        # 3. Create the record
         tr = TestRequest(
+            sync_id=payload.sync_id, # Ensure the UUID matches across systems
             patient_id=payload.patient_id,
             test_type_id=payload.test_type_id,
             requested_by=payload.requested_by,
             requested_note=payload.requested_note,
-            status="pending",
-            branch_id=self.branch_id,
+            status=payload.status or "pending", # Support pre-paid syncs
+            branch_id=effective_branch_id,
         )
 
         self.db.add(tr)
-        self.db.commit()
-        self.db.refresh(tr)
-        return tr
-
+        try:
+            self.db.commit()
+            self.db.refresh(tr)
+            return tr
+        except Exception as e:
+            self.db.rollback()
+            # This will help you see the real error in Render logs
+            print(f"DEBUG: Error creating test request: {str(e)}")
+            raise HTTPException(status_code=400, detail="Database integrity error during sync")
 
     def list(
         self,
