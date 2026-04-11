@@ -71,6 +71,11 @@ class PatientService:
             patient_no = self._next_patient_no()
             data["patient_no"] = patient_no
 
+        # ✅ FIX: Use payload branch_id if provided (Sync Engine), 
+        # otherwise use the current user's resolved scope.
+        if not data.get("branch_id"):
+            data["branch_id"] = self.branch_id
+
         # Attach branch scope
         data["branch_id"] = self.branch_id
 
