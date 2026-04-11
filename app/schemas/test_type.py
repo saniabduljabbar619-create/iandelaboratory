@@ -11,6 +11,8 @@ class TestTypeCreate(APIModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: str | None = None
     price: float = Field(..., ge=0)
+    # ✅ this for the Sync Engine
+    sync_id: str | None = Field(default=None, max_length=36)
 
 
 class TestTypeOut(APIModel):
