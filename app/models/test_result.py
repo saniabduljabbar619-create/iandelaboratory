@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # app/ models/test_result.py
 from __future__ import annotations
-
+import uuid  # ✅ Add this line right at the top
 import enum
 from sqlalchemy import Column, Integer, DateTime, func, ForeignKey, Enum, JSON, String, Index
 from sqlalchemy.orm import relationship

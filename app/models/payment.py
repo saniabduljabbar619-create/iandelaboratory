@@ -2,7 +2,7 @@
 # app/models/payment.py
 
 from __future__ import annotations
-
+import uuid  # ✅ Add this line right at the top
 from sqlalchemy import Column, Integer, DateTime, Enum, String, Float, func
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column

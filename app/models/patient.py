@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # app/ models/ patient.py
 from __future__ import annotations
-
+import uuid  # ✅ Add this line right at the top
 from sqlalchemy import Column, Integer, String, Date, DateTime, func, Index
 from app.db.base import Base
 from sqlalchemy import ForeignKey

@@ -2,6 +2,8 @@
 # app/models/test_request.py
 
 from __future__ import annotations
+
+import uuid  # ✅ Add this line right at the top
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
