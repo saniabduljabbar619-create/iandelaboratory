@@ -17,7 +17,7 @@ class TestRequestCreate(BaseModel):
     requested_by: Optional[str] = None
     requested_note: Optional[str] = None
     # ✅ Add these three so the service can "see" them during sync
-    status: Optional[TestRequestStatus] = "paid"
+    status: Optional[TestRequestStatus] = "pending"
     sync_id: str | None = Field(default=None, max_length=36)
     branch_id: int | None = None
 
