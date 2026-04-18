@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 # app/api/routes/booking_conversion.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query # Added Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func # 🔥 CRITICAL for case-insensitive lookup
 
 from app.api.deps import get_db
 from app.models.booking_item import BookingItem
 from app.services.booking_conversion_service import BookingConversionService
 from app.models.booking import Booking
-router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
 
+router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
 
 @router.post("/{booking_id}/convert")
 def convert_patient_request(
     booking_id: int,
-    patient_name: str, # Keep this as str to match frontend
+    patient_name: str, 
     branch_id: int,
     cashier_name: str,
     db: Session = Depends(get_db)
@@ -27,33 +28,45 @@ def convert_patient_request(
         if booking.status not in ["payment_verified", "approved_credit"]:
             raise HTTPException(status_code=400, detail="Booking not ready for conversion")
 
-        # 🔥 BRIDGE THE GAP 🔥
-        # Find the patient_id associated with this name in this booking
+        # 🔥 BULLETPROOF LOOKUP 🔥
+        # 1. We trim the input name
+        clean_name = patient_name.strip()
+
+        # 2. We use func.lower() and func.trim() to ensure a match regardless of spaces or case
         item = db.query(BookingItem).filter(
             BookingItem.booking_id == booking_id,
-            BookingItem.patient_name == patient_name
+            func.trim(func.lower(BookingItem.patient_name)) == clean_name.lower()
         ).first()
 
+        # 3. Fallback: If exact match fails, try a "contains" search
         if not item:
-            raise HTTPException(status_code=404, detail="Patient not found in this booking")
+            item = db.query(BookingItem).filter(
+                BookingItem.booking_id == booking_id,
+                BookingItem.patient_name.ilike(f"%{clean_name}%")
+            ).first()
 
-        # Call the service using the ID it now requires
+        if not item:
+            raise HTTPException(status_code=404, detail=f"Patient '{patient_name}' not found in items")
+
+        # Call the service using the ID
         requests = BookingConversionService.convert_patient(
             db=db,
             booking_id=booking_id,
-            patient_id=item.patient_id, # Use the ID from the item
+            patient_id=item.patient_id, 
             branch_id=branch_id,
             cashier_name=cashier_name
         )
 
         return {
             "status": "success",
-            "message": "Requests created",
+            "message": f"Converted {len(requests)} tests for {item.patient_name}",
             "requests_created": len(requests)
         }
     except HTTPException: raise
     except Exception as e:
+        print(f"CONVERSION ERROR: {str(e)}") # Log for Render logs
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/{booking_id}/patients")
 def get_booking_patients(
