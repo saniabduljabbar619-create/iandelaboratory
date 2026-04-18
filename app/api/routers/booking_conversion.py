@@ -14,48 +14,34 @@ router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
 @router.post("/{booking_id}/convert")
 def convert_patient_request(
     booking_id: int,
-    patient_name: str,
+    patient_name: str, # Keep this as str to match frontend
     branch_id: int,
     cashier_name: str,
     db: Session = Depends(get_db)
 ):
-    """
-    Convert portal booking items into TestRequest rows
-    for a specific patient inside the booking.
-    """
-    
     try:
-
-        # ----------------------------------
-        # BOOKING VALIDATION
-        # ----------------------------------
-        
-        booking = db.query(Booking).filter(
-            Booking.id == booking_id
-        ).first()
-        print("BOOKING STATUS:", booking.status)
-
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
         if not booking:
-            raise HTTPException(
-                status_code=404,
-                detail="Booking not found"
-            )
+            raise HTTPException(status_code=404, detail="Booking not found")
 
-        # ✅ SINGLE SOURCE OF TRUTH
         if booking.status not in ["payment_verified", "approved_credit"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Booking not ready for conversion"
-            )
+            raise HTTPException(status_code=400, detail="Booking not ready for conversion")
 
-        # ----------------------------------
-        # CONVERSION
-        # ----------------------------------
+        # 🔥 BRIDGE THE GAP 🔥
+        # Find the patient_id associated with this name in this booking
+        item = db.query(BookingItem).filter(
+            BookingItem.booking_id == booking_id,
+            BookingItem.patient_name == patient_name
+        ).first()
 
+        if not item:
+            raise HTTPException(status_code=404, detail="Patient not found in this booking")
+
+        # Call the service using the ID it now requires
         requests = BookingConversionService.convert_patient(
             db=db,
             booking_id=booking_id,
-            patient_name=patient_name,
+            patient_id=item.patient_id, # Use the ID from the item
             branch_id=branch_id,
             cashier_name=cashier_name
         )
@@ -65,16 +51,9 @@ def convert_patient_request(
             "message": "Requests created",
             "requests_created": len(requests)
         }
-
-    except HTTPException:
-        raise
-
+    except HTTPException: raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
-
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{booking_id}/patients")
 def get_booking_patients(
