@@ -5,11 +5,12 @@ from __future__ import annotations
 
 from datetime import datetime
 from fastapi import HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.branch_scope import resolve_branch_scope
 from app.models.test_type import TestType
 from app.models.test_request import TestRequest
-from app.models.patient import Patient  # <-- ADD THIS IMPORT
+from app.models.patient import Patient 
 from app.schemas.test_request import TestRequestCreate, TestRequestStatusUpdate
 
 
@@ -22,23 +23,18 @@ class TestRequestService:
 
 
     def create(self, payload: TestRequestCreate) -> TestRequest:
-        # 1. Determine the effective Branch ID
-        # If payload provides a branch_id (from Sync Engine), use it.
-        # Otherwise, use the user's resolved branch scope.
         effective_branch_id = payload.branch_id if hasattr(payload, 'branch_id') and payload.branch_id else self.branch_id
 
-        # 2. Strict check: Every request MUST belong to a branch
         if not effective_branch_id:
             raise HTTPException(status_code=400, detail="Branch context required")
 
-        # 3. Create the record
         tr = TestRequest(
-            sync_id=payload.sync_id, # Ensure the UUID matches across systems
+            sync_id=payload.sync_id, 
             patient_id=payload.patient_id,
             test_type_id=payload.test_type_id,
             requested_by=payload.requested_by,
             requested_note=payload.requested_note,
-            status=payload.status or "pending", # Support pre-paid syncs
+            status=payload.status or "pending", 
             branch_id=effective_branch_id,
         )
 
@@ -49,21 +45,21 @@ class TestRequestService:
             return tr
         except Exception as e:
             self.db.rollback()
-            # This will help you see the real error in Render logs
             print(f"DEBUG: Error creating test request: {str(e)}")
-            raise HTTPException(status_code=400, detail="Database integrity error during sync")
+            raise HTTPException(status_code=400, detail="Database integrity error")
 
     def list(
         self,
         status: str | None = None,
         patient_id: int | None = None,
+        created_date: str | None = None,  # 🔥 Added date filter support
         limit: int = 50
     ):
-        # Update query to include Patient model
+        # Join all three tables to get the full picture
         q = (
             self.db.query(TestRequest, TestType, Patient)
             .join(TestType, TestType.id == TestRequest.test_type_id)
-            .join(Patient, Patient.id == TestRequest.patient_id) # <-- JOIN PATIENT HERE
+            .join(Patient, Patient.id == TestRequest.patient_id)
         )
 
         if self.branch_id:
@@ -75,11 +71,14 @@ class TestRequestService:
         if patient_id:
             q = q.filter(TestRequest.patient_id == patient_id)
 
+        # 🔥 Filter by specific day (YYYY-MM-DD)
+        if created_date:
+            q = q.filter(func.date(TestRequest.created_at) == created_date)
+
         rows = q.order_by(TestRequest.created_at.desc()).limit(limit).all()
 
         out = []
 
-        # Update the loop to unpack the Patient model (p)
         for tr, tt, p in rows: 
             out.append({
                 "id": tr.id,
@@ -87,30 +86,36 @@ class TestRequestService:
                 "test_type_id": tr.test_type_id,
                 "status": tr.status,
                 "requested_by": tr.requested_by,
-                "requested_note": tr.requested_note,
                 "created_at": tr.created_at,
                 "updated_at": tr.updated_at,
-                "branch_id": tr.branch_id,
+                
+                # 🔥 Nested Patient Data for Frontend Compatibility
+                # This allows the Daily Queue to show old patients with new requests
+                "patient": {
+                    "id": p.id,
+                    "patient_no": p.patient_no,
+                    "full_name": p.full_name,
+                    "phone": p.phone,
+                    "gender": p.gender,
+                    "dob": p.date_of_birth.isoformat() if p.date_of_birth else None,
+                    "created_at": p.created_at
+                },
 
-                # 🔥 Enrichment
+                # 🔥 Test Info Enrichment
                 "test_name": tt.name,
-                "price": float(tt.price),
-                "patient_name": p.full_name, # <-- ADD REAL NAME HERE
+                "price": float(tt.price) if tt.price else 0.0,
             })
 
         return out
 
     def get(self, request_id: int) -> TestRequest:
         q = self.db.query(TestRequest).filter(TestRequest.id == request_id)
-
         if self.branch_id:
             q = q.filter(TestRequest.branch_id == self.branch_id)
 
         tr = q.first()
-
         if not tr:
             raise HTTPException(status_code=404, detail="Test request not found")
-
         return tr
 
 
@@ -118,12 +123,12 @@ class TestRequestService:
         tr = self.get(request_id)
 
         allowed = {
-                "pending": {"paid", "rejected"},
-                "paid": {"accepted", "rejected"},
-                "accepted": {"fulfilled"},
-                "rejected": set(),
-                "fulfilled": set(),
-            }
+            "pending": {"paid", "rejected"},
+            "paid": {"accepted", "rejected"},
+            "accepted": {"fulfilled", "in_progress"}, # Added in_progress for lab flow
+            "rejected": set(),
+            "fulfilled": set(),
+        }
 
         if payload.status != tr.status and payload.status not in allowed.get(tr.status, set()):
             raise HTTPException(status_code=400, detail=f"Invalid transition {tr.status} -> {payload.status}")
