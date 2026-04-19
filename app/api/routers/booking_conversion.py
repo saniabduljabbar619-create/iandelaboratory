@@ -69,30 +69,21 @@ def convert_patient_request(
 
 
 @router.get("/{booking_id}/patients")
-def get_booking_patients(
-    booking_id: int,
-    db: Session = Depends(get_db),
-):
-    """
-    Return patients inside a booking.
-    Each patient may have multiple tests.
-    """
-
-    rows = (
-        db.query(BookingItem)
-        .filter(BookingItem.booking_id == booking_id)
-        .all()
-    )
-
+def get_booking_patients(booking_id: int, db: Session = Depends(get_db)):
+    rows = db.query(BookingItem).filter(BookingItem.booking_id == booking_id).all()
     patients = {}
 
     for r in rows:
-        # We group by name and phone to merge multiple tests into one patient row
         key = f"{r.patient_name}_{r.patient_phone}"
 
         if key not in patients:
+            # 🔥 IMPROVED LOGIC:
+            # Use patient_id if it exists, otherwise use the BookingItem row ID.
+            # This guarantees 'id' will NEVER be None.
+            effective_id = r.patient_id if r.patient_id is not None else r.id
+
             patients[key] = {
-                "id": r.patient_id,           # 🔥 THE MISSING LINK: Added the integer ID
+                "id": effective_id, 
                 "patient_name": r.patient_name,
                 "phone": r.patient_phone,
                 "dob": r.dob,
@@ -100,8 +91,6 @@ def get_booking_patients(
                 "tests": []
             }
 
-        patients[key]["tests"].append(
-            r.test_name_snapshot
-        )
+        patients[key]["tests"].append(r.test_name_snapshot)
 
     return list(patients.values())
