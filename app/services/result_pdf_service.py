@@ -6,8 +6,7 @@ from app.services.portal_reports.builder import build_bundle_result
 from app.services.portal_reports.renderer import render_pdf
 from app.services.portal_reports.config import LAB_PROFILE
 
-
-def generate_result_pdf(result):
+def generate_result_pdf(result, source="lab"):
     # ===============================
     # BUILD BUNDLE
     # ===============================
@@ -21,7 +20,6 @@ def generate_result_pdf(result):
     # PATIENT DATA
     # ===============================
     patient = result.patient
-
     sex = patient.gender or "-"
 
     age = "-"
@@ -52,11 +50,13 @@ def generate_result_pdf(result):
     # ===============================
     # RENDER PDF
     # ===============================
+    # 🔥 We now pass the 'source' through to the renderer
     render_pdf(
         output_path=output_path,
         lab_profile=LAB_PROFILE,
         patient_row=patient_row,
         bundle_results=bundle_results,
+        source=source 
     )
 
     return output_path
