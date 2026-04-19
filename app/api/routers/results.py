@@ -113,12 +113,19 @@ def reprint_result(
     service = ResultService(db, current_user)
     result = service.get(result_id)
 
-    # 🔒 Safety: only released results can be printed
-    if result.status != ResultStatus.released:
-        raise HTTPException(status_code=400, detail="Result not released")
+    # 🔓 Allowed: Draft or Released
+    allowed_statuses = [ResultStatus.released, ResultStatus.draft]
+    
+    if result.status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Result in '{result.status}' status cannot be printed. Must be Draft or Released."
+        )
 
-    # Generate PDF
-    output_path = generate_result_pdf(result)
+    # 🔥 REFINEMENT: Pass the source to the PDF generator
+    # This ensures the footer note "Routed and fetched from the Laboratory Portal" is applied.
+    # We also pass the status to help the generator add a 'DRAFT' watermark if needed.
+    output_path = generate_result_pdf(result, source="lab")
 
     return FileResponse(
         path=output_path,
