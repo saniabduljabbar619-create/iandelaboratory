@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/bookings", tags=["Bookings"])
 @router.post("/{booking_id}/convert")
 def convert_patient_request(
     booking_id: int,
-    patient_name: str, 
+    patient_id: int,
     branch_id: int,
     cashier_name: str,
     db: Session = Depends(get_db)
@@ -34,9 +34,9 @@ def convert_patient_request(
 
         # 2. We use func.lower() and func.trim() to ensure a match regardless of spaces or case
         item = db.query(BookingItem).filter(
-            BookingItem.booking_id == booking_id,
-            func.trim(func.lower(BookingItem.patient_name)) == clean_name.lower()
-        ).first()
+        BookingItem.booking_id == booking_id,
+        BookingItem.patient_id == patient_id
+    ).first()
 
         # 3. Fallback: If exact match fails, try a "contains" search
         if not item:
