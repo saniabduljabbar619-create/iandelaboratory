@@ -87,11 +87,12 @@ def get_booking_patients(
     patients = {}
 
     for r in rows:
-
+        # We group by name and phone to merge multiple tests into one patient row
         key = f"{r.patient_name}_{r.patient_phone}"
 
         if key not in patients:
             patients[key] = {
+                "id": r.patient_id,           # 🔥 THE MISSING LINK: Added the integer ID
                 "patient_name": r.patient_name,
                 "phone": r.patient_phone,
                 "dob": r.dob,
