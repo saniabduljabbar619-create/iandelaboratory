@@ -24,9 +24,10 @@ class ReferrerService:
     def get_dashboard(db: Session, referrer_id: int):
         total_credit = (
             db.query(func.coalesce(func.sum(Booking.total_amount), 0))
+            # Change this in both get_dashboard and get_booking_details
             .filter(
                 Booking.referrer_id == referrer_id,
-                Booking.status == "approved_credit"
+                Booking.status.in_(["approved_credit", "converted"]) # ✅ Allow converted ones to stay visible
             )
             .scalar()
         )
@@ -40,7 +41,7 @@ class ReferrerService:
             )
             .filter(
                 Booking.referrer_id == referrer_id,
-                Booking.status == "approved_credit"
+                Booking.status.in_(["approved_credit", "converted"]) # ✅ Allow converted ones to stay visible
             )
             .group_by(Booking.booking_code)
             .order_by(func.max(Booking.created_at).desc())
@@ -72,7 +73,7 @@ class ReferrerService:
             .filter(
                 Booking.booking_code == booking_code,
                 Booking.referrer_id == referrer_id,
-                Booking.status == "approved_credit"
+                Booking.status == "approved_credit", "converted"
             )
             .all()
         )
@@ -177,6 +178,7 @@ class ReferrerService:
                 
                 # Link these specific Lab Requests to the Batch UID via Bridge
                 for req in created_requests:
+                    req.status = "paid"
                     db.add(ReferralBridge(
                         batch_uid=batch.batch_uid,
                         test_request_id=req.id,
