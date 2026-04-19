@@ -63,6 +63,7 @@ class ReferrerService:
             "bookings": bookings
         }
 
+
     # ==============================================================
     # DRILL DOWN
     # ==============================================================
@@ -73,7 +74,8 @@ class ReferrerService:
             .filter(
                 Booking.booking_code == booking_code,
                 Booking.referrer_id == referrer_id,
-                Booking.status == "approved_credit", "converted"
+                # 🔥 FIX: Use .in_() here so it doesn't crash
+                Booking.status.in_(["approved_credit", "converted"]) 
             )
             .all()
         )
@@ -87,7 +89,6 @@ class ReferrerService:
             }
             for r in rows
         ]
-
     # ==============================================================    
     # SMART BATCH SYNC (ATOMIC)
     # ==============================================================
