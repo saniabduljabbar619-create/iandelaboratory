@@ -16,6 +16,8 @@ router = APIRouter(prefix="/api/referrer", tags=["Referrer"])
 
 @router.get("/dashboard")
 def get_dashboard(referrer_id: int, db: Session = Depends(get_db)):
+    # 🔥 ALIGNMENT: Use ReferrerService directly to ensure shared logic
+    return ReferrerService.get_dashboard(db, referrer_id)
     # -----------------------------
     # TOTAL CREDIT
     # -----------------------------
@@ -69,6 +71,8 @@ def get_booking_details(
     referrer_id: int,
     db: Session = Depends(get_db)
 ):
+    # 🔥 ALIGNMENT: Ensures drill-down matches dashboard totals
+    return ReferrerService.get_booking_details(db, booking_code, referrer_id)
     rows = (
         db.query(Booking)
         .filter(
