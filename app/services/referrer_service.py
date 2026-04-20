@@ -85,7 +85,6 @@ class ReferrerService:
                 "full_name": r.patient_name,
                 "phone": "-", # Bridged patients use snapshots
                 "amount": 0,   # Financial details stay in the Booking header
-                "created_at": r.created_at
             }
             for r in rows
         ]
