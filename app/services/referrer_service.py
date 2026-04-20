@@ -102,51 +102,35 @@ class ReferrerService:
         booking_service = BookingService(db)
 
         try:
-            # 1. CREATE BATCH HEADER
-            batch = ReferralBatch(
-                batch_uid=batch_data["batch_uid"],
-                referrer_id=batch_data["referrer_id"],
-                date_received=batch_data.get("date_received"),
-                date_due=batch_data.get("date_due") or batch_data.get("date_received"),
-                status="Pending"
-            )
-            db.add(batch)
-
-            # ---------------------------------------------------------
-            # 2. THE COLLECTOR PHASE (PRE-BOOKING)
-            # ---------------------------------------------------------
+            # 1. THE COLLECTOR PHASE (PRE-BOOKING)
+            # We don't save the batch yet; we collect the data first.
             master_booking_items = []
-            patient_conversion_map = [] # To store (patient_obj, original_row_data)
+            patient_conversion_map = [] 
 
             for row in batch_data["patients"]:
                 patient_info = row.get("patient_info")
                 test_ids = row.get("test_ids", [])
                 if not patient_info: continue
 
-                # Create/Resolve the Clinical Patient
-                from app.schemas.patient import PatientCreate
                 new_patient = p_service.create(PatientCreate(**patient_info))
 
-                # Add every test for this patient to the MASTER list
-                
                 for tid in test_ids:
                     master_booking_items.append({
                         "test_type_id": tid, 
-                        "patient_id": new_patient.id,   # ✅ CRITICAL
+                        "patient_id": new_patient.id,
                         "patient_name": new_patient.full_name, 
                         "patient_phone": new_patient.phone
                     })
                 
-                # Keep reference for the conversion step later
                 patient_conversion_map.append({
                     "patient": new_patient, 
                     "sample_type": row.get("sample_type")
                 })
 
             # ---------------------------------------------------------
-            # 3. SINGLE FINANCIAL BOOKING (ONE CODE GENERATED)
+            # 2. FINANCIAL AUTHORITY (CORE-2) GENERATES THE UNIFIED ID
             # ---------------------------------------------------------
-            # We call this ONCE with all items from all patients
+            # We call the booking service first to get the authoritative SLB- code.
             booking = booking_service.create_booking(
                 "referral",
                 batch_data.get("referrer_name"),
@@ -154,21 +138,29 @@ class ReferrerService:
                 None,
                 master_booking_items,
                 billing_mode="credit",
-                referrer_id=batch.referrer_id
+                referrer_id=batch_data["referrer_id"]
             )
-            
             booking.status = "approved_credit"
-            db.flush() # Secure the booking.id
+            db.flush() 
+
+            # 🔥 THE UNIFIED ID: This is the only ID that matters now.
+            unified_id = booking.booking_code
 
             # ---------------------------------------------------------
-            # 4. MULTI-PATIENT SILENT CONVERSION
+            # 3. CREATE BATCH HEADER & BRIDGE USING THE UNIFIED ID
             # ---------------------------------------------------------
-            # Now we loop through our saved patient map to "promote" them to Lab
+            batch = ReferralBatch(
+                batch_uid=unified_id,  # Use SLB- code here
+                referrer_id=batch_data["referrer_id"],
+                date_received=batch_data.get("date_received"),
+                date_due=batch_data.get("date_due") or batch_data.get("date_received"),
+                status="Pending"
+            )
+            db.add(batch)
+
+            # 4. MULTI-PATIENT SILENT CONVERSION
             for entry in patient_conversion_map:
                 p_obj = entry["patient"]
-                
-                # Conversion logic groups items by patient_name automatically
-                
                 created_requests = BookingConversionService.convert_patient(
                     db=db,
                     booking_id=booking.id,
@@ -177,30 +169,25 @@ class ReferrerService:
                     cashier_name=f"{current_user.username} (Batch-Sync)"
                 )
                 
-                # Link these specific Lab Requests to the Batch UID via Bridge
                 for req in created_requests:
                     req.status = "paid"
+                    # Link everything to the authoritative unified_id
                     db.add(ReferralBridge(
-                        batch_uid=batch.batch_uid,
+                        batch_uid=unified_id, # Use SLB- code here
                         test_request_id=req.id,
                         patient_name=p_obj.full_name,
                         sample_type=entry["sample_type"]
                     ))
 
             # 5. FINAL FINANCIALS & LEDGER
-            # Use the single booking's total for the ledger
             discount_percent = float(batch_data["financials"].get("discount", 0))
-            computed_gross = float(booking.total_amount)
-            computed_net = computed_gross * (1 - (discount_percent / 100))
-            
             ledger = ReferralLedger(
-                batch_uid=batch.batch_uid,
-                referrer_id=batch.referrer_id,
-                gross_total=computed_gross,
+                batch_uid=unified_id, # Use SLB- code here
+                referrer_id=batch_data["referrer_id"],
+                gross_total=float(booking.total_amount),
                 discount_percent=discount_percent,
-                net_payable=computed_net,
-                is_settled=bool(batch_data["financials"].get("is_paid", False)),
-                payment_method=batch_data["financials"].get("method")
+                net_payable=float(booking.total_amount) * (1 - (discount_percent / 100)),
+                is_settled=False
             )
             db.add(ledger)
 
