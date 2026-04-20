@@ -22,45 +22,48 @@ class ReferrerService:
     # ==============================================================
     @staticmethod
     def get_dashboard(db: Session, referrer_id: int):
+        # 1. TOTAL CREDIT (Commerce Layer remains the same)
         total_credit = (
             db.query(func.coalesce(func.sum(Booking.total_amount), 0))
-            # Change this in both get_dashboard and get_booking_details
             .filter(
                 Booking.referrer_id == referrer_id,
-                Booking.status.in_(["approved_credit", "converted"]) # ✅ Allow converted ones to stay visible
+                Booking.status.in_(["approved_credit", "converted"])
             )
             .scalar()
         )
 
+        # 2. 🔥 FIXED: Query clinical counts from the Bridge, not the Booking header
         grouped = (
             db.query(
                 Booking.booking_code,
                 func.sum(Booking.total_amount).label("booking_total"),
-                func.count(Booking.id).label("patients_count"),
+                # Subquery to count actual patient entries in the batch link table
+                db.query(func.count(ReferralBridge.id))
+                  .filter(ReferralBridge.batch_uid == Booking.booking_code)
+                  .as_scalar()
+                  .label("patients_count"),
                 func.max(Booking.created_at).label("created_at")
             )
             .filter(
                 Booking.referrer_id == referrer_id,
-                Booking.status.in_(["approved_credit", "converted"]) # ✅ Allow converted ones to stay visible
+                Booking.status.in_(["approved_credit", "converted"])
             )
             .group_by(Booking.booking_code)
             .order_by(func.max(Booking.created_at).desc())
             .all()
         )
 
-        bookings = [
-            {
-                "booking_code": g.booking_code,
-                "booking_total": float(g.booking_total),
-                "patients_count": g.patients_count,
-                "created_at": g.created_at
-            }
-            for g in grouped
-        ]
-
         return {
             "total_credit": float(total_credit),
-            "bookings": bookings
+            "bookings": [
+                {
+                    "booking_code": g.booking_code,
+                    "booking_total": float(g.booking_total),
+                    "patients_count": g.patients_count, # Now shows '2'
+                    "created_at": g.created_at
+                }
+                for g in grouped
+            ]
         }
 
 
@@ -69,22 +72,19 @@ class ReferrerService:
     # ==============================================================
     @staticmethod
     def get_booking_details(db: Session, booking_code: str, referrer_id: int):
+        # 🔥 FIXED: Pull the actual patient snapshots from the Bridge table
+        # This ensures Bello and Safiya both appear in the list.
         rows = (
-            db.query(Booking)
-            .filter(
-                Booking.booking_code == booking_code,
-                Booking.referrer_id == referrer_id,
-                # 🔥 FIX: Use .in_() here so it doesn't crash
-                Booking.status.in_(["approved_credit", "converted"]) 
-            )
+            db.query(ReferralBridge)
+            .filter(ReferralBridge.batch_uid == booking_code)
             .all()
         )
 
         return [
             {
-                "full_name": r.full_name,
-                "phone": r.phone,
-                "amount": float(r.total_amount),
+                "full_name": r.patient_name,
+                "phone": "-", # Bridged patients use snapshots
+                "amount": 0,   # Financial details stay in the Booking header
                 "created_at": r.created_at
             }
             for r in rows
