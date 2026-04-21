@@ -6,15 +6,15 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 
-# --- MODELS (The Authority Layer) [cite: 191] ---
+# --- MODELS (The Authority Layer) ---
 from app.models.booking import Booking
 from app.models.referrer import Referrer
 from app.models.referral_batch import ReferralBatch
-from app.models.referral_bridge import ReferralBridge # Authority for Batch Linkage
+from app.models.referral_bridge import ReferralBridge
 from app.models.referral_ledger import ReferralLedger
-from app.models.test_request import TestRequest        # Clinical Reality [cite: 49]
-from app.models.test_type import TestType              # Financial Authority [cite: 19]
-from app.models.patient import Patient                  # Identity Authority [cite: 19]
+from app.models.test_request import TestRequest  # Clinical Reality
+from app.models.test_type import TestType        # Financial Authority
+from app.models.patient import Patient            # Identity Authority
 
 # --- SCHEMAS ---
 from app.schemas.patient import PatientCreate
@@ -22,12 +22,12 @@ from app.schemas.patient import PatientCreate
 class ReferrerService:
 
     # ==============================================================
-    # DASHBOARD: Unified Authority View [cite: 111]
+    # DASHBOARD: Unified Authority View
     # ==============================================================
     @staticmethod
     def get_dashboard(db: Session, referrer_id: int):
-        """Retrieves deterministic financial totals and clinical counts."""
-        # 1. Financial Authority (Core-2 Commerce Layer) [cite: 62, 132]
+        """Retrieves deterministic financial totals and patient counts."""
+        # 1. Total Credit: Commerce Authority (Core-2)
         total_credit = (
             db.query(func.coalesce(func.sum(Booking.total_amount), 0))
             .filter(
@@ -36,12 +36,12 @@ class ReferrerService:
             ).scalar()
         )
 
-        # 2. Grouped Reality View (Core-1 Enforcement Layer) [cite: 55, 116]
+        # 2. Grouped View: Links Financial Header with Clinical Reality
         grouped = (
             db.query(
                 Booking.booking_code,
                 func.sum(Booking.total_amount).label("booking_total"),
-                # Subquery counts actual clinical links sharing the unified fingerprint
+                # Counts actual clinical links sharing the unified SLB- fingerprint
                 db.query(func.count(ReferralBridge.id))
                   .filter(ReferralBridge.batch_uid == Booking.booking_code)
                   .as_scalar()
@@ -74,13 +74,9 @@ class ReferrerService:
     # ==============================================================
     @staticmethod
     def get_booking_details(db: Session, booking_code: str, referrer_id: int):
-        from app.models.test_request import TestRequest
-        from app.models.test_type import TestType
-        from app.models.patient import Patient 
-
+        """Bridges Identity, Clinical Audit, and Financial Authority."""
         try:
-            # 🔥 THE MASTER AUTHORITY JOIN
-            # We explicitly select FROM the Bridge to resolve SQL ambiguity
+            # 🔥 THE MASTER JOIN: Resolves ambiguity by defining an explicit root
             results = (
                 db.query(
                     Patient.full_name,
@@ -88,7 +84,7 @@ class ReferrerService:
                     TestType.price.label("test_price"), 
                     TestRequest.created_at.label("clinical_date")
                 )
-                .select_from(ReferralBridge) # Explicit root of the join chain
+                .select_from(ReferralBridge) # Explicit Core-1 starting point
                 .join(TestRequest, ReferralBridge.test_request_id == TestRequest.id)
                 .join(Patient, TestRequest.patient_id == Patient.id)
                 .join(TestType, TestRequest.test_type_id == TestType.id)
@@ -101,25 +97,24 @@ class ReferrerService:
                     "full_name": r.full_name,
                     "phone": r.phone or "0000000000", 
                     "amount": float(r.test_price) if r.test_price else 0.0,
-                    # Audit-compliant date formatting
+                    # Audit-compliant timestamp formatting
                     "created_at": r.clinical_date.strftime("%Y-%m-%d %H:%M") if r.clinical_date else "N/A"
                 }
                 for r in results
             ]
         except Exception as e:
-            # Audit the failure for technical oversight
-            print(f"[CORE-1 AUDIT FAILURE] Dashboard resolution error: {str(e)}")
+            print(f"[CORE-1 AUDIT FAILURE] Drill-down resolution error: {str(e)}")
             raise HTTPException(status_code=500, detail="Authority failed to resolve clinical details.")
 
     # ==============================================================    
-    # SMART BATCH SYNC: Single Point of Authority [cite: 111]
+    # SMART BATCH SYNC: Single Point of Authority
     # ==============================================================
     @staticmethod
     def create_referral_batch_sync(db: Session, batch_data: dict, current_user):
         """Atomically synchronizes UI input with the centralized enforcement brain."""
+        from app.services.patient_service import PatientService
         from app.services.booking_service import BookingService
         from app.services.booking_conversion_service import BookingConversionService
-        from app.services.patient_service import PatientService
         
         p_service = PatientService(db, current_user)
         booking_service = BookingService(db)
@@ -133,7 +128,7 @@ class ReferrerService:
                 p_info = row.get("patient_info")
                 if not p_info: continue
 
-                # Resolve authoritative patient record
+                # Resolve authoritative patient records
                 new_patient = p_service.create(PatientCreate(**p_info))
 
                 for tid in row.get("test_ids", []):
@@ -149,7 +144,7 @@ class ReferrerService:
                     "sample_type": row.get("sample_type")
                 })
 
-            # 2. Centralized Authority: Generate SLB code [cite: 191]
+            # 2. Central Authority: Generate the authoritative booking code (SLB-)
             booking = booking_service.create_booking(
                 "referral",
                 batch_data.get("referrer_name"),
@@ -162,13 +157,23 @@ class ReferrerService:
             booking.status = "approved_credit"
             db.flush() 
 
-            # 🔥 THE UNIFIED ID: The fingerprint binding all layers [cite: 111]
+            # 🔥 THE UNIFIED ID: The fingerprint that binds all layers [cite: 111]
             unified_id = booking.booking_code
 
-            # 3. Bridge & Conversion (Enforcement Reality) [cite: 117]
+            # 3. Create Batch Header (Metadata tracking)
+            batch_header = ReferralBatch(
+                batch_uid=unified_id,
+                referrer_id=batch_data["referrer_id"],
+                date_received=batch_data.get("date_received"),
+                date_due=batch_data.get("date_due") or batch_data.get("date_received"),
+                status="Pending"
+            )
+            db.add(batch_header)
+
+            # 4. Bridge & Conversion (Enforcement Authority)
             for entry in patient_conversion_map:
                 p_obj = entry["patient"]
-                requests = BookingConversionService.convert_patient(
+                created_requests = BookingConversionService.convert_patient(
                     db=db,
                     booking_id=booking.id,
                     patient_id=p_obj.id,
@@ -176,7 +181,7 @@ class ReferrerService:
                     cashier_name=f"{current_user.username} (Batch-Sync)"
                 )
                 
-                for req in requests:
+                for req in created_requests:
                     req.status = "paid"
                     db.add(ReferralBridge(
                         batch_uid=unified_id,
@@ -185,7 +190,7 @@ class ReferrerService:
                         sample_type=entry["sample_type"]
                     ))
 
-            # 4. Economic Ledger Compliance [cite: 281]
+            # 5. Final Financial Ledger (Economic Compliance)
             db.add(ReferralLedger(
                 batch_uid=unified_id,
                 referrer_id=batch_data["referrer_id"],
@@ -202,7 +207,6 @@ class ReferrerService:
 
     @staticmethod
     def create_referrer(db: Session, name: str, phone: str, email: str = None, credit_limit: float = 0):
-        """Registers a doctor or hospital as an external authority tenant."""
         existing = db.query(Referrer).filter(Referrer.phone == phone).first()
         if existing:
             raise HTTPException(status_code=400, detail="Referrer already exists")
