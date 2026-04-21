@@ -75,33 +75,38 @@ class ReferrerService:
     def get_booking_details(db: Session, booking_code: str, referrer_id: int):
         from app.models.test_request import TestRequest
         from app.models.test_type import TestType
-        from app.models.patient import Patient # The Authority for Names
+        from app.models.patient import Patient # The Identity Authority
 
-        # 🔥 THE MASTER JOIN:
-        # We bridge Reality -> Clinical Audit -> Financial Price -> Patient Identity
-        results = (
-            db.query(
-                Patient.full_name,
-                Patient.phone,
-                TestType.price.label("test_price"), 
-                TestRequest.created_at.label("clinical_date")
+        try:
+            # 🔥 THE FIX: Use .select_from(ReferralBridge) to resolve ambiguity
+            results = (
+                db.query(
+                    Patient.full_name,
+                    Patient.phone,
+                    TestType.price.label("test_price"), 
+                    TestRequest.created_at.label("clinical_date")
+                )
+                .select_from(ReferralBridge) # Explicitly start from the Bridge reality
+                .join(TestRequest, ReferralBridge.test_request_id == TestRequest.id)
+                .join(Patient, TestRequest.patient_id == Patient.id)
+                .join(TestType, TestRequest.test_type_id == TestType.id)
+                .filter(ReferralBridge.batch_uid == booking_code)
+                .all()
             )
-            .join(TestRequest, ReferralBridge.test_request_id == TestRequest.id)
-            .join(TestType, TestRequest.test_type_id == TestType.id)
-            .join(Patient, TestRequest.patient_id == Patient.id) # Join for the Name Authority
-            .filter(ReferralBridge.batch_uid == booking_code)
-            .all()
-        )
 
-        return [
-            {
-                "full_name": r.full_name,
-                "phone": r.phone or "-", # Now populating the Phone column too!
-                "amount": float(r.test_price) if r.test_price else 0.0,
-                "created_at": r.clinical_date.strftime("%Y-%m-%d %H:%M") if r.clinical_date else "N/A"
-            }
-            for r in results
-        ]
+            return [
+                {
+                    "full_name": r.full_name,
+                    "phone": r.phone or "-", 
+                    "amount": float(r.test_price) if r.test_price else 0.0,
+                    "created_at": r.clinical_date.strftime("%Y-%m-%d %H:%M") if r.clinical_date else "N/A"
+                }
+                for r in results
+            ]
+        except Exception as e:
+            # Audit the failure as per Master Script II
+            print(f"[CORE-1 AUDIT FAILURE] Drill-down resolution error: {str(e)}")
+            raise HTTPException(status_code=500, detail="Authority failed to resolve clinical details.")
     # ==============================================================    
     # SMART BATCH SYNC: Single Point of Authority
     # ==============================================================
