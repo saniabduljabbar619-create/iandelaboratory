@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.models.booking import Booking
 from app.models.referrer import Referrer
 from app.models.referral_batch import ReferralBatch
-from app.models.referral_bridge import ReferralBridge # Bridge Reality
+from app.models.referral_bridge import ReferralBridge # Authority for the Batch Link
 from app.models.referral_ledger import ReferralLedger
 from app.models.test_request import TestRequest        # Clinical Reality
 from app.models.test_type import TestType              # Financial Authority
@@ -41,7 +41,7 @@ class ReferrerService:
             db.query(
                 Booking.booking_code,
                 func.sum(Booking.total_amount).label("booking_total"),
-                # Subquery counts rows in the Bridge sharing the unified SLB- fingerprint
+                # Subquery to count actual clinical records linked to this SLB- code
                 db.query(func.count(ReferralBridge.id))
                   .filter(ReferralBridge.batch_uid == Booking.booking_code)
                   .as_scalar()
@@ -70,13 +70,14 @@ class ReferrerService:
         }
 
     # ==============================================================
-    # DRILL DOWN: The Quad-Join (Identity, Reality, and Money)
+    # DRILL DOWN: The Quad-Join (The Deterministic Truth)
     # ==============================================================
     @staticmethod
     def get_booking_details(db: Session, booking_code: str, referrer_id: int):
-        """Bridges Identity, Clinical Audit, and Financial Authority without ambiguity."""
+        """Bridges Identity, Clinical Audit, and Financial Authority into one view."""
         try:
-            # 🔥 THE MASTER JOIN: Pulls live names from Patient Authority
+            # 🔥 THE MASTER JOIN: Pulls Live Identity from the Patient table
+            # Resolves ambiguity by defining 'ReferralBridge' as the explicit root.
             results = (
                 db.query(
                     Patient.full_name,
@@ -84,7 +85,7 @@ class ReferrerService:
                     TestType.price.label("test_price"), 
                     TestRequest.created_at.label("clinical_date")
                 )
-                .select_from(ReferralBridge) # Explicit Core-1 starting point
+                .select_from(ReferralBridge) 
                 .join(TestRequest, ReferralBridge.test_request_id == TestRequest.id)
                 .join(Patient, TestRequest.patient_id == Patient.id)
                 .join(TestType, TestRequest.test_type_id == TestType.id)
@@ -94,7 +95,7 @@ class ReferrerService:
 
             return [
                 {
-                    "full_name": r.full_name,
+                    "full_name": r.full_name, # Authoritative Full Name
                     "phone": r.phone or "0000000000", 
                     "amount": float(r.test_price) if r.test_price else 0.0,
                     "created_at": r.clinical_date.strftime("%Y-%m-%d %H:%M") if r.clinical_date else "N/A"
@@ -102,7 +103,6 @@ class ReferrerService:
                 for r in results
             ]
         except Exception as e:
-            # Audit the failure as per Master Script VI
             print(f"[CORE-1 AUDIT FAILURE] Drill-down resolution error: {str(e)}")
             raise HTTPException(status_code=500, detail="Authority failed to resolve clinical details.")
 
@@ -127,10 +127,7 @@ class ReferrerService:
             for row in batch_data["patients"]:
                 p_info = row.get("patient_info")
                 if not p_info: continue
-
-                # Resolve authoritative patient records
                 new_patient = p_service.create(PatientCreate(**p_info))
-
                 for tid in row.get("test_ids", []):
                     master_booking_items.append({
                         "test_type_id": tid, 
@@ -138,13 +135,9 @@ class ReferrerService:
                         "patient_name": new_patient.full_name, 
                         "patient_phone": new_patient.phone
                     })
-                
-                patient_conversion_map.append({
-                    "patient": new_patient, 
-                    "sample_type": row.get("sample_type")
-                })
+                patient_conversion_map.append({"patient": new_patient, "sample_type": row.get("sample_type")})
 
-            # 2. Central Authority: Generate the authoritative booking code (SLB-)
+            # 2. Central Authority: Generate SLB code
             booking = booking_service.create_booking(
                 "referral",
                 batch_data.get("referrer_name"),
@@ -157,51 +150,45 @@ class ReferrerService:
             booking.status = "approved_credit"
             db.flush() 
 
-            # 🔥 THE UNIFIED ID
+            # 🔥 FIXED: Use 'booking_code' (verified from terminal)
             unified_id = booking.booking_code
 
-            # 3. Create Batch Header (Metadata tracking)
-            batch_header = ReferralBatch(
+            # 3. Batch Header
+            db.add(ReferralBatch(
                 batch_uid=unified_id,
                 referrer_id=batch_data["referrer_id"],
                 date_received=batch_data.get("date_received"),
                 date_due=batch_data.get("date_due") or batch_data.get("date_received"),
                 status="Pending"
-            )
-            db.add(batch_header)
+            ))
 
-            # 4. Bridge & Conversion (Enforcement Authority)
+            # 4. Conversion & Bridge Reality
             for entry in patient_conversion_map:
                 p_obj = entry["patient"]
-                created_requests = BookingConversionService.convert_patient(
-                    db=db,
-                    booking_id=booking.id,
-                    patient_id=p_obj.id,
+                requests = BookingConversionService.convert_patient(
+                    db=db, booking_id=booking.id, patient_id=p_obj.id,
                     branch_id=current_user.branch_id or 1,
                     cashier_name=f"{current_user.username} (Batch-Sync)"
                 )
-                
-                for req in created_requests:
+                for req in requests:
                     req.status = "paid"
                     db.add(ReferralBridge(
-                        batch_uid=unified_id,
-                        test_request_id=req.id,
-                        patient_name=p_obj.full_name,
-                        sample_type=entry["sample_type"]
+                        batch_uid=unified_id, test_request_id=req.id,
+                        patient_name=p_obj.full_name, sample_type=entry["sample_type"]
                     ))
 
-            # 5. 🔥 THE FINANCIAL LEDGER FIX: Prevent 'net_payable' 1048 Error
+            # 5. 🔥 FINANCIALS: Calculate 'net_payable' to satisfy schema 
             financials = batch_data.get("financials", {})
-            discount_percent = float(financials.get("discount", 0))
-            gross_total = float(booking.total_amount)
-            net_payable = gross_total * (1 - (discount_percent / 100))
+            discount_pct = float(financials.get("discount", 0))
+            gross = float(booking.total_amount)
+            net = gross * (1 - (discount_pct / 100))
 
             db.add(ReferralLedger(
                 batch_uid=unified_id,
                 referrer_id=batch_data["referrer_id"],
-                gross_total=gross_total,
-                discount_percent=discount_percent,
-                net_payable=net_payable, # Mandatory NOT NULL column
+                gross_total=gross,
+                discount_percent=discount_pct,
+                net_payable=net, # Prevents the 1048 Error
                 is_settled=False,
                 payment_method=financials.get("method", "Credit")
             ))
@@ -217,13 +204,8 @@ class ReferrerService:
     def create_referrer(db: Session, name: str, phone: str, email: str = None, credit_limit: float = 0):
         existing = db.query(Referrer).filter(Referrer.phone == phone).first()
         if existing:
-            raise HTTPException(status_code=400, detail="Referrer already exists")
-        try:
-            new_ref = Referrer(name=name, phone=phone, email=email, credit_limit=credit_limit, is_active=True)
-            db.add(new_ref)
-            db.commit()
-            db.refresh(new_ref)
-            return new_ref
-        except SQLAlchemyError as e:
-            db.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=400, detail="Referrer exists")
+        new_ref = Referrer(name=name, phone=phone, email=email, credit_limit=credit_limit, is_active=True)
+        db.add(new_ref)
+        db.commit()
+        return new_ref
