@@ -74,18 +74,21 @@ class ReferrerService:
     # ==============================================================
     @staticmethod
     def get_booking_details(db: Session, booking_code: str, referrer_id: int):
-        """Bridges Identity, Clinical Audit, and Financial Authority without ambiguity."""
+        from app.models.test_request import TestRequest
+        from app.models.test_type import TestType
+        from app.models.patient import Patient 
+
         try:
-            # 🔥 THE MASTER AUTHORITY JOIN: Resolves 'Tes#' by using the Bridge Name
-            # We explicitly use labels to prevent naming collisions. [cite: 111]
+            # 🔥 THE MASTER AUTHORITY JOIN
+            # We explicitly select FROM the Bridge to resolve SQL ambiguity
             results = (
                 db.query(
-                    ReferralBridge.patient_name.label("display_name"), # From Bridge Reality
-                    Patient.phone.label("patient_phone"),              # From Identity Authority
-                    TestType.price.label("test_price"),               # From Financial Authority
-                    TestRequest.created_at.label("clinical_date")      # From Clinical Audit
+                    Patient.full_name,
+                    Patient.phone,
+                    TestType.price.label("test_price"), 
+                    TestRequest.created_at.label("clinical_date")
                 )
-                .select_from(ReferralBridge) # Explicit Core-1 starting point [cite: 116]
+                .select_from(ReferralBridge) # Explicit root of the join chain
                 .join(TestRequest, ReferralBridge.test_request_id == TestRequest.id)
                 .join(Patient, TestRequest.patient_id == Patient.id)
                 .join(TestType, TestRequest.test_type_id == TestType.id)
@@ -95,16 +98,17 @@ class ReferrerService:
 
             return [
                 {
-                    "full_name": r.display_name, # Fixed: Pulls 'Bello shuaiu' from the Bridge
-                    "phone": r.patient_phone or "0000000000", 
+                    "full_name": r.full_name,
+                    "phone": r.phone or "0000000000", 
                     "amount": float(r.test_price) if r.test_price else 0.0,
+                    # Audit-compliant date formatting
                     "created_at": r.clinical_date.strftime("%Y-%m-%d %H:%M") if r.clinical_date else "N/A"
                 }
                 for r in results
             ]
         except Exception as e:
-            # Audit the failure as per Master Script VI [cite: 303]
-            print(f"[CORE-1 AUDIT FAILURE] Drill-down resolution error: {str(e)}")
+            # Audit the failure for technical oversight
+            print(f"[CORE-1 AUDIT FAILURE] Dashboard resolution error: {str(e)}")
             raise HTTPException(status_code=500, detail="Authority failed to resolve clinical details.")
 
     # ==============================================================    
