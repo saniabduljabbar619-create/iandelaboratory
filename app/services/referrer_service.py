@@ -73,30 +73,35 @@ class ReferrerService:
     # ==============================================================
     @staticmethod
     def get_booking_details(db: Session, booking_code: str, referrer_id: int):
-        # 🔥 THE SOLUNEX TRIPLE-JOIN:
-        # We bridge the Snapshot, the Clinical Audit, and the Financial Price
+        from app.models.test_request import TestRequest
+        from app.models.test_type import TestType
+        from app.models.patient import Patient # The Authority for Names
+
+        # 🔥 THE MASTER JOIN:
+        # We bridge Reality -> Clinical Audit -> Financial Price -> Patient Identity
         results = (
             db.query(
-                ReferralBridge.patient_name,
+                Patient.full_name,
+                Patient.phone,
                 TestType.price.label("test_price"), 
                 TestRequest.created_at.label("clinical_date")
             )
             .join(TestRequest, ReferralBridge.test_request_id == TestRequest.id)
             .join(TestType, TestRequest.test_type_id == TestType.id)
+            .join(Patient, TestRequest.patient_id == Patient.id) # Join for the Name Authority
             .filter(ReferralBridge.batch_uid == booking_code)
             .all()
         )
 
         return [
             {
-                "full_name": r.patient_name,
-                "phone": "-", 
+                "full_name": r.full_name,
+                "phone": r.phone or "-", # Now populating the Phone column too!
                 "amount": float(r.test_price) if r.test_price else 0.0,
                 "created_at": r.clinical_date.strftime("%Y-%m-%d %H:%M") if r.clinical_date else "N/A"
             }
             for r in results
         ]
-
     # ==============================================================    
     # SMART BATCH SYNC: Single Point of Authority
     # ==============================================================
