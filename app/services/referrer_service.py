@@ -10,11 +10,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.models.booking import Booking
 from app.models.referrer import Referrer
 from app.models.referral_batch import ReferralBatch
-from app.models.referral_bridge import ReferralBridge
+from app.models.referral_bridge import ReferralBridge # Bridge Reality
 from app.models.referral_ledger import ReferralLedger
-from app.models.test_request import TestRequest  # Clinical Reality
-from app.models.test_type import TestType        # Financial Authority
-from app.models.patient import Patient            # Identity Authority
+from app.models.test_request import TestRequest        # Clinical Reality
+from app.models.test_type import TestType              # Financial Authority
+from app.models.patient import Patient                  # Identity Authority
 
 # --- SCHEMAS ---
 from app.schemas.patient import PatientCreate
@@ -41,7 +41,7 @@ class ReferrerService:
             db.query(
                 Booking.booking_code,
                 func.sum(Booking.total_amount).label("booking_total"),
-                # Counts actual clinical links sharing the unified SLB- fingerprint
+                # Subquery counts rows in the Bridge sharing the unified SLB- fingerprint
                 db.query(func.count(ReferralBridge.id))
                   .filter(ReferralBridge.batch_uid == Booking.booking_code)
                   .as_scalar()
@@ -74,9 +74,9 @@ class ReferrerService:
     # ==============================================================
     @staticmethod
     def get_booking_details(db: Session, booking_code: str, referrer_id: int):
-        """Bridges Identity, Clinical Audit, and Financial Authority."""
+        """Bridges Identity, Clinical Audit, and Financial Authority without ambiguity."""
         try:
-            # 🔥 THE MASTER JOIN: Resolves ambiguity by defining an explicit root
+            # 🔥 THE MASTER JOIN: Pulls live names from Patient Authority
             results = (
                 db.query(
                     Patient.full_name,
@@ -97,12 +97,12 @@ class ReferrerService:
                     "full_name": r.full_name,
                     "phone": r.phone or "0000000000", 
                     "amount": float(r.test_price) if r.test_price else 0.0,
-                    # Audit-compliant timestamp formatting
                     "created_at": r.clinical_date.strftime("%Y-%m-%d %H:%M") if r.clinical_date else "N/A"
                 }
                 for r in results
             ]
         except Exception as e:
+            # Audit the failure as per Master Script VI
             print(f"[CORE-1 AUDIT FAILURE] Drill-down resolution error: {str(e)}")
             raise HTTPException(status_code=500, detail="Authority failed to resolve clinical details.")
 
@@ -157,7 +157,7 @@ class ReferrerService:
             booking.status = "approved_credit"
             db.flush() 
 
-            # 🔥 THE UNIFIED ID: The fingerprint that binds all layers [cite: 111]
+            # 🔥 THE UNIFIED ID
             unified_id = booking.booking_code
 
             # 3. Create Batch Header (Metadata tracking)
@@ -190,19 +190,27 @@ class ReferrerService:
                         sample_type=entry["sample_type"]
                     ))
 
-            # 5. Final Financial Ledger (Economic Compliance)
+            # 5. 🔥 THE FINANCIAL LEDGER FIX: Prevent 'net_payable' 1048 Error
+            financials = batch_data.get("financials", {})
+            discount_percent = float(financials.get("discount", 0))
+            gross_total = float(booking.total_amount)
+            net_payable = gross_total * (1 - (discount_percent / 100))
+
             db.add(ReferralLedger(
                 batch_uid=unified_id,
                 referrer_id=batch_data["referrer_id"],
-                gross_total=float(booking.total_amount),
-                is_settled=False
+                gross_total=gross_total,
+                discount_percent=discount_percent,
+                net_payable=net_payable, # Mandatory NOT NULL column
+                is_settled=False,
+                payment_method=financials.get("method", "Credit")
             ))
 
             db.commit()
             return booking
 
         except Exception as e:
-            db.rollback() # Ensures fail-closed security [cite: 189]
+            db.rollback() 
             raise HTTPException(status_code=500, detail=f"Consolidated Sync Failed: {str(e)}")
 
     @staticmethod
