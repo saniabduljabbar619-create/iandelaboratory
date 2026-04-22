@@ -1,26 +1,48 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from sqlalchemy import func
+from datetime import datetime
+
+# Models
 from app.models.cashier_referral import ReferralStore, ReferralData, ReferralFinancialRecord
+from app.models.test_type import TestType
+from app.models.test_request import TestRequest
+from app.models.payment import Payment
+
+# Schemas
 from app.schemas.cashier_referral import CashierReferralSyncRequest
-from app.services.booking_service import BookingService # To generate the SLB code
+from app.schemas.patient import PatientCreate
+
+# Existing Services
+from app.services.patient_service import PatientService
 
 class CashierReferralService:
     @staticmethod
-    def sync_new_batch(db: Session, data: CashierReferralSyncRequest, current_user):
-        booking_service = BookingService(db)
+    def sync_and_convert(db: Session, data: CashierReferralSyncRequest, current_user):
+        """
+        Atomic Orchestration:
+        1. ReferralStore: Archive the Referrer's intent (immutable).
+        2. PatientService: Generate authoritative Lab IDs (IEL-YY-NNNN).
+        3. TestRequest: Create the clinical worklist.
+        4. ReferralFinancialRecord: Apply discounts & track balance.
+        5. Payment: Seal the transaction in the main Lab ledger.
+        """
+        p_service = PatientService(db, current_user)
         
         try:
-            # 1. Generate the Unified Authority Code (SLB-BKG)
-            # We use the booking service just to get a unique, sequential code
-            batch_code = f"REF-{current_user.branch_id}-{func.now().strftime('%y%m%d%H%M%S')}" 
-            # Note: You can also use booking_service.generate_code() if available
+            # --- PHASE 1: GENERATE UNIFIED BATCH CODE ---
+            # Format: REF-BRANCH-YYMMDD-TIME
+            timestamp = datetime.now().strftime("%y%m%d-%H%M%S")
+            batch_code = f"REF-{current_user.branch_id}-{timestamp}"
             
             total_gross = 0.0
+            all_request_ids = []
 
+            # --- PHASE 2: PROCESSING PATIENTS ---
             for p_entry in data.patients:
-                # 2. Populate REFERRAL STORE (The Immutable Archive)
-                new_store_entry = ReferralStore(
+                # 1. Record the Intent (Archive)
+                store_entry = ReferralStore(
                     batch_code=batch_code,
                     facility_name=data.facility_name,
                     facility_phone=data.facility_phone,
@@ -32,34 +54,89 @@ class CashierReferralService:
                     sample_type=p_entry.sample_type,
                     branch_id=current_user.branch_id
                 )
-                db.add(new_store_entry)
-                db.flush() # Get the ID for the next table
+                db.add(store_entry)
+                db.flush()
 
-                # 3. Populate REFERRAL DATA (The Clinical Bridge)
-                db.add(ReferralData(
-                    store_id=new_store_entry.id,
-                    bio_gender=p_entry.gender,
-                    bio_dob=p_entry.dob,
-                    status="pending"
+                # 2. Create Clinical Identity (PatientService)
+                # This triggers the IEL-YY-NNNN auto-generation logic
+                patient_obj = p_service.create(PatientCreate(
+                    full_name=p_entry.full_name,
+                    phone=p_entry.phone,
+                    gender=p_entry.gender,
+                    date_of_birth=p_entry.dob,
+                    branch_id=current_user.branch_id
                 ))
 
-            # 4. Calculate Economics & Populate FINANCIAL RECORD
-            # (In a real scenario, you'd fetch prices from test_types here)
-            # For brevity, let's assume total_gross is calculated from the UI payload or DB
-            net_payable = total_gross * (1 - (data.financials.discount_percent / 100))
+                # 3. Resolve Clinical Requests & Prices
+                # We pull prices from TestType to ensure financial accuracy
+                last_req_id = None
+                for t_id in p_entry.test_type_ids:
+                    test_type = db.query(TestType).filter(TestType.id == t_id).first()
+                    if not test_type:
+                        raise HTTPException(status_code=404, detail=f"Test Type {t_id} not found")
+                    
+                    total_gross += float(test_type.price)
 
+                    new_request = TestRequest(
+                        patient_id=patient_obj.id,
+                        test_type_id=t_id,
+                        status="paid", # Authorized by the referral credit
+                        requested_by=data.clinician_name,
+                        branch_id=current_user.branch_id
+                    )
+                    db.add(new_request)
+                    db.flush()
+                    all_request_ids.append(new_request.id)
+                    last_req_id = new_request.id
+
+                # 4. Create the Bridge
+                db.add(ReferralData(
+                    store_id=store_entry.id,
+                    patient_id=patient_obj.id,
+                    test_request_id=last_req_id,
+                    status="converted"
+                ))
+
+            # --- PHASE 3: FINANCIAL AUTHORITY ---
+            discount_pct = float(data.financials.discount_percent)
+            net_amount = total_gross * (1 - (discount_pct / 100))
+
+            # A. Create the Main Ledger Entry (For Lab accounting)
+            # We bypass the PaymentService.create validation to allow patient_id=None
+            main_payment = Payment(
+                patient_id=None, # Batch payment identification
+                amount=net_amount,
+                method=data.financials.payment_method,
+                status="completed",
+                notes=f"BATCH:{batch_code}",
+                branch_id=current_user.branch_id,
+                created_by_id=current_user.id,
+                request_ids_csv=",".join(map(str, all_request_ids))
+            )
+            db.add(main_payment)
+            db.flush()
+
+            # B. Create the Referral Ledger (For CST Hospital's balance)
             db.add(ReferralFinancialRecord(
                 batch_code=batch_code,
                 referrer_id=data.referrer_id,
                 gross_total=total_gross,
-                discount_percent=data.financials.discount_percent,
-                net_payable=net_payable,
+                discount_percent=discount_pct,
+                net_payable=net_amount,
+                payment_id=main_payment.id,
                 is_settled=False
             ))
 
             db.commit()
-            return {"batch_code": batch_code, "status": "Success"}
+            return {
+                "status": "Success", 
+                "batch_code": batch_code, 
+                "total_patients": len(data.patients),
+                "net_payable": net_amount
+            }
 
         except Exception as e:
             db.rollback()
-            raise HTTPException(status_code=500, detail=f"Sovereign Sync Failed: {str(e)}")
+            # Log exact error for debugging in the cloud
+            print(f"DEBUG: Referral Sync Failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Sovereign Sync Failure: {str(e)}")
