@@ -2,13 +2,11 @@
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
-
 from app.db.session import engine, SessionLocal
 from app.db.base import Base
-
 from app.core.security import hash_password
 
-# Import models so Base.metadata is populated
+# --- EXISTING MODELS ---
 from app.models.patient import Patient  # noqa
 from app.models.test_type import TestType  # noqa
 from app.models.test_template import TestTemplate  # noqa
@@ -21,8 +19,16 @@ from app.models.booking import Booking  # noqa
 from app.models.booking_item import BookingItem  # noqa
 from app.models.referrer import Referrer # noqa
 
+# --- 🔥 NEW CASHIER AUTHORITY TRIAD ---
+# Import the new clean-room tables here
+from app.models.cashier_referral import (
+    ReferralStore,
+    ReferralData,
+    ReferralFinancialRecord
+) # noqa
 
 def bootstrap(db: Session):
+    # Branch Logic
     if db.query(Branch).count() == 0:
         hq = Branch(
             name="Head Office",
@@ -33,6 +39,7 @@ def bootstrap(db: Session):
         db.commit()
         db.refresh(hq)
 
+    # Super Admin Logic
     if db.query(User).count() == 0:
         admin = User(
             username="Profnur",
@@ -43,8 +50,8 @@ def bootstrap(db: Session):
         db.add(admin)
         db.commit()
 
-
 def init_db() -> None:
+    # This now creates: referral_store, referral_data, and referral_financial_records
     Base.metadata.create_all(bind=engine)
 
     db: Session = SessionLocal()
