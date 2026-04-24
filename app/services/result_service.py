@@ -232,11 +232,11 @@ class ResultService:
             if phone:
                 try:
                     sms_message = (
-                        f"I&E Diagnostic Lab:\n"
+                        f"I and E Diagnostic Lab:\n"
                         f"Dear {patient_name}, your test result is ready.\n"
                         f"Ref: {r.id}\n"
                         
-                        f"For assistance call: 08063645308"
+                        f"https://iandelaboratory.com/lookup"
                     )
 
                     NotificationService.send_sms(
