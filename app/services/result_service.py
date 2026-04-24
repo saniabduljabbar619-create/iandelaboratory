@@ -236,7 +236,7 @@ class ResultService:
                         f"Dear {patient_name}, your test result is ready.\n"
                         f"Ref: {r.id}\n"
                         
-                        f"https://iandelaboratory.com/lookup"
+                        f"Please visit our center for your copy"
                     )
 
                     NotificationService.send_sms(
