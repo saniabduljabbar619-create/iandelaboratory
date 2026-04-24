@@ -92,7 +92,7 @@ class NotificationService:
         payload = {
             "to": [phone],
             "message": message,
-            "sender_name": "SAlert", 
+            "sender_name": "SC-OTP", 
             "route": "dnd"
         }
 
