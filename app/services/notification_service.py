@@ -92,7 +92,7 @@ class NotificationService:
         payload = {
             "to": [phone],
             "message": message,
-            "sender_name": "Sendchamp", 
+            "sender_name": "SAlert", 
             "route": "dnd"
         }
 
