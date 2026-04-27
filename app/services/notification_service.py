@@ -92,8 +92,8 @@ class NotificationService:
         payload = {
             "to": [phone],
             "message": message,
-            "sender_name": "SC-OTP", 
-            "route": "dnd"
+            "sender_name": "IandELabs", 
+            "route": "non_dnd"
         }
 
         try:
