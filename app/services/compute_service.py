@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # app/services/compute_service.py
 from __future__ import annotations
 
@@ -83,11 +84,12 @@ class ComputeService:
             if v is None:
                 continue
 
-            state = "normal"
+            # Normalized to N/L/H for consistency with grid logic
+            state = "N"
             if low is not None and v < float(low):
-                state = "low"
+                state = "L"
             if high is not None and v > float(high):
-                state = "high"
+                state = "H"
 
             out[str(key)] = {
                 "state": state,
@@ -103,7 +105,6 @@ class ComputeService:
     # -----------------------------
     @staticmethod
     def _grid_schema(snapshot: Dict[str, Any]) -> Dict[str, Any]:
-        # schema can be at snapshot["schema"] OR snapshot["grid"]["schema"]
         sch = snapshot.get("schema") or {}
         if not sch:
             g = snapshot.get("grid") or {}
@@ -126,17 +127,6 @@ class ComputeService:
 
     @staticmethod
     def _compute_flags_for_grid(snapshot: Dict[str, Any], values: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Uses schema mapping:
-          schema = {
-            enabled: bool,
-            header_row: int,
-            mode: "minmax",
-            columns: { result, ref_min, ref_max, flag, parameter?, unit? }
-          }
-        Reads values["cells"] (2D list of strings).
-        Returns a grid flags object; does NOT mutate values.
-        """
         sch = ComputeService._grid_schema(snapshot)
         enabled = bool(sch.get("enabled", False))
         if not enabled:
@@ -150,21 +140,17 @@ class ComputeService:
         param_c = cols_map.get("parameter")
         unit_c = cols_map.get("unit")
 
-        # must have minimum mapping
         if res_c is None or lo_c is None or hi_c is None or flag_c is None:
             return {}
 
         header_row = int(sch.get("header_row", 0) or 0)
-
         cells = values.get("cells")
         if not isinstance(cells, list):
             return {}
 
-        rows_n = len(cells)
-        # compute per row (below header)
         row_flags: List[Dict[str, Any]] = []
 
-        for r in range(header_row + 1, rows_n):
+        for r in range(header_row + 1, len(cells)):
             res_s = ComputeService._safe_cell(cells, r, int(res_c))
             lo_s = ComputeService._safe_cell(cells, r, int(lo_c))
             hi_s = ComputeService._safe_cell(cells, r, int(hi_c))
@@ -174,14 +160,14 @@ class ComputeService:
             hi = ComputeService._to_float(hi_s)
 
             if res is None or lo is None or hi is None:
-                # skip rows that aren't numeric yet
                 continue
 
-            state = "normal"
+            # 🔥 SYNC: Using "L", "H", "N" to match frontend result_table_editor.py logic
+            state = "N"
             if res < lo:
-                state = "low"
+                state = "L"
             elif res > hi:
-                state = "high"
+                state = "H"
 
             entry: Dict[str, Any] = {
                 "row_index": r,
@@ -192,7 +178,6 @@ class ComputeService:
                 "flag_col": int(flag_c),
             }
 
-            # Optional metadata
             if param_c is not None:
                 entry["parameter"] = ComputeService._safe_cell(cells, r, int(param_c))
             if unit_c is not None:
@@ -214,22 +199,42 @@ class ComputeService:
     @staticmethod
     def compute_flags(snapshot: Dict[str, Any], values: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Unified compute:
-          - table/structured snapshots (fields-based): returns flags["fields"]
-          - grid snapshots (schema+cells): returns flags["grid"]
-
-        This keeps backward compatibility for existing structured callers.
+        Unified compute handler:
+        - multi-grid: iterates through sections array
+        - grid: handles single schema+cells logic
+        - fields: fallback for legacy structured fields
         """
         snapshot = snapshot or {}
         values = values or {}
 
         kind = str(snapshot.get("kind") or "").strip().lower()
 
-        # If it's a grid editor snapshot
+        # 🚀 1. Handle Multi-Grid (New Component Table System)
+        if kind == "multi-grid" or "sections" in snapshot:
+            sections = snapshot.get("sections") or []
+            
+            # Values for multi-grid are stored in uix['sections'] or directly in sections
+            # We check both to be safe based on the payload structure
+            val_sections = values.get("sections") or values.get("uix", {}).get("sections") or []
+            
+            multi_flags = []
+            for i, sec_snap in enumerate(sections):
+                # Match values to snapshot by index. If values missing, pass empty dict
+                sec_vals = val_sections[i] if i < len(val_sections) else {}
+                
+                # Recursive call to handle the specific section (grid or field)
+                multi_flags.append(ComputeService.compute_flags(sec_snap, sec_vals))
+            
+            return {
+                "kind": "multi-grid",
+                "sections": multi_flags
+            }
+
+        # 2. Handle Single Grid Snapshot
         if kind == "grid" or isinstance(snapshot.get("grid"), dict):
             grid_flags = ComputeService._compute_flags_for_grid(snapshot, values)
             return {"grid": grid_flags} if grid_flags else {}
 
-        # Otherwise treat as "table"/structured fields snapshot
+        # 3. Backward Compatibility: Field-based (Old format)
         field_flags = ComputeService._compute_flags_for_fields(snapshot, values)
-        return field_flags  # BACKWARD COMPAT: existing code expects {key: {...}}
+        return field_flags
