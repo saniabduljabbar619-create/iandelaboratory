@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-
-#app/services/result_service.py
+# app/services/result_service.py
 from __future__ import annotations
 
 from typing import Optional, Tuple, List
+from datetime import datetime
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 
 from app.models.patient import Patient
 from app.models.test_template import TestTemplate
 from app.models.test_result import TestResult, ResultStatus
+from app.models.test_request import TestRequest  # ✅ REQUIRED FOR TIMELINE
 from app.schemas.test_result import ResultInstantiate, ResultUpdateValues, ResultInstantiateFromSnapshot
 from app.services.compute_service import ComputeService
 from app.services.audit_service import AuditService
 from app.core.branch_scope import resolve_branch_scope
 from app.services.notification_service import NotificationService
-from app.models.patient import Patient
 
 class ResultService:
     def __init__(self, db: Session, current_user, requested_branch_id: int | None = None):
@@ -24,40 +25,32 @@ class ResultService:
         self.current_user = current_user
         self.branch_id = resolve_branch_scope(current_user, requested_branch_id)
 
-
     def instantiate(self, payload: ResultInstantiate) -> TestResult:
         if not self.branch_id:
             raise HTTPException(status_code=400, detail="User not bound to branch")
-        patient_query = self.db.query(Patient).filter(Patient.id == payload.patient_id)
-
-        if self.branch_id:
-            patient_query = patient_query.filter(Patient.branch_id == self.branch_id)
-
-        patient = patient_query.first()
-
-        if not patient:
-            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        patient = self.db.query(Patient).filter(
+            Patient.id == payload.patient_id,
+            Patient.branch_id == self.branch_id
+        ).first()
 
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
 
         template = self.db.query(TestTemplate).filter(TestTemplate.id == payload.template_id).first()
-        if not template:
-            raise HTTPException(status_code=404, detail="Template not found")
-        if not template.is_active:
-            raise HTTPException(status_code=400, detail="Template is not active")
+        if not template or not template.is_active:
+            raise HTTPException(status_code=400, detail="Invalid or inactive template")
 
-        # test_type_id is derived from template (correct design)
         r = TestResult(
             patient_id=patient.id,
             test_type_id=template.test_type_id,
             template_id=template.id,
             status=ResultStatus.draft,
-            template_snapshot=template.structure,  # snapshot
+            template_snapshot=template.structure,
             values={},
             flags={},
             notes=None,
-            branch_id=self.branch_id,  # ✅ CRITICAL
+            branch_id=self.branch_id,
         )
         self.db.add(r)
         self.db.commit()
@@ -65,20 +58,16 @@ class ResultService:
         return r
     
     def instantiate_from_snapshot(self, payload: ResultInstantiateFromSnapshot) -> TestResult:
-        # ✅ THE FIX: Prioritize branch_id from payload (for sync)
-        # Fall back to self.branch_id (resolved from current user)
         effective_branch_id = payload.branch_id if hasattr(payload, 'branch_id') and payload.branch_id else self.branch_id
 
-        # Strict check: Fail if we still have no branch ID
         if not effective_branch_id:
             raise HTTPException(status_code=400, detail="User not bound to branch")
         
-        # Branch-aware Patient lookup
-        patient_query = self.db.query(Patient).filter(Patient.id == payload.patient_id)
-        if effective_branch_id:
-            patient_query = patient_query.filter(Patient.branch_id == effective_branch_id)
+        patient = self.db.query(Patient).filter(
+            Patient.id == payload.patient_id,
+            Patient.branch_id == effective_branch_id
+        ).first()
 
-        patient = patient_query.first()
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
 
@@ -90,7 +79,7 @@ class ResultService:
         flags = ComputeService.compute_flags(snapshot, values)
 
         r = TestResult(
-            sync_id=payload.sync_id,  # ✅ Map the UUID
+            sync_id=payload.sync_id,
             patient_id=patient.id,
             test_type_id=payload.test_type_id,
             template_id=payload.template_id,
@@ -99,10 +88,23 @@ class ResultService:
             values=values,
             flags=flags,
             notes=payload.notes,
-            branch_id=effective_branch_id,  # ✅ Use the effective branch
+            branch_id=effective_branch_id,
         )
 
         self.db.add(r)
+        self.db.flush() # ✅ Get result ID to link back to request
+
+        # -------------------------------------------------
+        # 🔗 CLINICAL TIMELINE HANDSHAKE
+        # -------------------------------------------------
+        if hasattr(payload, 'test_request_id') and payload.test_request_id:
+            req = self.db.query(TestRequest).filter(TestRequest.id == payload.test_request_id).first()
+            if req:
+                req.test_result_id = r.id
+                req.status = "fulfilled"
+                # This fills the "Released" date on the PDF
+                req.fulfilled_at = func.now() 
+
         self.db.commit()
         self.db.refresh(r)
 
@@ -112,7 +114,6 @@ class ResultService:
             action="instantiate",
             entity="test_result",
             entity_id=r.id,
-            ip=None,
             meta={"source": "snapshot", "status": r.status.value},
         )
 
@@ -125,9 +126,7 @@ class ResultService:
         return r
 
     def update_values(self, result_id: int, payload: ResultUpdateValues) -> TestResult:
-
         r = self.get(result_id)
-
         existing = r.values if isinstance(r.values, dict) else {}
         incoming = payload.values if isinstance(payload.values, dict) else {}
         merged = {**existing, **incoming}
@@ -138,18 +137,12 @@ class ResultService:
         if payload.notes is not None:
             r.notes = payload.notes
 
-        # Result remains draft until cashier releases
-        if r.status == ResultStatus.draft:
-            r.status = ResultStatus.draft
-
         self.db.commit()
         self.db.refresh(r)
-
         return r
 
     def set_status(self, result_id: int, new_status: str, role: str) -> TestResult:
         r = self.get(result_id)
-
         role = (role or "").lower().strip()
         new_status = (new_status or "").lower().strip()
 
@@ -159,20 +152,9 @@ class ResultService:
             raise HTTPException(status_code=400, detail=f"Invalid status: {new_status}")
 
         allowed = {
-            "labtech": {
-                "draft": {"in_progress"},
-                "in_progress": {"pending_review"},
-            },
-            "supervisor": {
-                "pending_review": {"approved"},
-                "approved": {"released"},
-            },
-            "admin": {
-                "draft": {"released"},
-                "in_progress": {"released"},
-                "pending_review": {"released"},
-                "approved": {"released"},
-            },
+            "labtech": {"draft": {"in_progress"}, "in_progress": {"pending_review"}},
+            "supervisor": {"pending_review": {"approved"}, "approved": {"released"}},
+            "admin": {s: {"released"} for s in ["draft", "in_progress", "pending_review", "approved"]},
         }
 
         if role not in allowed:
@@ -188,47 +170,36 @@ class ResultService:
             )
 
         r.status = new_enum
+
+        # 🚀 UPDATE REQUEST TIMELINE ON RELEASE
+        if new_status == "released":
+            req = self.db.query(TestRequest).filter(TestRequest.test_result_id == r.id).first()
+            if req:
+                req.status = "fulfilled"
+                if not req.fulfilled_at:
+                    req.fulfilled_at = func.now()
+
         self.db.commit()
         self.db.refresh(r)
 
         # Audit log
         AuditService(self.db).log(
-            actor_type="staff",
-            actor=role,
-            action="status_change",
-            entity="test_result",
-            entity_id=r.id,
-            ip=None,
+            actor_type="staff", actor=role, action="status_change",
+            entity="test_result", entity_id=r.id,
             meta={"from": current, "to": new_status},
         )
 
-        # -------------------------------------------------
-        # Phase 5: Notification when result is released
-        # -------------------------------------------------
         if new_status == "released":
-
-            patient = (
-                self.db.query(Patient)
-                .filter(Patient.id == r.patient_id)
-                .first()
-            )
-
+            patient = self.db.query(Patient).filter(Patient.id == r.patient_id).first()
             patient_name = patient.full_name if patient else "Patient"
             phone = patient.phone if patient else None
 
-            # Notification (existing)
             NotificationService.create(
-                db=self.db,
-                type="result_ready",
-                title="Result Ready",
+                db=self.db, type="result_ready", title="Result Ready",
                 message=f"Lab result ready for {patient_name}",
-                reference_type="test_result",
-                reference_id=r.id
+                reference_type="test_result", reference_id=r.id
             )
 
-            # -----------------------------------
-            # SMS DISPATCH (SAFE + OPTIONAL)
-            # -----------------------------------
             if phone:
                 try:
                     sms_message = (
@@ -236,54 +207,25 @@ class ResultService:
                         f"Ref: {r.id}\n"
                         f"visit : https://iandelaboratory.com/lookup to download or view"
                     )
-
-                    NotificationService.send_sms(
-                        phone=phone,
-                        message=sms_message
-                    )
-
+                    NotificationService.send_sms(phone=phone, message=sms_message)
                 except Exception as sms_error:
-                    # Do NOT break release flow
                     print(f"[SMS ERROR] {sms_error}")
 
         return r
 
-    # --- NEW: List results (Option 2 canonical) ---
-    def list(
-        self,
-        patient_id: Optional[int] = None,
-        status: Optional[str] = None,
-        limit: int = 50,
-        offset: int = 0,
-        role: str = "labtech",
-    ) -> tuple[list[TestResult], int]:
-        # Currently permissive for staff roles; tighten later if needed.
+    def list(self, patient_id=None, status=None, limit=50, offset=0, role="labtech") -> tuple[list[TestResult], int]:
         role = (role or "").lower().strip()
         if role not in {"labtech", "labstaff", "cashier", "supervisor", "admin"}:
             raise HTTPException(status_code=403, detail="Invalid role")
 
         q = self.db.query(TestResult)
-
         if self.branch_id:
             q = q.filter(TestResult.branch_id == self.branch_id)
-
-
         if patient_id is not None:
             q = q.filter(TestResult.patient_id == patient_id)
-
         if status:
-            status_norm = (status or "").lower().strip()
-            try:
-                status_enum = ResultStatus(status_norm)
-            except Exception:
-                raise HTTPException(status_code=400, detail=f"Invalid status: {status_norm}")
-            q = q.filter(TestResult.status == status_enum)
+            q = q.filter(TestResult.status == ResultStatus(status.lower().strip()))
 
         total = q.count()
-        rows = (
-            q.order_by(desc(TestResult.created_at))
-             .offset(offset)
-             .limit(limit)
-             .all()
-        )
+        rows = q.order_by(desc(TestResult.created_at)).offset(offset).limit(limit).all()
         return rows, total
