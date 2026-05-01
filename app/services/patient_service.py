@@ -48,7 +48,7 @@ class PatientService:
         if not last:
             # Check if we are starting the 2026 sequence
             if current_year_yy == "26":
-                nxt = 3500
+                nxt = 4268
             else:
                 # Standard New Year reset
                 nxt = 1
