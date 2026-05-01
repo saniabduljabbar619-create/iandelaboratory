@@ -49,65 +49,66 @@ class TestRequestService:
             raise HTTPException(status_code=400, detail="Database integrity error")
 
     def list(
-        self,
-        status: str | None = None,
-        patient_id: int | None = None,
-        created_date: str | None = None,  # 🔥 Added date filter support
-        limit: int = 50
-    ):
-        # Join all three tables to get the full picture
-        q = (
-            self.db.query(TestRequest, TestType, Patient)
-            .join(TestType, TestType.id == TestRequest.test_type_id)
-            .join(Patient, Patient.id == TestRequest.patient_id)
-        )
+        self,
+        status: str | None = None,
+        patient_id: int | None = None,
+        created_date: str | None = None,
+        limit: int = 50
+    ):
+        # Join all three tables to get the full picture
+        q = (
+            self.db.query(TestRequest, TestType, Patient)
+            .join(TestType, TestType.id == TestRequest.test_type_id)
+            .join(Patient, Patient.id == TestRequest.patient_id)
+        )
 
-        if self.branch_id:
-            q = q.filter(TestRequest.branch_id == self.branch_id)
+        if self.branch_id:
+            q = q.filter(TestRequest.branch_id == self.branch_id)
 
-        if status:
-            q = q.filter(TestRequest.status == status)
+        if status:
+            q = q.filter(TestRequest.status == status)
 
-        if patient_id:
-            q = q.filter(TestRequest.patient_id == patient_id)
+        if patient_id:
+            q = q.filter(TestRequest.patient_id == patient_id)
 
-        # 🔥 Filter by specific day (YYYY-MM-DD)
-        if created_date:
-            q = q.filter(func.date(TestRequest.created_at) == created_date)
+        if created_date:
+            q = q.filter(func.date(TestRequest.created_at) == created_date)
 
-        rows = q.order_by(TestRequest.created_at.desc()).limit(limit).all()
+        rows = q.order_by(TestRequest.created_at.desc()).limit(limit).all()
 
-        out = []
+        out = []
 
-        for tr, tt, p in rows: 
-            out.append({
-                "id": tr.id,
-                "patient_id": tr.patient_id,
-                "test_type_id": tr.test_type_id,
-                "status": tr.status,
-                "requested_by": tr.requested_by,
-                # 🔥 UPDATE THESE TWO LINES:
-                "created_at": tr.created_at.isoformat() if tr.created_at else None,
-                "updated_at": tr.updated_at.isoformat() if tr.updated_at else None,
-                
-                # 🔥 Nested Patient Data for Frontend Compatibility
-                # This allows the Daily Queue to show old patients with new requests
-                "patient": {
-                    "id": p.id,
-                    "patient_no": p.patient_no,
-                    "full_name": p.full_name,
-                    "phone": p.phone,
-                    "gender": p.gender,
-                    "dob": p.date_of_birth.isoformat() if p.date_of_birth else None,
-                    "created_at": p.created_at
-                },
+        for tr, tt, p in rows: 
+            # 🔥 Fix: Define iso_date at the start of the loop
+            iso_date = tr.created_at.isoformat() if tr.created_at else None
+            
+            out.append({
+                "id": tr.id,
+                "patient_id": tr.patient_id,
+                "test_type_id": tr.test_type_id,
+                "status": tr.status,
+                "requested_by": tr.requested_by,
+                
+                # 🔥 Use the variable defined above
+                "created_at": iso_date,
+                "date": iso_date, # Providing 'date' as a fallback for frontend compatibility
+                "updated_at": tr.updated_at.isoformat() if tr.updated_at else None,
+                
+                "patient": {
+                    "id": p.id,
+                    "patient_no": p.patient_no,
+                    "full_name": p.full_name,
+                    "phone": p.phone,
+                    "gender": p.gender,
+                    "dob": p.date_of_birth.isoformat() if p.date_of_birth else None,
+                    "created_at": p.created_at.isoformat() if p.created_at else None
+                },
 
-                # 🔥 Test Info Enrichment
-                "test_name": tt.name,
-                "price": float(tt.price) if tt.price else 0.0,
-            })
+                "test_name": tt.name,
+                "price": float(tt.price) if tt.price else 0.0,
+            })
 
-        return out
+        return out
 
     def get(self, request_id: int) -> TestRequest:
         q = self.db.query(TestRequest).filter(TestRequest.id == request_id)
