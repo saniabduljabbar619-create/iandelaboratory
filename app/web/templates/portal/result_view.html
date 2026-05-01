@@ -33,9 +33,8 @@
 
                 <div class="meta-item">
                     <label>Investigation</label>
-                    <span>{{ result.test_type.name if result.test_request else "Laboratory Test" }}</span>
+                    <span>{{ result.test_type.name if result.test_type else "Laboratory Test" }}</span>
                 </div>
-
 
                 <div class="meta-item">
                     <label>Report Date</label>
@@ -45,11 +44,43 @@
             </div>
 
             <div class="table-responsive">
-                <table class="slx-result-table">
-                    {% set values = result.values %}
-                    {% set flags = result.flags %}
+                {% set values = result.values %}
+                {% set flags = result.flags %}
 
-                    {% if values and values.get('cells') %}
+                {# 1. MULTI-SECTION TABLE LOGIC (NEW) #}
+                {% if values and values.get('sections') %}
+                    {% for section in values.sections %}
+                        {% if section.title %}
+                            <h3 class="section-title" style="font-size: 1.1rem; color: #1e293b; margin: 25px 0 10px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; font-weight: 700;">
+                                {{ section.title }}
+                            </h3>
+                        {% endif %}
+                        
+                        <table class="slx-result-table mb-4">
+                            <thead>
+                                <tr>
+                                    {% for col in section.col_headers %}
+                                        <th>{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in section.cells %}
+                                <tr>
+                                    {% for col in row %}
+                                        <td class="{% if loop.first %}col-parameter{% elif loop.index0 == 1 %}col-result{% endif %}">
+                                            {{ col if col is not none else '' }}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endfor %}
+
+                {# 2. LEGACY SINGLE GRID LOGIC #}
+                {% elif values and values.get('cells') %}
+                    <table class="slx-result-table">
                         <thead>
                             <tr>
                                 {% for col in values.cells[0] %}
@@ -68,8 +99,11 @@
                             </tr>
                             {% endfor %}
                         </tbody>
+                    </table>
 
-                    {% else %}
+                {# 3. STRUCTURED RESULTS Fallback #}
+                {% else %}
+                    <table class="slx-result-table">
                         <thead>
                             <tr>
                                 <th>Parameter</th>
@@ -81,6 +115,7 @@
                         </thead>
                         <tbody>
                             {% for key, value in values.items() %}
+                            {% if key not in ['sections', 'template_snapshot', 'values'] %}
                             <tr>
                                 <td class="col-parameter">{{ key }}</td>
                                 <td class="col-result">{{ value }}</td>
@@ -93,10 +128,11 @@
                                     </span>
                                 </td>
                             </tr>
+                            {% endif %}
                             {% endfor %}
                         </tbody>
-                    {% endif %}
-                </table>
+                    </table>
+                {% endif %}
             </div>
 
             <div class="result-footer">
