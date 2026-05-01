@@ -86,8 +86,9 @@ class TestRequestService:
                 "test_type_id": tr.test_type_id,
                 "status": tr.status,
                 "requested_by": tr.requested_by,
-                "created_at": tr.created_at,
-                "updated_at": tr.updated_at,
+                # 🔥 UPDATE THESE TWO LINES:
+                "created_at": tr.created_at.isoformat() if tr.created_at else None,
+                "updated_at": tr.updated_at.isoformat() if tr.updated_at else None,
                 
                 # 🔥 Nested Patient Data for Frontend Compatibility
                 # This allows the Daily Queue to show old patients with new requests
