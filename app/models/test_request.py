@@ -31,12 +31,15 @@ class TestRequest(Base):
     requested_by = Column(String(120), nullable=True)
     requested_note = Column(String(500), nullable=True)
 
-    accepted_at = Column(DateTime, nullable=True)
-    fulfilled_at = Column(DateTime, nullable=True)
+    # Update these to include (timezone=True)
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    fulfilled_at = Column(DateTime(timezone=True), nullable=True)
+    
 
     test_result_id = Column(Integer, nullable=True, index=True)
 
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    
     branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"), nullable=False)
 
