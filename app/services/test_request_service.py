@@ -3,8 +3,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from fastapi import HTTPException
+from datetime import datetime, timezone # ✅ Use timezonefrom fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.branch_scope import resolve_branch_scope
@@ -79,7 +78,8 @@ class TestRequestService:
         out = []
 
         for tr, tt, p in rows: 
-            # Define iso_date before using it in the dictionary to avoid NameError
+            # Ensure the ISO format includes the UTC offset (+00:00)
+            # If tr.created_at is aware, isoformat() handles this automatically.
             iso_date = tr.created_at.isoformat() if tr.created_at else None
             
             out.append({
@@ -100,7 +100,8 @@ class TestRequestService:
                     "phone": p.phone,
                     "gender": p.gender,
                     "dob": p.date_of_birth.isoformat() if p.date_of_birth else None,
-                    "created_at": p.created_at.isoformat() if p.created_at else None
+                    "created_at": iso_date,
+                    "date": iso_date,
                 },
 
                 "test_name": tt.name,
@@ -137,10 +138,12 @@ class TestRequestService:
         tr.status = payload.status
 
         if payload.status == "accepted" and tr.accepted_at is None:
-            tr.accepted_at = datetime.utcnow()
+                    # ✅ Proper UTC aware datetime
+                    tr.accepted_at = datetime.now(timezone.utc)
 
         if payload.status == "fulfilled" and tr.fulfilled_at is None:
-            tr.fulfilled_at = datetime.utcnow()
+            # ✅ Proper UTC aware datetime
+            tr.fulfilled_at = datetime.now(timezone.utc)
 
         if payload.test_result_id:
             tr.test_result_id = payload.test_result_id
