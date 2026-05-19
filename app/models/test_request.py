@@ -18,6 +18,8 @@ class TestRequest(Base):
 
     sync_id = Column(String(36), unique=True, index=True, default=lambda: str(uuid.uuid4()))
 
+    request_no = Column(String(50), unique=True, nullable=True, index=True)
+
     patient_id = Column(Integer, nullable=False, index=True)
     test_type_id = Column(Integer, nullable=False, index=True)
 

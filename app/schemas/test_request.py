@@ -19,6 +19,7 @@ class TestRequestCreate(BaseModel):
     # ✅ Add these three so the service can "see" them during sync
     status: Optional[TestRequestStatus] = "pending"
     sync_id: str | None = Field(default=None, max_length=36)
+    request_no: str | None = Field(default=None, max_length=50)
     branch_id: int | None = None
 
 
@@ -30,6 +31,7 @@ class TestRequestStatusUpdate(BaseModel):
 class TestRequestOut(BaseModel):
     id: int
     sync_id: str | None 
+    request_no: str
     patient_id: int
     test_type_id: int
     status: TestRequestStatus

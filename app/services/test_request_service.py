@@ -14,11 +14,46 @@ from app.schemas.test_request import TestRequestCreate, TestRequestStatusUpdate
 
 
 class TestRequestService:
+
+    PREFIX = "REQ"
+    PAD = 4
     
     def __init__(self, db: Session, current_user, requested_branch_id: int | None = None):
         self.db = db
         self.current_user = current_user
         self.branch_id = resolve_branch_scope(current_user, requested_branch_id)
+
+    def _next_request_no(self) -> str:
+        """
+        Generates sequential request numbers.
+
+        Example:
+        REQ-26-0001
+        REQ-26-0002
+        """
+
+        now = datetime.now()
+        current_year_yy = now.strftime("%y")
+        year_prefix = f"{self.PREFIX}-{current_year_yy}-"
+
+        last = (
+            self.db.query(TestRequest)
+            .filter(TestRequest.request_no.like(f"{year_prefix}%"))
+            .order_by(TestRequest.request_no.desc())
+            .with_for_update()
+            .first()
+        )
+
+        if not last or not last.request_no:
+            nxt = 1
+        else:
+            try:
+                parts = last.request_no.split("-")
+                nxt = int(parts[-1]) + 1
+            except (ValueError, IndexError):
+                nxt = 1
+
+        return f"{year_prefix}{nxt:0{self.PAD}d}"
 
 
     def create(self, payload: TestRequestCreate) -> TestRequest:
@@ -29,6 +64,7 @@ class TestRequestService:
 
         tr = TestRequest(
             sync_id=payload.sync_id, 
+            request_no = self._next_request_no() if not payload.request_no else payload.request_no,
             patient_id=payload.patient_id,
             test_type_id=payload.test_type_id,
             requested_by=payload.requested_by,
@@ -84,6 +120,8 @@ class TestRequestService:
             
             out.append({
                 "id": tr.id,
+                "request_no": tr.request_no,
+                "sync_id": tr.sync_id,
                 "patient_id": tr.patient_id,
                 "test_type_id": tr.test_type_id,
                 "status": tr.status,
