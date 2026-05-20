@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+# app/api/routers/lab_reports.py
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -10,6 +10,8 @@ router = APIRouter(
     prefix="/lab-reports",
     tags=["Lab Reports"]
 )
+
+
 
 
 @router.post("/next-lab-no")

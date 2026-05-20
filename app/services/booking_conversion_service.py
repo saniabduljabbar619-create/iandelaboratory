@@ -15,75 +15,67 @@ class BookingConversionService:
     def convert_patient(
         db: Session,
         booking_id: int,
-        patient_id: int,   # 🔥 CHANGE HERE
+        patient_id: int,
         branch_id: int,
         cashier_name: str
     ):
-
-        # --------------------------------------
-        # LOAD BOOKING
-        # --------------------------------------
-
-        booking = db.query(Booking).filter(
-            Booking.id == booking_id
-        ).first()
-
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
         if not booking:
             raise Exception("Booking not found")
-
         if booking.status == "converted":
             raise Exception("Booking already processed")
-
         if booking.status not in ["payment_verified", "approved_credit"]:
             raise Exception("Booking not ready for conversion")
 
-        # --------------------------------------
-        # FETCH ITEMS
-        # --------------------------------------
+        # ── Step 1: Find the anchor item (by patient_id FK or by row id) ──────────
+        anchor = db.query(BookingItem).filter(
+            BookingItem.booking_id == booking_id,
+            (BookingItem.patient_id == patient_id) | (BookingItem.id == patient_id)
+        ).first()
 
+        if not anchor:
+            raise Exception("Patient record not found in this booking")
+
+        # ── Step 2: Get ALL unconverted items for this patient (group by name+phone)
         items = db.query(BookingItem).filter(
             BookingItem.booking_id == booking_id,
-            BookingItem.patient_id == patient_id,
+            BookingItem.patient_name == anchor.patient_name,
+            BookingItem.patient_phone == anchor.patient_phone,
             BookingItem.converted == False
         ).all()
 
-        # --------------------------------------
-        # HANDLE EMPTY (ALREADY PROCESSED)
-        # --------------------------------------
-
         if not items:
-
             remaining = db.query(BookingItem).filter(
                 BookingItem.booking_id == booking_id,
                 BookingItem.converted == False
             ).count()
-
             if remaining == 0:
                 booking.status = "converted"
                 db.commit()
-
             raise Exception("Nothing to convert")
 
-        # --------------------------------------
-        # RESOLVE PATIENT
-        # --------------------------------------
+        # ── Step 3: Resolve Patient record properly ───────────────────────────────
+        patient = None
 
-        patient = db.query(Patient).filter(
-            Patient.id == patient_id
-        ).first()
+        # Try the FK first (set for registered patients)
+        if anchor.patient_id:
+            patient = db.query(Patient).filter(Patient.id == anchor.patient_id).first()
+
+        # Fall back to phone lookup (portal/walk-in patients)
+        if not patient and anchor.patient_phone:
+            patient = db.query(Patient).filter(
+                Patient.phone == anchor.patient_phone
+            ).first()
 
         if not patient:
-            raise Exception("Patient not found for conversion")
+            raise Exception(
+                f"No patient record found for {anchor.patient_name} "
+                f"({anchor.patient_phone}). Please register them first."
+            )
 
-
-        # --------------------------------------
-        # CREATE TEST REQUESTS
-        # --------------------------------------
-
+        # ── Step 4: Create test requests ─────────────────────────────────────────
         created_requests = []
-
         for item in items:
-
             request = TestRequest(
                 patient_id=patient.id,
                 test_type_id=item.test_type_id,
@@ -91,24 +83,17 @@ class BookingConversionService:
                 requested_by=cashier_name,
                 branch_id=branch_id
             )
-
             db.add(request)
-
             item.converted = True
             created_requests.append(request)
 
-        # --------------------------------------
-        # FINALIZE BOOKING
-        # --------------------------------------
-
+        # ── Step 5: Close booking if fully converted ──────────────────────────────
         remaining = db.query(BookingItem).filter(
             BookingItem.booking_id == booking_id,
             BookingItem.converted == False
         ).count()
-
         if remaining == 0:
             booking.status = "converted"
 
         db.commit()
-
         return created_requests
