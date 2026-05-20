@@ -26,6 +26,7 @@ from app.web.routes.portal_ui import router as portal_ui_router
 from app.web.routes.admin import router as admin_router
 
 from app.services.audit_service import AuditService
+from app.api.routers.lab_reports import router as lab_reports_router
 
 
 # --------------------------------------------------
@@ -75,6 +76,7 @@ app.include_router(portal.router, prefix="/portal", tags=["portal"])
 
 app.include_router(debug.router, prefix="/api/debug", tags=["debug"])
 app.include_router(audit.router, prefix="/api/audits", tags=["audits"])
+app.include_router(lab_reports_router, prefix="/api")
 
 app.include_router(referrer_router)
 app.include_router(portal_ui_router)
