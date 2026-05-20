@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.api.deps import get_db
 from app.utils.lab_no_generator import next_lab_no
 
 router = APIRouter(
