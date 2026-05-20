@@ -87,7 +87,7 @@ class BookingConversionService:
                 date_of_birth=anchor.dob,
                 gender=anchor.gender,
                 branch_id=branch_id,
-                patient_no=f"AUTO-{uuid.uuid4().hex[:8].upper()}",  # unique placeholder
+                patient_no=f"ID-{uuid.uuid4().hex[:8].upper()}",  # unique placeholder
             )
             db.add(patient)
             db.flush()  # Materialise patient.id before use
