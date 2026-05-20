@@ -7,7 +7,7 @@ from app.models.booking import Booking
 from app.models.booking_item import BookingItem
 from app.models.patient import Patient
 from app.models.test_request import TestRequest
-
+import uuid
 
 class BookingConversionService:
 
@@ -78,13 +78,16 @@ class BookingConversionService:
                 Patient.phone == anchor.patient_phone
             ).first()
 
+
         # 3c. Auto-create for first-time portal/walk-in patients
         if not patient:
             patient = Patient(
                 full_name=anchor.patient_name,
                 phone=anchor.patient_phone,
-                dob=anchor.dob,
+                date_of_birth=anchor.dob,
                 gender=anchor.gender,
+                branch_id=branch_id,
+                patient_no=f"AUTO-{uuid.uuid4().hex[:8].upper()}",  # unique placeholder
             )
             db.add(patient)
             db.flush()  # Materialise patient.id before use
