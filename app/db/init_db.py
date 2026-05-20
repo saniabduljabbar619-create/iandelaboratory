@@ -18,6 +18,10 @@ from app.models.user import User  # noqa
 from app.models.booking import Booking  # noqa
 from app.models.booking_item import BookingItem  # noqa
 from app.models.referrer import Referrer # noqa
+from app.models.lab_report_counter import LabReportCounter # noqa
+from app.models.payment import Payment # noqa
+from app.models.referral_bridge import ReferralBridge # noqa
+
 
 # --- 🔥 NEW CASHIER AUTHORITY TRIAD ---
 # Import the new clean-room tables here
