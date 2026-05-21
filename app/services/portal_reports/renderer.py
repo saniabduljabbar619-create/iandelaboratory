@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
@@ -16,6 +17,24 @@ def _safe_set_alpha(c, a):
         pass
 
 
+def _parse_dt(raw) -> str:
+    """Parse an ISO datetime string or datetime object into a readable string."""
+    if not raw or raw == "N/A":
+        return "N/A"
+    try:
+        if isinstance(raw, str):
+            dt_obj = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if dt_obj.tzinfo is None:
+                dt_obj = dt_obj.replace(tzinfo=timezone.utc)
+        else:
+            dt_obj = raw
+            if dt_obj.tzinfo is None:
+                dt_obj = dt_obj.replace(tzinfo=timezone.utc)
+        return dt_obj.astimezone(None).strftime("%d %b %Y  %I:%M %p")
+    except Exception:
+        return str(raw)
+
+
 def _draw_header(c, lab_profile, w, h):
     logo = lab_profile.get("logo_path")
     top_y = h - 20 * mm
@@ -24,23 +43,21 @@ def _draw_header(c, lab_profile, w, h):
         try:
             from PIL import Image
             pil_img = Image.open(logo)
-            # Ensure RGB/RGBA to avoid 'L' or 'P' mode errors
             if pil_img.mode not in ('RGB', 'RGBA'):
                 pil_img = pil_img.convert('RGB')
-                
+
             img = ImageReader(pil_img)
             size = 18 * mm
-    
-            # Draw logo on both sides for symmetry
-            c.drawImage(img, 15 * mm, h - 35 * mm, size, size, mask='auto')
-            c.drawImage(img, w - 15 * mm - size, h - 35 * mm, size, size, mask='auto')
+
+            c.drawImage(img, 15 * mm,             h - 35 * mm, size, size, mask='auto')
+            c.drawImage(img, w - 15 * mm - size,  h - 35 * mm, size, size, mask='auto')
         except Exception as e:
             print(f"DEBUG PDF LOGO ERROR: {e}")
 
     lab_name = lab_profile.get("lab_name", "Laboratory")
-    address = lab_profile.get("address", "")
-    phone = lab_profile.get("phone", "")
-    email = lab_profile.get("email", "")
+    address  = lab_profile.get("address", "")
+    phone    = lab_profile.get("phone", "")
+    email    = lab_profile.get("email", "")
 
     c.setFont("Helvetica-Bold", 15)
     c.drawCentredString(w / 2, top_y, lab_name)
@@ -77,7 +94,7 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
     w, h = A4
 
     # ================= WATERMARK =================
-    logo = lab_profile.get("logo_path")
+    logo      = lab_profile.get("logo_path")
     watermark = bool(lab_profile.get("watermark_enabled", True))
 
     if watermark and logo:
@@ -96,21 +113,31 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
     _draw_header(c, lab_profile, w, h)
 
     # ================= PATIENT BLOCK =================
-    pid = patient_row.get("Patient ID", "-")
+    pid  = patient_row.get("Patient ID", "-")
     name = patient_row.get("Name", "-")
-    sex = patient_row.get("Sex", "-")
-    age = patient_row.get("Age", "-")
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    sex  = patient_row.get("Sex", "-")
+    age  = patient_row.get("Age", "-")
+
+    # ── Pull requested date from the first result's request data ─────────────
+    # Falls back to current time only if no request date is available at all.
+    first_res = list(bundle_results.values())[0] if bundle_results else {}
+    req_raw   = (
+        first_res.get("created_at")
+        or first_res.get("date")
+        or first_res.get("request", {}).get("created_at")
+    )
+    requested_dt = _parse_dt(req_raw) if req_raw else datetime.now().strftime("%d %b %Y  %I:%M %p")
 
     c.setFont("Helvetica-Bold", 11)
     c.drawString(15 * mm, h - 48 * mm, "Patient Report")
 
     c.setFont("Helvetica", 9)
-    c.drawString(15 * mm, h - 53 * mm, f"Name: {name}")
+    c.drawString(15 * mm, h - 53 * mm, f"Name:       {name}")
     c.drawString(15 * mm, h - 57 * mm, f"Patient ID: {pid}")
     c.drawString(80 * mm, h - 53 * mm, f"Sex: {sex}")
     c.drawString(80 * mm, h - 57 * mm, f"Age: {age}")
-    c.drawString(w - 60 * mm, h - 53 * mm, f"Printed: {now}")
+    # ← was "Printed: {now}" — now shows when the test was actually requested
+    c.drawString(w - 75 * mm, h - 53 * mm, f"Requested: {requested_dt}")
 
     y = h - 65 * mm
 
@@ -133,18 +160,19 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
             for r in rows:
                 data.append([
                     r.get("parameter", ""), r.get("result", ""),
-                    r.get("unit", ""), r.get("ref_range", ""), r.get("flag", "")
+                    r.get("unit", ""),      r.get("ref_range", ""),
+                    r.get("flag", "")
                 ])
 
             tbl = Table(data, colWidths=[60 * mm, 25 * mm, 22 * mm, 35 * mm, 18 * mm])
             tbl.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                ("GRID", (0, 0), (-1, -1), 0.3, colors.grey),
-                ("FONT", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, -1), 8),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("WORDWRAP", (0, 0), (-1, -1), True),
-                ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+                ("BACKGROUND", (0, 0), (-1,  0), colors.lightgrey),
+                ("GRID",       (0, 0), (-1, -1), 0.3, colors.grey),
+                ("FONT",       (0, 0), (-1,  0), "Helvetica-Bold"),
+                ("FONTSIZE",   (0, 0), (-1, -1), 8),
+                ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
+                ("WORDWRAP",   (0, 0), (-1, -1), True),
+                ("ALIGN",      (1, 1), (-1, -1), "CENTER"),
             ]))
 
             tw, th = tbl.wrapOn(c, w - 30 * mm, y)
@@ -152,17 +180,15 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
             tbl.drawOn(c, 15 * mm, y - th)
             y -= th + 8 * mm
 
-        # ================= GRID TABLE RESULT (MULTI-SECTION SUPPORT) =================
+        # ================= GRID TABLE RESULT =================
         elif typ == "table":
-            # 🚀 Fix: Get sections from uix bundle, or fallback to the single legacy grid
             sections = payload.get("uix", {}).get("sections") or [payload.get("grid", {})]
-            
+
             for section_grid in sections:
                 cells = section_grid.get("cells", [])
                 if not cells:
                     continue
 
-                # Handle Section Titles (if named in editor)
                 title = section_grid.get("title", "")
                 if title:
                     y = _ensure_space(c, y, 12 * mm, h, lab_profile, w)
@@ -170,29 +196,27 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
                     c.drawString(15 * mm, y, f"[{title}]")
                     y -= 5 * mm
 
-                ncols = max(len(r) for r in cells)
-                padded = [r + [""] * (ncols - len(r)) for r in cells]
+                ncols     = max(len(r) for r in cells)
+                padded    = [r + [""] * (ncols - len(r)) for r in cells]
                 col_width = (w - 30 * mm) / ncols
 
                 tbl = Table(padded, colWidths=[col_width] * ncols)
                 tbl.setStyle(TableStyle([
-                    ("GRID", (0, 0), (-1, -1), 0.3, colors.grey),
-                    ("FONT", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke),
-                    ("FONTSIZE", (0, 0), (-1, -1), 8),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("ALIGN", (0, 0), (0, -1), "LEFT"), # Parameters Left
-                    ("ALIGN", (1, 0), (-1, -1), "CENTER"), # Values Centered
+                    ("GRID",       (0, 0), (-1, -1), 0.3, colors.grey),
+                    ("FONT",       (0, 0), (-1,  0), "Helvetica-Bold"),
+                    ("BACKGROUND", (0, 0), (-1,  0), colors.whitesmoke),
+                    ("FONTSIZE",   (0, 0), (-1, -1), 8),
+                    ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
+                    ("ALIGN",      (0, 0), ( 0, -1), "LEFT"),    # Parameters left
+                    ("ALIGN",      (1, 0), (-1, -1), "CENTER"),  # Values centred
                 ]))
 
                 tw, th = tbl.wrapOn(c, w - 30 * mm, y)
                 y = _ensure_space(c, y, th + 5 * mm, h, lab_profile, w)
                 tbl.drawOn(c, 15 * mm, y - th)
-
-                # Move y down for the next table component
                 y -= th + 10 * mm
 
-        # Separator line between different test results
+        # Separator line between test results
         c.setStrokeColor(colors.lightgrey)
         c.line(15 * mm, y, w - 15 * mm, y)
         y -= 6 * mm
@@ -211,7 +235,7 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
 
     c.setFont("Helvetica-Oblique", 7)
     c.setFillColor(colors.gray)
-    
+
     if source == "lab":
         source_note = "Official Reprint: Routed and fetched from the Laboratory Internal Portal."
     else:
