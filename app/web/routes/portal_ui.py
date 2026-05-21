@@ -236,7 +236,7 @@ def download_result(request: Request, result_id: int):
     print("LOGO EXISTS:", logo_file.exists())
 
     from app.services.result_pdf_service import generate_result_pdf
-    output_path = generate_result_pdf(result)
+    output_path = generate_result_pdf(result, requested_at=result.created_at)
 
     # ===============================
     # DOWNLOAD RESPONSE

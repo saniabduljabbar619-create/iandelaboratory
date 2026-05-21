@@ -56,7 +56,8 @@ def generate_result_pdf(result, source="lab"):
         lab_profile=LAB_PROFILE,
         patient_row=patient_row,
         bundle_results=bundle_results,
-        source=source 
+        source=source,
+        requested_at=result.created_at,   # ← same field the web view uses for Report Date
     )
 
     return output_path
