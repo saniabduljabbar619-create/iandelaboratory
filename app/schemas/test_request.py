@@ -31,7 +31,7 @@ class TestRequestStatusUpdate(BaseModel):
 class TestRequestOut(BaseModel):
     id: int
     sync_id: str | None 
-    request_no: str
+    request_no: str | None = None   # was: request_no: str
     patient_id: int
     test_type_id: int
     status: TestRequestStatus

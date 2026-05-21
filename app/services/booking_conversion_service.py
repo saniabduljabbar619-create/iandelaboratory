@@ -1,15 +1,44 @@
 # -*- coding: utf-8 -*-
 # app/services/booking_conversion_service.py
 
+from __future__ import annotations
+
+import uuid
+from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models.booking import Booking
 from app.models.booking_item import BookingItem
 from app.models.patient import Patient
 from app.models.test_request import TestRequest
-import uuid
+
 
 class BookingConversionService:
+
+    # ── Request number generator (mirrors TestRequestService logic) ───────────
+    @staticmethod
+    def _next_request_no(db: Session) -> str:
+        prefix      = "REQ"
+        year        = datetime.now().strftime("%y")
+        year_prefix = f"{prefix}-{year}-"
+
+        last = (
+            db.query(TestRequest)
+            .filter(TestRequest.request_no.like(f"{year_prefix}%"))
+            .order_by(TestRequest.request_no.desc())
+            .with_for_update()
+            .first()
+        )
+
+        if not last or not last.request_no:
+            nxt = 1
+        else:
+            try:
+                nxt = int(last.request_no.split("-")[-1]) + 1
+            except (ValueError, IndexError):
+                nxt = 1
+
+        return f"{year_prefix}{nxt:04d}"
 
     @staticmethod
     def convert_patient(
@@ -50,7 +79,6 @@ class BookingConversionService:
         ).all()
 
         if not items:
-            # Check if the whole booking is already done
             remaining = db.query(BookingItem).filter(
                 BookingItem.booking_id == booking_id,
                 BookingItem.converted == False
@@ -78,7 +106,6 @@ class BookingConversionService:
                 Patient.phone == anchor.patient_phone
             ).first()
 
-
         # 3c. Auto-create for first-time portal/walk-in patients
         if not patient:
             patient = Patient(
@@ -87,7 +114,7 @@ class BookingConversionService:
                 date_of_birth=anchor.dob,
                 gender=anchor.gender,
                 branch_id=branch_id,
-                patient_no=f"ID-{uuid.uuid4().hex[:8].upper()}",  # unique placeholder
+                patient_no=f"ID-{uuid.uuid4().hex[:8].upper()}",
             )
             db.add(patient)
             db.flush()  # Materialise patient.id before use
@@ -97,7 +124,7 @@ class BookingConversionService:
             for item in items:
                 item.patient_id = patient.id
 
-        # ── Step 5: Create TestRequest rows ──────────────────────────────────
+        # ── Step 5: Create TestRequest rows with sequential request_no ────────
         created_requests = []
 
         for item in items:
@@ -106,9 +133,12 @@ class BookingConversionService:
                 test_type_id=item.test_type_id,
                 status="paid",
                 requested_by=cashier_name,
-                branch_id=branch_id
+                branch_id=branch_id,
+                request_no=BookingConversionService._next_request_no(db),
             )
             db.add(request)
+            db.flush()   # ← flush each insert so the next _next_request_no()
+                         #   sees it and won't generate a duplicate number
             item.converted = True
             created_requests.append(request)
 
