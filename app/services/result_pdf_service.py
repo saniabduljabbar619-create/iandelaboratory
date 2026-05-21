@@ -6,7 +6,7 @@ from app.services.portal_reports.builder import build_bundle_result
 from app.services.portal_reports.renderer import render_pdf
 from app.services.portal_reports.config import LAB_PROFILE
 
-def generate_result_pdf(result, source="lab"):
+def generate_result_pdf(result, source="lab", requested_at=None):
     # ===============================
     # BUILD BUNDLE
     # ===============================
