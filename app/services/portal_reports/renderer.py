@@ -86,7 +86,7 @@ def _ensure_space(c, y, needed, page_height, lab_profile, w):
     return y
 
 
-def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="lab"):
+def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="lab", requested_at=None):
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 
@@ -118,13 +118,14 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
     sex  = patient_row.get("Sex", "-")
     age  = patient_row.get("Age", "-")
 
-    # ── Pull requested date from the first result's request data ─────────────
-    # Falls back to current time only if no request date is available at all.
+    # ── Derive report date: primary source is result.created_at passed in as
+    #    requested_at; falls back to bundle payload fields, then current time.
     first_res = list(bundle_results.values())[0] if bundle_results else {}
     req_raw   = (
-        first_res.get("created_at")
+        requested_at                                        # ← primary: result.created_at from DB
+        or first_res.get("request", {}).get("created_at")  # ← fallback: result payload
+        or first_res.get("created_at")
         or first_res.get("date")
-        or first_res.get("request", {}).get("created_at")
     )
     requested_dt = _parse_dt(req_raw) if req_raw else datetime.now().strftime("%d %b %Y  %I:%M %p")
 
@@ -136,8 +137,7 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
     c.drawString(15 * mm, h - 57 * mm, f"Patient ID: {pid}")
     c.drawString(80 * mm, h - 53 * mm, f"Sex: {sex}")
     c.drawString(80 * mm, h - 57 * mm, f"Age: {age}")
-    # ← was "Printed: {now}" — now shows when the test was actually requested
-    c.drawString(w - 75 * mm, h - 53 * mm, f"Requested: {requested_dt}")
+    c.drawString(w - 75 * mm, h - 53 * mm, f"Report Date: {requested_dt}")
 
     y = h - 65 * mm
 
