@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
 from sqlalchemy.orm import Session
 
@@ -15,12 +14,39 @@ from app.models.test_request import TestRequest
 
 class BookingConversionService:
 
-    # ── Request number generator (mirrors TestRequestService logic) ───────────
+    # ── Mirrors PatientService._next_patient_no() ─────────────────────────────
+    @staticmethod
+    def _next_patient_no(db: Session) -> str:
+        PREFIX = "IEL"
+        PAD    = 4
+        now    = datetime.now()
+        year   = now.strftime("%y")
+        year_prefix = f"{PREFIX}-{year}-"
+
+        last = (
+            db.query(Patient)
+            .filter(Patient.patient_no.like(f"{year_prefix}%"))
+            .order_by(Patient.patient_no.desc())
+            .with_for_update()
+            .first()
+        )
+
+        if not last:
+            nxt = 4268 if year == "26" else 1
+        else:
+            try:
+                nxt = int(last.patient_no.split("-")[-1]) + 1
+            except (ValueError, IndexError):
+                nxt = 1
+
+        return f"{year_prefix}{nxt:0{PAD}d}"
+
+    # ── Mirrors TestRequestService._next_request_no() ────────────────────────
     @staticmethod
     def _next_request_no(db: Session) -> str:
-        prefix      = "REQ"
-        year        = datetime.now().strftime("%y")
-        year_prefix = f"{prefix}-{year}-"
+        PREFIX = "REQ"
+        year   = datetime.now().strftime("%y")
+        year_prefix = f"{PREFIX}-{year}-"
 
         last = (
             db.query(TestRequest)
@@ -53,10 +79,8 @@ class BookingConversionService:
 
         if not booking:
             raise Exception("Booking not found")
-
         if booking.status == "converted":
             raise Exception("Booking already processed")
-
         if booking.status not in ["payment_verified", "approved_credit"]:
             raise Exception("Booking not ready for conversion")
 
@@ -69,8 +93,7 @@ class BookingConversionService:
         if not anchor:
             raise Exception("Patient record not found in this booking")
 
-        # ── Step 2: Fetch ALL unconverted items for this patient ──────────────
-        # Group by name + phone since patient_id may be NULL for portal bookings
+        # ── Step 2: All unconverted items for this patient ────────────────────
         items = db.query(BookingItem).filter(
             BookingItem.booking_id == booking_id,
             BookingItem.patient_name == anchor.patient_name,
@@ -83,30 +106,24 @@ class BookingConversionService:
                 BookingItem.booking_id == booking_id,
                 BookingItem.converted == False
             ).count()
-
             if remaining == 0:
                 booking.status = "converted"
                 db.commit()
-
             raise Exception("Nothing to convert")
 
-        # ── Step 3: Resolve Patient — auto-create if not found ───────────────
+        # ── Step 3: Resolve Patient — auto-create with proper ID if needed ────
 
         patient = None
 
-        # 3a. Try direct FK (pre-registered / cashier-registered patients)
+        # 3a. Try direct FK
         if anchor.patient_id:
-            patient = db.query(Patient).filter(
-                Patient.id == anchor.patient_id
-            ).first()
+            patient = db.query(Patient).filter(Patient.id == anchor.patient_id).first()
 
-        # 3b. Fall back to phone lookup (returning portal patients)
+        # 3b. Phone lookup
         if not patient and anchor.patient_phone:
-            patient = db.query(Patient).filter(
-                Patient.phone == anchor.patient_phone
-            ).first()
+            patient = db.query(Patient).filter(Patient.phone == anchor.patient_phone).first()
 
-        # 3c. Auto-create for first-time portal/walk-in patients
+        # 3c. Auto-create with a real sequential IEL-YY-NNNN patient number
         if not patient:
             patient = Patient(
                 full_name=anchor.patient_name,
@@ -114,17 +131,17 @@ class BookingConversionService:
                 date_of_birth=anchor.dob,
                 gender=anchor.gender,
                 branch_id=branch_id,
-                patient_no=f"ID-{uuid.uuid4().hex[:8].upper()}",
+                patient_no=BookingConversionService._next_patient_no(db),  # ← real ID
             )
             db.add(patient)
-            db.flush()  # Materialise patient.id before use
+            db.flush()
 
-        # ── Step 4: Backfill patient_id on all items for clean future lookups ─
+        # ── Step 4: Backfill patient_id on items ─────────────────────────────
         if not anchor.patient_id:
             for item in items:
                 item.patient_id = patient.id
 
-        # ── Step 5: Create TestRequest rows with sequential request_no ────────
+        # ── Step 5: Create TestRequest rows ──────────────────────────────────
         created_requests = []
 
         for item in items:
@@ -137,8 +154,7 @@ class BookingConversionService:
                 request_no=BookingConversionService._next_request_no(db),
             )
             db.add(request)
-            db.flush()   # ← flush each insert so the next _next_request_no()
-                         #   sees it and won't generate a duplicate number
+            db.flush()  # flush each so next _next_request_no() sees it
             item.converted = True
             created_requests.append(request)
 
@@ -147,7 +163,6 @@ class BookingConversionService:
             BookingItem.booking_id == booking_id,
             BookingItem.converted == False
         ).count()
-
         if remaining == 0:
             booking.status = "converted"
 
