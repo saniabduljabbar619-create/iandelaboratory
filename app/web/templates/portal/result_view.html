@@ -1,350 +1,164 @@
 {% extends "layouts/portal_base.html" %}
 
-{% block title %}{{ result.test_type.name if result.test_type else 'Result' }} — Solunex Health Portal{% endblock %}
+{% block title %}Official Report - I & E Lab{% endblock %}
 
 {% block page_css %}
-<style>
-/* result_view.css — Result Detail Page */
-
-.slx-rv-back{
-  display:inline-flex;align-items:center;gap:8px;
-  font-size:.85rem;font-weight:700;color:var(--slx-muted);
-  margin-bottom:24px;transition:color .15s;
-}
-.slx-rv-back:hover{color:var(--slx-accent)}
-
-/* Result hero card */
-.slx-rv-hero{
-  background:var(--slx-card);border-radius:var(--r);
-  border:1px solid var(--slx-border);box-shadow:var(--s1);
-  overflow:hidden;margin-bottom:24px;
-}
-.slx-rv-hero-header{
-  background:linear-gradient(135deg,var(--slx-primary),var(--slx-primary-l));
-  padding:28px 32px;color:#fff;
-  display:flex;align-items:flex-start;justify-content:space-between;gap:20px;
-}
-.slx-rv-test-name{font-size:1.6rem;font-weight:900;letter-spacing:-.02em;margin-bottom:6px}
-.slx-rv-test-sub{font-size:.85rem;opacity:.75;display:flex;align-items:center;gap:16px}
-.slx-rv-hero-badges{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-
-.slx-rv-patient-block{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0;
-  border-bottom:1px solid var(--slx-border);
-}
-.slx-rv-meta-cell{
-  padding:18px 24px;border-right:1px solid var(--slx-border);
-}
-.slx-rv-meta-cell:last-child{border-right:none}
-.slx-rv-meta-lbl{
-  font-size:.7rem;font-weight:700;color:var(--slx-muted);
-  text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;
-}
-.slx-rv-meta-val{font-size:.95rem;font-weight:700;color:var(--slx-text)}
-
-/* Result table section */
-.slx-rv-table-wrap{
-  background:var(--slx-card);border-radius:var(--r);
-  border:1px solid var(--slx-border);box-shadow:var(--s1);
-  overflow:hidden;margin-bottom:24px;
-}
-.slx-rv-table-header{
-  padding:18px 24px;border-bottom:1px solid var(--slx-border);
-  display:flex;align-items:center;justify-content:space-between;
-}
-.slx-rv-table-title{font-size:.95rem;font-weight:800;color:var(--slx-text)}
-.slx-rv-table-body{padding:0}
-
-/* Result values table */
-.slx-rv-table{width:100%;border-collapse:collapse}
-.slx-rv-table th{
-  background:var(--slx-primary);color:#fff;
-  padding:13px 20px;text-align:left;
-  font-size:.75rem;font-weight:700;
-  text-transform:uppercase;letter-spacing:.06em;
-}
-.slx-rv-table th:first-child{border-radius:0}
-.slx-rv-table td{
-  padding:14px 20px;border-bottom:1px solid var(--slx-border-l);
-  vertical-align:middle;
-}
-.slx-rv-table tr:last-child td{border-bottom:none}
-.slx-rv-table tr:nth-child(even) td{background:#FAFAFA}
-.slx-rv-table tr:hover td{background:var(--slx-accent-dim)}
-
-/* Flag-specific styling */
-.rv-param{font-weight:600;color:var(--slx-text)}
-.rv-val{font-size:1rem;font-weight:700;color:var(--slx-text)}
-.rv-val-H{color:var(--slx-danger);font-weight:900;font-size:1.05rem}
-.rv-val-L{color:var(--slx-warn);font-weight:900;font-size:1.05rem}
-.rv-flag-H{color:var(--slx-danger);font-weight:900}
-.rv-flag-L{color:var(--slx-warn);font-weight:900}
-.rv-flag-N{color:var(--slx-success);font-weight:700}
-
-/* Flag pill with icon */
-.flag-pill{
-  display:inline-flex;align-items:center;gap:4px;
-  padding:4px 12px;border-radius:99px;
-  font-size:.72rem;font-weight:800;
-}
-.flag-pill-H{background:var(--slx-danger-bg);color:var(--slx-danger)}
-.flag-pill-L{background:var(--slx-warn-bg);color:var(--slx-warn)}
-.flag-pill-N{background:var(--slx-success-bg);color:var(--slx-success)}
-
-/* SSFO & SAS section */
-.slx-rv-intel{
-  background:var(--slx-card);border-radius:var(--r);
-  border:1px solid var(--slx-border);box-shadow:var(--s1);
-  overflow:hidden;margin-bottom:24px;
-}
-.slx-rv-intel-header{
-  background:linear-gradient(135deg,#065F46,#0D9488);
-  padding:16px 24px;display:flex;align-items:center;gap:12px;
-}
-.slx-rv-intel-header h3{font-size:.95rem;font-weight:800;color:#fff}
-.slx-rv-intel-header p{font-size:.75rem;color:rgba(255,255,255,.75);margin-top:2px}
-.slx-rv-intel-body{padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
-
-.slx-rv-intel-section h4{
-  font-size:.72rem;font-weight:800;color:var(--slx-muted);
-  text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;
-}
-
-/* SAS predictions */
-.sas-pred-item{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:8px 0;border-bottom:1px solid var(--slx-border-l);
-  font-size:.85rem;
-}
-.sas-pred-item:last-child{border-bottom:none}
-.sas-pred-field{font-weight:600;color:var(--slx-text)}
-.sas-pred-val{font-weight:800;color:var(--slx-accent)}
-.sas-conf{
-  font-size:.7rem;color:var(--slx-muted);
-  background:var(--slx-accent-dim);border-radius:99px;
-  padding:2px 8px;font-weight:700;
-}
-
-/* Download bar */
-.slx-rv-actions{
-  background:var(--slx-card);border-radius:var(--r);
-  border:1px solid var(--slx-border);box-shadow:var(--s1);
-  padding:20px 24px;
-  display:flex;align-items:center;justify-content:space-between;gap:16px;
-  flex-wrap:wrap;
-}
-.slx-rv-actions p{
-  font-size:.85rem;color:var(--slx-muted);max-width:500px;
-}
-.slx-btn-dl{
-  display:inline-flex;align-items:center;gap:10px;
-  background:var(--slx-primary);color:#fff;
-  padding:13px 28px;border-radius:99px;
-  font-size:.875rem;font-weight:800;
-  box-shadow:0 4px 14px rgba(30,58,95,.3);
-  transition:all .2s;flex-shrink:0;
-}
-.slx-btn-dl:hover{
-  background:var(--slx-accent);
-  box-shadow:0 6px 20px rgba(13,148,136,.4);
-  transform:translateY(-1px);
-}
-
-@media(max-width:768px){
-  .slx-rv-patient-block{grid-template-columns:repeat(2,1fr)}
-  .slx-rv-intel-body{grid-template-columns:1fr}
-  .slx-rv-hero-header{flex-direction:column}
-}
-</style>
+<link rel="stylesheet" href="/static/css/result_view.css">
 {% endblock %}
 
 {% block content %}
 
-<a href="/results" class="slx-rv-back">← Back to My Results</a>
+<section class="slx-result-view">
 
-<!-- ═══ RESULT HERO ═══ -->
-<div class="slx-rv-hero mb-6">
-  <div class="slx-rv-hero-header">
-    <div>
-      <div class="slx-rv-test-name">{{ result.test_type.name if result.test_type else 'Laboratory Result' }}</div>
-      <div class="slx-rv-test-sub">
-        <span>📅 {{ result.created_at.strftime('%d %B %Y, %I:%M %p') if result.created_at else '—' }}</span>
-        <span>🆔 Report No: SLX-{{ '%05d' % result.id }}</span>
-      </div>
-    </div>
-    <div class="slx-rv-hero-badges">
-      <span class="slx-badge b-released">✔ Released</span>
-      {% if ssfo %}
-        {% if ssfo.severity_flag == 'critical' %}
-          <span class="slx-badge b-critical">⚠ Critical Values</span>
-        {% elif ssfo.severity_flag == 'abnormal' %}
-          <span class="slx-badge b-abnormal">⚡ Abnormal Values</span>
-        {% elif ssfo.severity_flag == 'normal' %}
-          <span class="slx-badge b-normal">✓ Normal Range</span>
-        {% endif %}
-      {% endif %}
-      {% if result.sas_predictions %}
-        <span class="slx-badge b-sas">⬡ SAS Assisted</span>
-      {% endif %}
-    </div>
-  </div>
+    <div class="slx-container">
 
-  <!-- Patient meta block -->
-  <div class="slx-rv-patient-block">
-    <div class="slx-rv-meta-cell">
-      <div class="slx-rv-meta-lbl">Patient Name</div>
-      <div class="slx-rv-meta-val">{{ result.patient.full_name if result.patient else '—' }}</div>
-    </div>
-    <div class="slx-rv-meta-cell">
-      <div class="slx-rv-meta-lbl">Patient ID</div>
-      <div class="slx-rv-meta-val" style="font-family:monospace">{{ result.patient.patient_no if result.patient else '—' }}</div>
-    </div>
-    <div class="slx-rv-meta-cell">
-      <div class="slx-rv-meta-lbl">Gender</div>
-      <div class="slx-rv-meta-val">{{ (result.patient.gender | capitalize) if result.patient and result.patient.gender else '—' }}</div>
-    </div>
-    <div class="slx-rv-meta-cell">
-      <div class="slx-rv-meta-lbl">Test Category</div>
-      <div class="slx-rv-meta-val">{{ ssfo.test_category if ssfo else '—' }}</div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ RESULT VALUES TABLE ═══ -->
-{% if result.template_snapshot and result.template_snapshot.get('fields') %}
-<div class="slx-rv-table-wrap mb-6">
-  <div class="slx-rv-table-header">
-    <div class="slx-rv-table-title">Laboratory Results</div>
-    <div style="font-size:.75rem;color:var(--slx-muted)">
-      Reference ranges are age and gender specific. Consult your physician.
-    </div>
-  </div>
-  <div class="slx-rv-table-body">
-    <table class="slx-rv-table">
-      <thead>
-        <tr>
-          <th>Parameter</th>
-          <th>Result</th>
-          <th>Unit</th>
-          <th>Reference Range</th>
-          <th>Flag</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% set values = result.values or {} %}
-        {% set flags = result.flags or {} %}
-        {% for field in result.template_snapshot.get('fields', []) %}
-          {% set key = field.get('key', '') %}
-          {% set val = values.get(key) %}
-          {% set flag_data = flags.get(key) %}
-          {% set flag_state = flag_data.get('state', 'N') if flag_data and flag_data is mapping else 'N' %}
-          {% set ref = field.get('ref', {}) %}
-          <tr>
-            <td class="rv-param">{{ field.get('label', key) }}</td>
-            <td class="rv-val-{{ flag_state }}">{{ val if val is not none else '—' }}</td>
-            <td style="color:var(--slx-muted);font-size:.8rem">{{ field.get('unit', '') }}</td>
-            <td style="color:var(--slx-muted);font-size:.85rem">
-              {% if ref.get('low') is not none and ref.get('high') is not none %}
-                {{ ref.get('low') }} – {{ ref.get('high') }}
-              {% else %}—{% endif %}
-            </td>
-            <td>
-              {% if flag_state == 'H' %}
-                <span class="flag-pill flag-pill-H">▲ HIGH</span>
-              {% elif flag_state == 'L' %}
-                <span class="flag-pill flag-pill-L">▼ LOW</span>
-              {% else %}
-                <span class="flag-pill flag-pill-N">● Normal</span>
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
-{% endif %}
-
-<!-- ═══ SSFO + SAS INTELLIGENCE ═══ -->
-{% if ssfo or result.sas_predictions %}
-<div class="slx-rv-intel mb-6">
-  <div class="slx-rv-intel-header">
-    <div>
-      <h3>⬡ SSFO &amp; SAS Intelligence</h3>
-      <p>AI-powered classification and analysis powered by Solunex Assistance System</p>
-    </div>
-  </div>
-  <div class="slx-rv-intel-body">
-
-    <!-- SSFO Disease Classification -->
-    <div class="slx-rv-intel-section">
-      <h4>SSFO — Detected Conditions</h4>
-      {% if ssfo and ssfo.disease_tags %}
-        <div class="slx-tags">
-          {% for tag in ssfo.disease_tags %}
-            {% if tag in ['malaria', 'typhoid', 'hiv', 'tuberculosis', 'hepatitis_b', 'hepatitis_c', 'sickle_cell_disease'] %}
-              <span class="slx-tag w">{{ tag | replace('_', ' ') }}</span>
-            {% else %}
-              <span class="slx-tag">{{ tag | replace('_', ' ') }}</span>
-            {% endif %}
-          {% endfor %}
+        <div class="slx-result-header">
+            <h2>I & E Diagnostic Laboratory</h2>
+            <p>Secure Diagnostic Result Viewer</p>
         </div>
-        <p style="font-size:.75rem;color:var(--slx-muted);margin-top:12px;line-height:1.6">
-          These conditions are detected patterns identified by SSFO based on your test values and clinical history. 
-          This is not a medical diagnosis. Please consult your physician.
-        </p>
-      {% else %}
-        <p style="font-size:.85rem;color:var(--slx-muted);font-style:italic">
-          No specific conditions detected in this result.
-        </p>
-      {% endif %}
-    </div>
 
-    <!-- SAS Predictions -->
-    <div class="slx-rv-intel-section">
-      <h4>SAS — AI Predictions Used</h4>
-      {% if result.sas_predictions %}
-        {% for key, val in result.sas_predictions.items() %}
-          {% if val is not none %}
-          <div class="sas-pred-item">
-            <span class="sas-pred-field">{{ key }}</span>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="sas-pred-val">{{ val }}</span>
-              {% if result.sas_confidence and result.sas_confidence.get(key) %}
-                <span class="sas-conf">{{ result.sas_confidence.get(key) }}% conf.</span>
-              {% endif %}
+        <div class="slx-result-card">
+            
+            <div class="patient-meta-grid">
+                
+                <div class="meta-item">
+                    <label>Patient Name</label>
+                    <span>{{ result.patient.full_name }}</span>
+                </div>
+
+                <div class="meta-item">
+                    <label>Patient Number</label>
+                    <span>{{ result.patient.patient_no }}</span>
+                </div>
+
+                <div class="meta-item">
+                    <label>Investigation</label>
+                    <span>{{ result.test_type.name if result.test_type else "Laboratory Test" }}</span>
+                </div>
+
+                <div class="meta-item">
+                    <label>Report Date</label>
+                    <span>{{ result.created_at.strftime("%d %b %Y") if result.created_at else "-" }}</span>
+                </div>
+
             </div>
-          </div>
-          {% endif %}
-        {% endfor %}
-        <p style="font-size:.72rem;color:var(--slx-muted);margin-top:12px;line-height:1.6">
-          SAS predictions are decision-support tools for laboratory scientists. Final values
-          are always verified and authorized by a qualified medical laboratory scientist.
-        </p>
-      {% else %}
-        <p style="font-size:.85rem;color:var(--slx-muted);font-style:italic">
-          This result was created without SAS prediction assistance.
-        </p>
-      {% endif %}
+
+            <div class="table-responsive">
+                {% set values = result.values %}
+                {% set flags = result.flags %}
+
+                {# 1. MULTI-SECTION TABLE LOGIC (NEW) #}
+                {% if values and values.get('sections') %}
+                    {% for section in values.sections %}
+                        {% if section.title %}
+                            <h3 class="section-title" style="font-size: 1.1rem; color: #1e293b; margin: 25px 0 10px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; font-weight: 700;">
+                                {{ section.title }}
+                            </h3>
+                        {% endif %}
+                        
+                        <table class="slx-result-table mb-4">
+                            <thead>
+                                <tr>
+                                    {% for col in section.col_headers %}
+                                        <th>{{ col }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in section.cells %}
+                                <tr>
+                                    {% for col in row %}
+                                        <td class="{% if loop.first %}col-parameter{% elif loop.index0 == 1 %}col-result{% endif %}">
+                                            {{ col if col is not none else '' }}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endfor %}
+
+                {# 2. LEGACY SINGLE GRID LOGIC #}
+                {% elif values and values.get('cells') %}
+                    <table class="slx-result-table">
+                        <thead>
+                            <tr>
+                                {% for col in values.cells[0] %}
+                                    <th>{{ col }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in values.cells[1:] %}
+                            <tr>
+                                {% for col in row %}
+                                    <td class="{% if loop.first %}col-parameter{% elif loop.index0 == 1 %}col-result{% endif %}">
+                                        {{ col }}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                {# 3. STRUCTURED RESULTS Fallback #}
+                {% else %}
+                    <table class="slx-result-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Result</th>
+                                <th>Unit</th>
+                                <th>Ref. Range</th>
+                                <th style="text-align: center;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key, value in values.items() %}
+                            {% if key not in ['sections', 'template_snapshot', 'values'] %}
+                            <tr>
+                                <td class="col-parameter">{{ key }}</td>
+                                <td class="col-result">{{ value }}</td>
+                                <td>{{ result.units.get(key, '-') if result.units else '-' }}</td>
+                                <td>{{ result.reference_ranges.get(key, '-') if result.reference_ranges else '-' }}</td>
+                                <td style="text-align: center;">
+                                    {% set f = flags[key]|upper if flags and key in flags else "NORMAL" %}
+                                    <span class="flag-pill {% if f == 'HIGH' %}flag-high{% elif f == 'LOW' %}flag-low{% else %}flag-normal{% endif %}">
+                                        {{ f }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+
+            <div class="result-footer">
+                <div class="signature-block">
+                    <label style="display:block; font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase;">Released By</label>
+                    <span style="font-weight:700; color:#0f172a;">{{ result.released_by if result.released_by else "Laboratory Scientist" }}</span>
+                </div>
+                <div class="date-block" style="text-align: right;">
+                    <label style="display:block; font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase;">Verified On</label>
+                    <span style="font-weight:700; color:#0f172a;">{{ result.updated_at.strftime("%d %b %Y") if result.updated_at else "-" }}</span>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="slx-result-actions">
+            <a href="/results/{{ result.id }}/download" class="btn-download">
+                Download Official PDF
+            </a>
+            <a href="/results" class="btn-secondary" style="text-decoration:none; font-weight:700; color:#475569; padding: 10px 20px;">
+                Back to List
+            </a>
+        </div>
+
     </div>
 
-  </div>
-</div>
-{% endif %}
-
-<!-- ═══ DOWNLOAD BAR ═══ -->
-<div class="slx-rv-actions">
-  <div>
-    <p style="font-weight:700;color:var(--slx-text);margin-bottom:4px">Download Official PDF Report</p>
-    <p>
-      Your result PDF includes the laboratory letterhead, QR verification code,
-      barcode, and official authorization. The QR code allows anyone to verify
-      the authenticity of this result online.
-    </p>
-  </div>
-  <a href="/results/{{ result.id }}/download" class="slx-btn-dl">
-    ↓ &nbsp; Download PDF
-  </a>
-</div>
+</section>
 
 {% endblock %}
