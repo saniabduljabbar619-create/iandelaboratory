@@ -10,52 +10,96 @@
             --sx-navy-green: #123C34;
             --sx-blue-black: #0B1F2A;
             --sx-yellow: #F4B400;
+            --sx-yellow-l: #FFC933;
             --sx-white: #FFFFFF;
         }
+
+        * { box-sizing: border-box; }
 
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, var(--sx-blue-black) 0%, var(--sx-navy-green) 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--sx-blue-black) 0%, var(--sx-navy-green) 65%, #0d3126 100%);
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle watermark, matching the Portal lookup page's visual language */
+        body::before {
+            content: '⬡';
+            position: absolute;
+            bottom: -80px;
+            right: -60px;
+            font-size: 26rem;
+            opacity: 0.045;
+            color: white;
+            line-height: 1;
+            pointer-events: none;
+        }
+        body::after {
+            content: '⬡';
+            position: absolute;
+            top: -100px;
+            left: -80px;
+            font-size: 18rem;
+            opacity: 0.035;
+            color: white;
+            line-height: 1;
+            pointer-events: none;
         }
 
         .login-container {
             width: 100%;
             max-width: 400px;
             padding: 20px;
+            position: relative;
+            z-index: 1;
         }
 
         .login-card {
             background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 42px 40px 36px;
+            border-radius: 18px;
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,.04);
             text-align: center;
         }
 
         .brand-logo {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--sx-yellow), var(--sx-deep-green));
-            margin: 0 auto 20px;
+            width: 58px;
+            height: 58px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--sx-yellow) 0%, var(--sx-yellow-l) 45%, var(--sx-deep-green) 100%);
+            margin: 0 auto 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(244,180,0,.28);
+        }
+        .brand-logo span {
+            color: var(--sx-blue-black);
+            font-weight: 900;
+            font-size: 26px;
+            line-height: 1;
         }
 
         h2 {
             color: var(--sx-blue-black);
-            margin-bottom: 10px;
-            font-size: 24px;
+            margin-bottom: 8px;
+            font-size: 23px;
+            font-weight: 800;
+            letter-spacing: -.01em;
         }
 
         p.subtitle {
             color: #64748b;
-            font-size: 14px;
+            font-size: 13.5px;
             margin-bottom: 30px;
+            line-height: 1.5;
         }
 
         .form-group {
@@ -65,9 +109,11 @@
 
         label {
             display: block;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 11.5px;
+            font-weight: 800;
             color: #475569;
+            text-transform: uppercase;
+            letter-spacing: .05em;
             margin-bottom: 8px;
         }
 
@@ -75,16 +121,16 @@
             width: 100%;
             padding: 12px 14px;
             border: 1.5px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 15px;
-            box-sizing: border-box;
+            border-radius: 9px;
+            font-size: 14.5px;
+            font-family: inherit;
             transition: all 0.2s ease;
         }
 
         input:focus {
             outline: none;
             border-color: var(--sx-yellow);
-            box-shadow: 0 0 0 3px rgba(244, 180, 0, 0.1);
+            box-shadow: 0 0 0 3px rgba(244, 180, 0, 0.14);
         }
 
         .btn-login {
@@ -93,41 +139,51 @@
             background: var(--sx-deep-green);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 9px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: .01em;
             cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 10px;
+            transition: background 0.2s, transform .15s, box-shadow .2s;
+            margin-top: 6px;
+            box-shadow: 0 4px 14px rgba(15,61,46,.28);
         }
 
         .btn-login:hover {
             background: #145A45;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(15,61,46,.35);
         }
+        .btn-login:active { transform: translateY(0); }
 
         .error-box {
             background: #fef2f2;
             color: #b91c1c;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 12px 14px;
+            border-radius: 9px;
             font-size: 13px;
-            margin-bottom: 20px;
+            font-weight: 600;
+            margin-bottom: 22px;
             border: 1px solid #fee2e2;
+            border-left: 4px solid #dc2626;
+            text-align: left;
         }
 
         .footer {
-            margin-top: 30px;
-            color: rgba(255,255,255,0.6);
-            font-size: 12px;
+            margin-top: 26px;
+            color: rgba(255,255,255,0.55);
+            font-size: 11.5px;
             text-align: center;
+            letter-spacing: .01em;
         }
+        .footer strong { color: rgba(255,255,255,0.75); }
     </style>
 </head>
 <body>
 
 <div class="login-container">
     <div class="login-card">
-        <div class="brand-logo"></div>
+        <div class="brand-logo"><span>⬡</span></div>
         <h2>Admin Portal</h2>
         <p class="subtitle">Enter your credentials to access the lab panel</p>
 
@@ -153,7 +209,7 @@
     </div>
 
     <div class="footer">
-        &copy; 2026 Solunex Technologies | <strong>I & E Lab Platform</strong>
+        &copy; 2026 Solunex Technologies | <strong>I &amp; E Lab Platform</strong>
     </div>
 </div>
 

@@ -14,11 +14,18 @@ class PatientCreate(APIModel):
     date_of_birth: date | None = None
     gender: str | None = None
     address: str | None = None
-    # ✅ Added for Sync Engine: When the local Mini Server pushes an offline 
-    # patient up to Aiven, it needs to be able to send the UUID it already generated.
+    email: str | None = None
+    # v2.0 — structured age
+    age_value: int | None = None
+    age_unit: str | None = None
+    # v2.0 — portal enrollment
+    portal_enabled: bool = True
+    # v2.0 — referrer
+    referrer_id: int | None = None
+    # sync
     sync_id: str | None = Field(default=None, max_length=36)
-    # ✅ Add this so the Sync Engine can pass the branch link!
     branch_id: int | None = None
+
 
 class PatientUpdate(APIModel):
     full_name: str | None = None
@@ -26,11 +33,14 @@ class PatientUpdate(APIModel):
     date_of_birth: date | None = None
     gender: str | None = None
     address: str | None = None
+    email: str | None = None
+    age_value: int | None = None
+    age_unit: str | None = None
+    referrer_id: int | None = None
 
 
 class PatientOut(APIModel):
     id: int
-    # ✅ Exposes the UUID so your Desktop App and Sync Engine can read it
     sync_id: str | None
     patient_no: str
     full_name: str
@@ -38,5 +48,13 @@ class PatientOut(APIModel):
     date_of_birth: date | None
     gender: str | None
     address: str | None
+    email: str | None = None
+    age_value: int | None = None
+    age_unit: str | None = None
+    portal_enabled: bool = True
+    referrer_id: int | None = None
     created_at: datetime
     updated_at: datetime
+    # Returned ONCE on creation so the cashier can print/show the credential.
+    # Never stored in plaintext; only echoed back at creation time.
+    portal_code_plain: str | None = None

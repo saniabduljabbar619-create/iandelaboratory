@@ -36,6 +36,8 @@ class TestResultOut(APIModel):
     notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    patient_info: Optional[Dict[str, Any]] = None
+    test_name: Optional[str] = None
 
 
 class PagedTestResultOut(APIModel):

@@ -330,3 +330,114 @@ class PaymentService:
         summary = {row.method: float(row.total_amount) for row in results}
         summary["total"] = sum(summary.values())
         return summary
+
+
+
+    def cashier_today_summary(self) -> dict:
+        """
+        Returns TODAY's snapshot for the logged-in cashier only
+        (isolation model): their revenue, tests billed, and pending count.
+        """
+        from datetime import datetime, time
+        from app.models.test_request import TestRequest
+
+        today = datetime.now().date()
+        start = datetime.combine(today, time.min)
+        end = datetime.combine(today, time.max)
+
+        uid = self.current_user.id
+
+        # Revenue today — this cashier's payments only
+        pay_q = self.db.query(func.coalesce(func.sum(Payment.amount), 0)).filter(
+            Payment.created_by_id == uid,
+            Payment.created_at >= start,
+            Payment.created_at <= end,
+        )
+        if self.branch_id:
+            pay_q = pay_q.filter(Payment.branch_id == self.branch_id)
+        revenue_today = float(pay_q.scalar() or 0)
+
+        # Tests billed today — count of request_ids across this cashier's payments today
+        pay_rows = self.db.query(Payment).filter(
+            Payment.created_by_id == uid,
+            Payment.created_at >= start,
+            Payment.created_at <= end,
+        ).all()
+        tests_billed = sum(len(self.parse_request_ids(p)) for p in pay_rows)
+
+        # Pending bills — count of pending requests in this branch
+        pend_q = self.db.query(func.count(TestRequest.id)).filter(
+            TestRequest.status == "pending",
+        )
+        if self.branch_id:
+            pend_q = pend_q.filter(TestRequest.branch_id == self.branch_id)
+        pending_count = int(pend_q.scalar() or 0)
+
+        return {
+            "revenue_today": revenue_today,
+            "tests_billed_today": tests_billed,
+            "pending_bills": pending_count,
+        }
+        
+        
+    def cashier_period_report(self, start_date=None, end_date=None) -> dict:
+        """
+        Financial report for the logged-in cashier over a period (isolation).
+        Returns totals, per-method breakdown, top tests, and daily revenue.
+        """
+        from datetime import datetime, time, date as _date
+        from collections import defaultdict
+        from app.models.test_type import TestType
+
+        uid = self.current_user.id
+
+        q = self.db.query(Payment).filter(Payment.created_by_id == uid)
+        if self.branch_id:
+            q = q.filter(Payment.branch_id == self.branch_id)
+        if start_date:
+            q = q.filter(Payment.created_at >= start_date)
+        if end_date:
+            q = q.filter(Payment.created_at <= end_date)
+        payments = q.order_by(Payment.created_at.desc()).all()
+
+        total_revenue = sum(float(p.amount or 0) for p in payments)
+        method_breakdown = defaultdict(float)
+        daily = defaultdict(float)
+        all_request_ids: list[int] = []
+
+        for p in payments:
+            method_breakdown[p.method or "Cash"] += float(p.amount or 0)
+            if p.created_at:
+                daily[p.created_at.date().isoformat()] += float(p.amount or 0)
+            all_request_ids.extend(self.parse_request_ids(p))
+
+        tests_billed = len(all_request_ids)
+
+        # Top tests by frequency among paid requests
+        top_tests = []
+        if all_request_ids:
+            from app.models.test_request import TestRequest
+            reqs = self.db.query(TestRequest).filter(TestRequest.id.in_(all_request_ids)).all()
+            type_counts = defaultdict(int)
+            for r in reqs:
+                type_counts[r.test_type_id] += 1
+            # resolve names + prices
+            type_ids = list(type_counts.keys())
+            types = self.db.query(TestType).filter(TestType.id.in_(type_ids)).all() if type_ids else []
+            tmap = {t.id: t for t in types}
+            for tid, cnt in sorted(type_counts.items(), key=lambda x: x[1], reverse=True)[:8]:
+                tt = tmap.get(tid)
+                top_tests.append({
+                    "name": tt.name if tt else f"Test #{tid}",
+                    "count": cnt,
+                    "revenue": float(tt.price) * cnt if tt else 0,
+                })
+
+        return {
+            "total_revenue": total_revenue,
+            "tests_billed": tests_billed,
+            "payment_count": len(payments),
+            "method_breakdown": dict(method_breakdown),
+            "top_tests": top_tests,
+            "daily_revenue": dict(sorted(daily.items())),
+        }

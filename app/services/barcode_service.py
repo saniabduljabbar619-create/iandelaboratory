@@ -1,0 +1,88 @@
+# -*- coding: utf-8 -*-
+# app/services/barcode_service.py
+"""
+Barcode and QR code generation for LabCore v2.0 result PDFs.
+Returns PIL Image objects ready for ReportLab's ImageReader.
+"""
+from __future__ import annotations
+
+import io
+from typing import Optional
+
+from PIL import Image
+
+
+def generate_qr(
+    data: str,
+    box_size: int = 4,
+    border: int = 2,
+) -> Image.Image:
+    """
+    Generates a QR code as a PIL Image.
+    data: the URL or text to encode (e.g. portal result URL).
+    """
+    try:
+        import qrcode
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=box_size,
+            border=border,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        return img.convert("RGB")
+    except ImportError:
+        return _placeholder_image(100, 100, "QR")
+
+
+def generate_barcode(
+    code: str,
+    bar_height: int = 30,
+    bar_width: float = 1.2,
+) -> Image.Image:
+    """
+    Generates a Code128 barcode as a PIL Image.
+    code: the value to encode (result sync_id or report number).
+    """
+    try:
+        import barcode
+        from barcode.writer import ImageWriter
+
+        # Sanitize — Code128 handles alphanumeric fine
+        clean_code = str(code).replace("-", "")[:20]
+
+        writer = ImageWriter()
+        code128 = barcode.get("code128", clean_code, writer=writer)
+
+        options = {
+            "module_height": bar_height,
+            "module_width": bar_width,
+            "font_size": 6,
+            "text_distance": 3,
+            "quiet_zone": 2,
+            "write_text": True,
+        }
+
+        buf = io.BytesIO()
+        code128.write(buf, options=options)
+        buf.seek(0)
+        return Image.open(buf).convert("RGB")
+
+    except ImportError:
+        return _placeholder_image(200, 60, "BARCODE")
+    except Exception as e:
+        print(f"[Barcode] Generation error: {e}")
+        return _placeholder_image(200, 60, str(code)[:12])
+
+
+def _placeholder_image(w: int, h: int, label: str) -> Image.Image:
+    """Returns a white placeholder image when barcode libs unavailable."""
+    img = Image.new("RGB", (w, h), color="white")
+    return img
+
+
+def get_portal_result_url(sync_id: str, base_url: str = "https://portal.solunex.ng") -> str:
+    """Builds the portal URL that the QR code will encode."""
+    return f"{base_url}/results/{sync_id}"

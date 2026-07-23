@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-# app/ models/test_result.py
+# app/models/test_result.py
 from __future__ import annotations
-import uuid  # ✅ Add this line right at the top
+import uuid
 import enum
 from sqlalchemy import Column, Integer, DateTime, func, ForeignKey, Enum, JSON, String, Index
 from sqlalchemy.orm import relationship
-from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
-
 from app.db.base import Base
 
 
@@ -41,6 +39,11 @@ class TestResult(Base):
 
     # Optional notes / remarks
     notes = Column(String(500), nullable=True)
+
+    # v2.0 — SAS prediction storage
+    sas_predictions = Column(JSON, nullable=True)  # SAS suggested values per field
+    sas_confidence = Column(JSON, nullable=True)   # confidence score per field
+    sas_accepted = Column(JSON, nullable=True)     # fields the scientist accepted from SAS
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)

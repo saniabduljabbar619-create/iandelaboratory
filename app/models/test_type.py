@@ -25,6 +25,7 @@ class TestType(Base):
     # short code e.g. FBC, LFT, RFT, MAL
     code = Column(String(50), nullable=False, index=True)
     name = Column(String(255), nullable=False, index=True)
+    category = Column(String(50), nullable=True, index=True)
 
     description = Column(String(255), nullable=True)
 

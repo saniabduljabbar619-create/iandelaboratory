@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-#app/core/config.py
+# app/core/config.py
 from __future__ import annotations
 
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,8 +12,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Solunex Lab Backend"
     ENV: str = "dev"
 
-    # Example:
-    # mysql+pymysql://root:password@127.0.0.1:3306/solunex_lab?charset=utf8mb4
+    # mysql+pymysql://user:password@host:3306/dbname?charset=utf8mb4
     DATABASE_URL: str
 
     JWT_SECRET: str
@@ -22,9 +22,11 @@ class Settings(BaseSettings):
     PORTAL_JWT_EXPIRES_MIN: int = 15
     PORTAL_SECRET: str = "change-me-portal-secret"
 
-
     PORTAL_MAX_FAILS: int = 5
     PORTAL_LOCK_MINUTES: int = 15
+
+    # v2.0 — AI layer
+    ANTHROPIC_API_KEY: Optional[str] = None
 
 
 settings = Settings()

@@ -1,114 +1,280 @@
 {% extends "layouts/portal_base.html" %}
 
-{% block title %}Laboratory Results – I & E Lab{% endblock %}
+{% block title %}My Results — Solunex Health Portal{% endblock %}
 
 {% block page_css %}
-<link rel="stylesheet" href="/static/css/results.css">
+<style>
+/* results.css — Patient Dashboard */
+
+/* Disease history section */
+.slx-dhistory{
+  background:var(--slx-card);border-radius:var(--r);
+  border:1px solid var(--slx-border);box-shadow:var(--s1);
+  padding:20px 24px;margin-bottom:28px;
+}
+.slx-dhistory-title{
+  font-size:.75rem;font-weight:800;color:var(--slx-muted);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;
+}
+.slx-dh-empty{
+  font-size:.85rem;color:var(--slx-muted);font-style:italic;
+}
+
+/* Category empty notice */
+.slx-cat-empty{
+  padding:24px;text-align:center;
+  font-size:.82rem;color:var(--slx-muted);font-style:italic;
+}
+
+/* All results table */
+.slx-all-results{margin-top:32px}
+.slx-results-list{
+  background:var(--slx-card);border-radius:var(--r);
+  border:1px solid var(--slx-border);box-shadow:var(--s1);
+  overflow:hidden;
+}
+.slx-results-list table{width:100%;border-collapse:collapse}
+.slx-results-list th{
+  background:var(--slx-primary);color:#fff;
+  padding:12px 18px;text-align:left;
+  font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+}
+.slx-results-list td{
+  padding:14px 18px;border-bottom:1px solid var(--slx-border-l);
+  font-size:.875rem;vertical-align:middle;
+}
+.slx-results-list tr:last-child td{border-bottom:none}
+.slx-results-list tr:hover td{background:var(--slx-accent-dim)}
+
+/* Severity dot indicator */
+.sev-dot{
+  width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;
+}
+.sev-normal{background:var(--slx-success)}
+.sev-abnormal{background:var(--slx-warn)}
+.sev-critical{background:var(--slx-danger);animation:pulse 1.5s infinite}
+.sev-unknown{background:#CBD5E1}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* No results state */
+.slx-no-results{
+  text-align:center;padding:80px 24px;
+}
+.slx-no-results .nr-icon{
+  width:80px;height:80px;border-radius:50%;
+  background:linear-gradient(135deg,var(--slx-accent-dim),#EEF2FF);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;margin:0 auto 20px;
+}
+.slx-no-results h3{font-size:1.2rem;font-weight:800;color:var(--slx-text);margin-bottom:10px}
+.slx-no-results p{color:var(--slx-muted);font-size:.9rem;max-width:360px;margin:0 auto 24px}
+.slx-no-results a{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--slx-accent);color:#fff;
+  padding:12px 28px;border-radius:99px;
+  font-weight:700;font-size:.875rem;
+  box-shadow:0 4px 12px rgba(13,148,136,.3);
+  transition:all .2s;
+}
+.slx-no-results a:hover{background:#0F766E;transform:translateY(-1px)}
+
+/* Category collapse (JS-powered) */
+.slx-cat-body{transition:max-height .3s ease}
+</style>
 {% endblock %}
 
 {% block content %}
 
-<section class="slx-results">
-
-<div class="slx-container">
-
-<div class="slx-results-header">
-<h2>Released Laboratory Results</h2>
-
-<p>
-Below are the laboratory results that have been verified and released
-by our laboratory team.
-</p>
+<!-- ═══ WELCOME HERO ═══ -->
+<div class="slx-hero-welcome mb-8">
+  <div class="slx-hw-greeting">Welcome back</div>
+  <div class="slx-hw-name">{{ patient.full_name | upper }}</div>
+  <div class="slx-hw-meta">
+    <span class="slx-hw-chip">🪪 {{ patient.patient_no }}</span>
+    {% if patient.gender %}
+    <span class="slx-hw-chip">{{ patient.gender | capitalize }}</span>
+    {% endif %}
+    <span class="slx-hw-chip">📋 {{ results | length }} Released Result{{ 's' if results | length != 1 else '' }}</span>
+    {% if patient.disease_history %}
+    <span class="slx-hw-chip">⬡ {{ patient.disease_history | length }} Condition{{ 's' if patient.disease_history | length != 1 else '' }} Tracked</span>
+    {% endif %}
+  </div>
 </div>
 
-
-<div class="slx-results-card">
-
-{% if results %}
-
-<table class="slx-results-table">
-
-<thead>
-<tr>
-<th>Test</th>
-<th>Date Released</th>
-<th>Branch</th>
-<th>Action</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for r in results %}
-
-<tr>
-
-<td class="test-name">
-{{ r.test_type.name if r.test_type else "Laboratory Test" }}
-</td>
-
-<td>
-{{ r.created_at.strftime('%d %b %Y') if r.created_at else "-" }}
-</td>
-
-<td>
-{{ r.branch.name if r.branch else "-" }}
-</td>
-
-<td class="result-actions">
-
-<a class="btn-download"
-href="/results/{{ r.id }}">
-View
-</a>
-
-<a class="btn-download"
-href="/results/{{ r.id }}/download">
-Download
-</a>
-
-</td>
-
-</tr>
-
-{% endfor %}
-
-</tbody>
-
-</table>
-
-{% else %}
-
-<div class="slx-empty-state">
-
-<h3>No Results Available</h3>
-
-<p>
-We could not find any released laboratory results associated with
-your account.
-</p>
-
-<a href="/lookup" class="btn-primary">
-Search Again
-</a>
-
+<!-- ═══ STATS ═══ -->
+<div class="slx-stats mb-8">
+  <div class="slx-stat">
+    <div class="slx-stat-lbl">Total Results</div>
+    <div class="slx-stat-val">{{ results | length }}</div>
+    <div class="slx-stat-sub">Released by the lab</div>
+  </div>
+  <div class="slx-stat">
+    <div class="slx-stat-lbl">Categories</div>
+    <div class="slx-stat-val">{{ results_by_category | length }}</div>
+    <div class="slx-stat-sub">SSFO-organized</div>
+  </div>
+  <div class="slx-stat {% if patient.disease_history | length > 0 %}warn{% endif %}">
+    <div class="slx-stat-lbl">Tracked Conditions</div>
+    <div class="slx-stat-val">{{ patient.disease_history | length }}</div>
+    <div class="slx-stat-sub">From SSFO analysis</div>
+  </div>
+  <div class="slx-stat success">
+    <div class="slx-stat-lbl">SAS Assisted</div>
+    <div class="slx-stat-val">
+      {% set sas_count = results | selectattr('sas_assisted') | list | length %}
+      {{ sas_count }}
+    </div>
+    <div class="slx-stat-sub">AI-supported results</div>
+  </div>
 </div>
 
+<!-- ═══ DISEASE HISTORY ═══ -->
+{% if patient.disease_history %}
+<div class="slx-dhistory mb-8">
+  <div class="slx-dhistory-title">⬡ SSFO — Your Tracked Health Conditions</div>
+  <div class="slx-tags">
+    {% for tag in patient.disease_history %}
+      {% if 'critical' in tag %}
+        <span class="slx-tag d">{{ tag | replace('_', ' ') }}</span>
+      {% elif tag in ['malaria', 'typhoid', 'hiv', 'tuberculosis', 'hepatitis_b', 'hepatitis_c'] %}
+        <span class="slx-tag w">{{ tag | replace('_', ' ') }}</span>
+      {% else %}
+        <span class="slx-tag">{{ tag | replace('_', ' ') }}</span>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
 {% endif %}
 
+<!-- ═══ SSFO CATEGORY CARDS ═══ -->
+{% if results_by_category %}
+
+<div class="slx-sh">Results by Clinical Category</div>
+
+{% set cat_icons = {
+  'Haematology': '🩸',
+  'Biochemistry': '⚗️',
+  'Microbiology': '🔬',
+  'Serology': '🧪',
+  'Parasitology': '🦠',
+  'Blood Bank': '🏥',
+  'General': '📋'
+} %}
+
+{% set cat_classes = {
+  'Haematology': 'cc-haem',
+  'Biochemistry': 'cc-bio',
+  'Microbiology': 'cc-micro',
+  'Serology': 'cc-sero',
+  'Parasitology': 'cc-para',
+  'Blood Bank': 'cc-bb',
+  'General': 'cc-gen'
+} %}
+
+<div class="slx-cat-grid mb-8">
+{% for category, cat_results in results_by_category.items() %}
+  <div class="slx-cat-card {{ cat_classes.get(category, 'cc-gen') }}">
+    <div class="slx-cat-head">
+      <div class="slx-cat-icon">{{ cat_icons.get(category, '📋') }}</div>
+      <div class="slx-cat-name">{{ category }}</div>
+      <div class="slx-cat-badge">{{ cat_results | length }}</div>
+    </div>
+
+    {% if cat_results %}
+    {% for r in cat_results %}
+    <div class="slx-ritem">
+      <span class="slx-rdot {{ 'cr' if r.severity_flag == 'critical' else ('ab' if r.severity_flag == 'abnormal' else '') }}"></span>
+      <div class="slx-rinfo">
+        <div class="slx-rtest">{{ r.test_name or 'Laboratory Test' }}</div>
+        <div class="slx-rdate">
+          {{ r.created_at[:10] if r.created_at else '—' }}
+          {% if r.sas_assisted %}
+            &nbsp;<span class="slx-badge b-sas" style="font-size:.6rem">⬡ SAS</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="slx-raction">
+        <a href="/results/{{ r.id }}" class="slx-mbtn slx-mbtn-view">View</a>
+        <a href="/results/{{ r.id }}/download" class="slx-mbtn slx-mbtn-dl">PDF</a>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="slx-cat-empty">No results in this category yet.</div>
+    {% endif %}
+  </div>
+{% endfor %}
 </div>
 
+<!-- ═══ ALL RESULTS TABLE ═══ -->
+<div class="slx-sh">All Released Results</div>
 
-<div class="slx-results-footer">
-
-<a href="/book" class="btn-secondary">
-Book Another Test
-</a>
-
+<div class="slx-results-list mb-8">
+  <table>
+    <thead>
+      <tr>
+        <th>Test Name</th>
+        <th>Category</th>
+        <th>Date</th>
+        <th>Severity</th>
+        <th>AI</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr>
+        <td style="font-weight:700">{{ r.test_name or 'Laboratory Test' }}</td>
+        <td>
+          <span class="slx-badge" style="background:#F3F4F6;color:#374151">
+            {{ r.test_category or '—' }}
+          </span>
+        </td>
+        <td style="font-size:.8rem;color:var(--slx-muted)">
+          {{ r.created_at[:10] if r.created_at else '—' }}
+        </td>
+        <td>
+          {% if r.severity_flag == 'critical' %}
+            <span class="slx-badge b-critical">● Critical</span>
+          {% elif r.severity_flag == 'abnormal' %}
+            <span class="slx-badge b-abnormal">● Abnormal</span>
+          {% elif r.severity_flag == 'normal' %}
+            <span class="slx-badge b-normal">● Normal</span>
+          {% else %}
+            <span class="sev-dot sev-unknown"></span>—
+          {% endif %}
+        </td>
+        <td>
+          {% if r.sas_assisted %}
+            <span class="slx-badge b-sas">⬡ SAS</span>
+          {% else %}
+            <span style="color:var(--slx-light);font-size:.8rem">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <a href="/results/{{ r.id }}" class="slx-mbtn slx-mbtn-view">View</a>
+            <a href="/results/{{ r.id }}/download" class="slx-mbtn slx-mbtn-dl">↓ PDF</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
+{% else %}
+<!-- No results state -->
+<div class="slx-no-results">
+  <div class="nr-icon">🔬</div>
+  <h3>No Results Released Yet</h3>
+  <p>
+    Your laboratory results will appear here once they have been
+    verified and released by our qualified scientists.
+  </p>
+  <a href="/book">+ Book a Test</a>
 </div>
-
-</section>
+{% endif %}
 
 {% endblock %}

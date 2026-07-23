@@ -2,6 +2,8 @@
 # app/services/test_request_service.py
 
 from __future__ import annotations
+from fastapi import HTTPException
+
 
 from datetime import datetime, timezone # ✅ Use timezonefrom fastapi import HTTPException
 from sqlalchemy import func
@@ -138,6 +140,7 @@ class TestRequestService:
                     "phone": p.phone,
                     "gender": p.gender,
                     "dob": p.date_of_birth.isoformat() if p.date_of_birth else None,
+                    "referrer_id": p.referrer_id,
                     "created_at": iso_date,
                     "date": iso_date,
                 },

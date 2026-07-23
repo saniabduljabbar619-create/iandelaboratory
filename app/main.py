@@ -27,6 +27,14 @@ from app.web.routes.admin import router as admin_router
 
 from app.services.audit_service import AuditService
 from app.api.routers.lab_reports import router as lab_reports_router
+from app.api.routers.subscription import router as subscription_router
+from app.api.routers.ssdo import router as ssdo_router
+from app.api.routers.sas import router as sas_router
+from app.api.routers.blood_bank import router as blood_bank_router
+from app.api.routers.analytics import router as analytics_router
+from app.api.routers.onboarding import router as onboarding_router
+from app.api.routers.voice import router as voice_router
+from app.api.routers.settings import router as settings_router
 
 
 # --------------------------------------------------
@@ -81,6 +89,14 @@ app.include_router(lab_reports_router, prefix="/api")
 app.include_router(referrer_router)
 app.include_router(portal_ui_router)
 app.include_router(admin_router, prefix="/admin")
+app.include_router(subscription_router)
+app.include_router(ssdo_router)
+app.include_router(sas_router)
+app.include_router(blood_bank_router)
+app.include_router(analytics_router)
+app.include_router(onboarding_router)
+app.include_router(voice_router)
+app.include_router(settings_router)
 
 # --------------------------------------------------
 # STARTUP

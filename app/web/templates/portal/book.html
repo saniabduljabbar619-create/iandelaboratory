@@ -6,25 +6,9 @@
 <link rel="stylesheet" href="/static/css/book.css">
 <style>
     /* =========================================================
-       ENTERPRISE PRO-GRADE OVERRIDES
+       Reconnected to the shared portal design system
+       (--slx-*, --r/--rs, --s1/s2/s3 from layouts/portal_base.html)
        ========================================================= */
-    :root {
-        --brand-primary: #0d9488; /* Deep Medical Teal */
-        --brand-primary-hover: #0f766e;
-        --brand-bg: #f8fafc;
-        --card-bg: #ffffff;
-        --text-main: #0f172a;
-        --text-muted: #64748b;
-        --border-color: #e2e8f0;
-        --radius: 12px;
-        --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05);
-    }
-
-    body {
-        background-color: var(--brand-bg);
-        color: var(--text-main);
-    }
 
     .slx-container {
         max-width: 1280px;
@@ -38,11 +22,11 @@
     .slx-section-head h2 {
         font-size: 2rem;
         font-weight: 800;
-        color: var(--text-main);
+        color: var(--slx-text);
         margin-bottom: 0.5rem;
     }
     .slx-section-head p {
-        color: var(--text-muted);
+        color: var(--slx-muted);
         font-size: 1.1rem;
     }
 
@@ -56,16 +40,16 @@
 
     /* Cards */
     .slx-book-card, .slx-summary-card {
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius);
+        background: var(--slx-card);
+        border: 1px solid var(--slx-border);
+        border-radius: var(--r);
         padding: 1.75rem;
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--s1);
         margin-bottom: 1.5rem;
         transition: box-shadow 0.2s ease;
     }
     .slx-book-card:hover {
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--s2);
     }
 
     .slx-book-card h3, .slx-summary-card h3 {
@@ -73,7 +57,8 @@
         font-weight: 700;
         margin-bottom: 1.5rem;
         padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--slx-border);
+        color: var(--slx-text);
     }
 
     /* Forms */
@@ -90,19 +75,21 @@
     .form-group label {
         font-size: 0.9rem;
         font-weight: 600;
-        color: var(--text-main);
+        color: var(--slx-text);
     }
     .form-group input, .form-group select {
         padding: 0.65rem 1rem;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
+        border: 1px solid var(--slx-border);
+        border-radius: var(--rs);
         font-size: 1rem;
+        font-family: var(--font);
         transition: all 0.2s;
-        background: #fdfdfd;
+        background: var(--slx-card);
+        color: var(--slx-text);
     }
     .form-group input:focus, .form-group select:focus {
         outline: none;
-        border-color: var(--brand-primary);
+        border-color: var(--slx-accent);
         box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
     }
 
@@ -114,26 +101,26 @@
     .slx-type-option {
         flex: 1;
         cursor: pointer;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
+        border: 1px solid var(--slx-border);
+        border-radius: var(--rs);
         padding: 1rem;
         display: flex;
         align-items: center;
         gap: 0.75rem;
         font-weight: 600;
+        color: var(--slx-text);
         transition: all 0.2s;
-        background: var(--brand-bg);
+        background: var(--slx-bg);
     }
     .slx-type-option:hover {
         border-color: #cbd5e1;
     }
-    /* Modern CSS: Highlight card when radio is checked */
     .slx-type-option:has(input:checked) {
-        border-color: var(--brand-primary);
-        background: rgba(13, 148, 136, 0.05);
+        border-color: var(--slx-accent);
+        background: var(--slx-accent-dim);
     }
     .slx-type-option input {
-        accent-color: var(--brand-primary);
+        accent-color: var(--slx-accent);
         width: 1.2rem;
         height: 1.2rem;
     }
@@ -142,15 +129,17 @@
     .slx-test-search input {
         width: 100%;
         padding: 0.85rem 1.25rem;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
+        border: 1px solid var(--slx-border);
+        border-radius: var(--rs);
         margin-bottom: 1.5rem;
         font-size: 1rem;
-        background: var(--brand-bg);
+        font-family: var(--font);
+        background: var(--slx-bg);
+        color: var(--slx-text);
     }
     .slx-category-title {
         font-weight: 800;
-        color: var(--text-muted);
+        color: var(--slx-muted);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         font-size: 0.85rem;
@@ -160,8 +149,8 @@
         display: flex;
         align-items: center;
         padding: 0.85rem 1rem;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
+        border: 1px solid var(--slx-border);
+        border-radius: var(--rs);
         margin-bottom: 0.5rem;
         cursor: pointer;
         transition: all 0.2s;
@@ -169,14 +158,14 @@
     }
     .slx-test-item:hover {
         border-color: #cbd5e1;
-        background: #f8fafc;
+        background: var(--slx-border-l);
     }
     .slx-test-item:has(input:checked) {
-        border-color: var(--brand-primary);
-        background: rgba(13, 148, 136, 0.05);
+        border-color: var(--slx-accent);
+        background: var(--slx-accent-dim);
     }
     .slx-test-item input[type="checkbox"] {
-        accent-color: var(--brand-primary);
+        accent-color: var(--slx-accent);
         width: 1.2rem;
         height: 1.2rem;
     }
@@ -186,17 +175,17 @@
     .slx-test-content strong {
         display: block;
         font-size: 1rem;
-        color: var(--text-main);
+        color: var(--slx-text);
     }
     .slx-test-price {
         font-size: 0.9rem;
-        color: var(--text-muted);
+        color: var(--slx-muted);
         margin-top: 0.2rem;
     }
     .slx-test-info {
-        background: var(--brand-bg);
-        border: 1px solid var(--border-color);
-        color: var(--text-muted);
+        background: var(--slx-bg);
+        border: 1px solid var(--slx-border);
+        color: var(--slx-muted);
         width: 28px;
         height: 28px;
         border-radius: 50%;
@@ -205,34 +194,35 @@
         transition: all 0.2s;
     }
     .slx-test-info:hover {
-        background: var(--brand-primary);
+        background: var(--slx-accent);
         color: #fff;
-        border-color: var(--brand-primary);
+        border-color: var(--slx-accent);
     }
 
     /* Sticky Summary Sidebar */
     .slx-book-summary {
         position: sticky;
-        top: 20px; /* Sticks to top of viewport when scrolling */
+        top: 20px;
     }
     .slx-selected-item {
         display: flex;
         justify-content: space-between;
         font-size: 0.95rem;
         padding: 0.5rem 0;
-        border-bottom: 1px dashed var(--border-color);
+        border-bottom: 1px dashed var(--slx-border);
+        color: var(--slx-text);
     }
     .slx-summary-totals {
         margin-top: 1.5rem;
-        background: var(--brand-bg);
+        background: var(--slx-bg);
         padding: 1.25rem;
-        border-radius: 8px;
+        border-radius: var(--rs);
     }
     .slx-summary-row {
         display: flex;
         justify-content: space-between;
         font-size: 0.95rem;
-        color: var(--text-muted);
+        color: var(--slx-muted);
         margin-bottom: 0.5rem;
     }
     .slx-summary-total {
@@ -240,50 +230,18 @@
         justify-content: space-between;
         font-size: 1.25rem;
         font-weight: 800;
-        color: var(--text-main);
+        color: var(--slx-text);
         margin-top: 0.75rem;
         padding-top: 0.75rem;
-        border-top: 1px solid var(--border-color);
+        border-top: 1px solid var(--slx-border);
     }
 
-    /* Buttons */
-    .btn-primary {
-        background: var(--brand-primary);
-        color: #ffffff;
-        border: none;
-        padding: 0.85rem 1.5rem;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-        font-size: 1rem;
-    }
-    .btn-primary:hover {
-        background: var(--brand-primary-hover);
-    }
-    .btn-primary.full {
+    /* Page-local button sizing (color/base styles come from portal_base.html) */
+    .btn-primary.full,
+    .btn-secondary.full {
         width: 100%;
     }
-    .btn-primary.large {
-        padding: 1rem;
-        font-size: 1.1rem;
-    }
-    .btn-secondary {
-        background: #ffffff;
-        color: var(--text-main);
-        border: 1px solid var(--border-color);
-        padding: 1rem;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-        width: 100%;
-    }
-    .btn-secondary:hover {
-        background: var(--brand-bg);
-        border-color: #cbd5e1;
-    }
-    
+
     .button-group {
         display: flex;
         flex-direction: column;
@@ -302,12 +260,12 @@
         z-index: 9999;
     }
     .slx-modal-content {
-        background: var(--card-bg);
+        background: var(--slx-card);
         padding: 2rem;
-        border-radius: var(--radius);
+        border-radius: var(--r);
         max-width: 400px;
         width: 90%;
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        box-shadow: var(--s3);
     }
 
     @media (max-width: 960px) {
@@ -442,7 +400,7 @@
 
                     <div class="slx-book-card" id="groupBuilder" style="display:none;">
                         <h3>Group Patients</h3>
-                        <div id="groupPatientsList" style="margin-bottom: 1rem; color: var(--text-muted);">
+                        <div id="groupPatientsList" style="margin-bottom: 1rem; color: var(--slx-muted);">
                             No patients added yet
                         </div>
                         <button type="button" class="btn-primary" onclick="addPatientToGroup()">
@@ -455,9 +413,9 @@
                 <div class="slx-book-summary">
                     <div class="slx-summary-card">
                         <h3>Booking Summary</h3>
-                        
+
                         <div id="selectedTests" class="slx-selected-tests" style="min-height: 50px;">
-                            <span style="color: var(--text-muted);">No tests selected</span>
+                            <span style="color: var(--slx-muted);">No tests selected</span>
                         </div>
 
                         <input type="hidden" name="group_payload" id="groupPayload">
@@ -469,7 +427,7 @@
                             </div>
                             <div class="slx-summary-row" id="discountRow" style="display:none;">
                                 <span>Group Discount</span>
-                                <span style="color: #ef4444;">-₦<span id="discountAmount">0.00</span></span>
+                                <span style="color: var(--slx-danger);">-₦<span id="discountAmount">0.00</span></span>
                             </div>
                             <div class="slx-summary-total">
                                 <span>Total</span>
@@ -481,7 +439,7 @@
                             <button type="submit" name="action" value="pay" class="btn-primary large full">
                                 Continue to Payment
                             </button>
-                            <button type="submit" name="action" value="unpaid" class="btn-secondary">
+                            <button type="submit" name="action" value="unpaid" class="btn-secondary full">
                                 Proceed Without Payment
                             </button>
                         </div>
@@ -496,7 +454,7 @@
 <div id="testModal" class="slx-modal">
     <div class="slx-modal-content">
         <h3 style="margin-top: 0;">Test Information</h3>
-        <p id="modalText" style="color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;"></p>
+        <p id="modalText" style="color: var(--slx-muted); line-height: 1.5; margin-bottom: 1.5rem;"></p>
         <button type="button" onclick="closeModal()" class="btn-primary full">
             Close
         </button>
@@ -569,11 +527,11 @@ function updateSummary(){
     }
 
     if(html === ""){
-        html = '<span style="color: var(--text-muted);">No tests selected</span>';
+        html = '<span style="color: var(--slx-muted);">No tests selected</span>';
     }
 
     selectedTests.innerHTML = html;
-    
+
     // Formatting numbers with commas
     const formattedTotal = total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     totalDisplay.innerText = formattedTotal;
@@ -627,7 +585,7 @@ function closeModal(){
 function updateGroupPayload(){
     const payloadInput = document.getElementById("groupPayload");
     let items = [];
-    
+
     groupPatients.forEach(p => {
         p.tests.forEach(t => {
             items.push({
@@ -639,7 +597,7 @@ function updateGroupPayload(){
             });
         });
     });
-    
+
     payloadInput.value = JSON.stringify(items);
 }
 
@@ -753,9 +711,9 @@ function renderGroupPatients(){
     let html="";
     groupPatients.forEach((p,i)=>{
         html+=`
-        <div class="slx-group-item" style="display:flex; justify-content:space-between; padding:0.75rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:0.5rem;">
-            <strong style="color:#0f172a;">${p.name}</strong>
-            <span style="color:#64748b; font-size:0.9rem;">${p.tests.length} tests</span>
+        <div class="slx-group-item" style="display:flex; justify-content:space-between; padding:0.75rem; background:var(--slx-bg); border:1px solid var(--slx-border); border-radius:var(--rs); margin-bottom:0.5rem;">
+            <strong style="color:var(--slx-text);">${p.name}</strong>
+            <span style="color:var(--slx-muted); font-size:0.9rem;">${p.tests.length} tests</span>
         </div>
         `;
     });

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Optional
-
+from app.core.dependencies import get_current_user
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -49,3 +49,41 @@ def list_audits(
 
     rows = q.order_by(desc(AuditLog.id)).limit(limit).all()
     return rows
+
+
+from pydantic import BaseModel
+
+class GuardrailLogIn(BaseModel):
+    patient_id: int
+    test_type_id: int | None = None
+    result_id: int | None = None
+    guardrail: str
+    severity: str
+    message: str
+    acknowledged: bool = True
+    reason: str | None = None
+
+@router.post("/guardrail")
+def log_guardrail(
+    payload: GuardrailLogIn,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Log a guardrail fire + acknowledgment to the audit trail."""
+    from app.services.audit_service import AuditService
+    AuditService(db).log(
+        actor_type="staff",
+        actor=getattr(current_user, "username", "unknown"),
+        action="guardrail_" + payload.guardrail,
+        entity="test_result",
+        entity_id=payload.result_id,
+        meta={
+            "patient_id": payload.patient_id,
+            "test_type_id": payload.test_type_id,
+            "severity": payload.severity,
+            "message": payload.message,
+            "acknowledged": payload.acknowledged,
+            "reason": payload.reason,
+        },
+    )
+    return {"logged": True}

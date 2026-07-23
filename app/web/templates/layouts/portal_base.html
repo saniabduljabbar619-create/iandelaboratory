@@ -1,228 +1,444 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Solunex Health Portal{% endblock %}</title>
 
-<title>{% block title %}I & E Lab – Precision Diagnostics{% endblock %}</title>
+<!-- ═══ SOLUNEX PORTAL DESIGN SYSTEM v2.0 ═══ -->
+<style>
+/* ─── TOKENS ─────────────────────────────────── */
+:root{
+  --slx-primary:#1E3A5F;--slx-primary-l:#2C5F8A;--slx-primary-xl:#3D7AB5;
+  --slx-accent:#0D9488;--slx-accent-l:#14B8A6;--slx-accent-dim:#CCFBF1;
+  --slx-bg:#F0F4F8;--slx-card:#FFFFFF;
+  --slx-text:#1F2937;--slx-muted:#6B7280;--slx-light:#9CA3AF;
+  --slx-border:#E5E7EB;--slx-border-l:#F3F4F6;
+  --slx-success:#059669;--slx-success-bg:#D1FAE5;
+  --slx-warn:#D97706;--slx-warn-bg:#FEF3C7;
+  --slx-danger:#DC2626;--slx-danger-bg:#FEE2E2;
+  --slx-info:#2563EB;--slx-info-bg:#DBEAFE;
+  /* SSFO category palette */
+  --cat-haem:#DC143C;--cat-bio:#1E40AF;--cat-micro:#065F46;
+  --cat-sero:#92400E;--cat-para:#6B21A8;--cat-bb:#991B1B;--cat-gen:#374151;
+  /* Shadows */
+  --s1:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --s2:0 4px 6px -1px rgba(0,0,0,.08),0 2px 4px -1px rgba(0,0,0,.04);
+  --s3:0 10px 25px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);
+  --r:12px;--rs:8px;
+  --nav-h:64px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;
+}
 
-<link rel="stylesheet" href="/static/css/portal.css">
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--slx-bg);color:var(--slx-text);
+  min-height:100vh;display:flex;flex-direction:column}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--slx-bg)}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:99px}
+
+/* ─── TOPNAV ─────────────────────────────────── */
+.slx-nav{
+  position:sticky;top:0;z-index:200;
+  height:var(--nav-h);
+  background:rgba(255,255,255,.98);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--slx-border);
+  box-shadow:var(--s1);
+  display:flex;align-items:center;
+  padding:0 28px;gap:24px;
+}
+
+/* Brand */
+.slx-nav-brand{
+  display:flex;align-items:center;gap:10px;
+  text-decoration:none;flex-shrink:0;
+}
+.slx-nav-brand .b-icon{
+  width:38px;height:38px;
+  background:linear-gradient(135deg,var(--slx-primary),var(--slx-primary-l));
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:1.25rem;font-weight:900;
+  box-shadow:0 2px 8px rgba(30,58,95,.3);
+}
+.slx-nav-brand .b-name{
+  font-size:.95rem;font-weight:900;color:var(--slx-primary);letter-spacing:-.01em;
+}
+.slx-nav-brand .b-tag{
+  font-size:.6rem;font-weight:700;color:var(--slx-accent);
+  text-transform:uppercase;letter-spacing:.1em;
+}
+
+/* Nav links */
+.slx-nav-links{
+  display:flex;align-items:center;gap:2px;margin-left:8px;
+}
+.slx-nav-links a{
+  padding:7px 14px;border-radius:var(--rs);
+  font-size:.825rem;font-weight:600;color:var(--slx-muted);
+  transition:all .15s;white-space:nowrap;
+}
+.slx-nav-links a:hover{background:var(--slx-accent-dim);color:var(--slx-accent)}
+.slx-nav-links a.slx-active{background:var(--slx-accent-dim);color:var(--slx-accent)}
+
+.slx-nav-spacer{flex:1}
+
+/* Patient chip */
+.slx-nav-patient{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 14px 6px 6px;
+  border-radius:99px;border:1.5px solid var(--slx-border);
+  background:var(--slx-card);
+  box-shadow:var(--s1);
+}
+.slx-nav-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--slx-accent),var(--slx-primary-l));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:.8rem;
+}
+.slx-nav-pname{font-size:.8rem;font-weight:700;color:var(--slx-text);max-width:160px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slx-nav-pid{font-size:.65rem;color:var(--slx-muted);font-family:'SF Mono','Consolas',monospace}
+
+/* CTA buttons */
+.slx-btn-nav{
+  padding:8px 18px;border-radius:99px;
+  font-size:.8rem;font-weight:700;cursor:pointer;
+  border:none;transition:all .2s;display:inline-flex;align-items:center;gap:6px;
+}
+.slx-btn-nav-outline{
+  background:transparent;border:1.5px solid var(--slx-border);color:var(--slx-muted);
+}
+.slx-btn-nav-outline:hover{border-color:var(--slx-danger);color:var(--slx-danger)}
+.slx-btn-nav-solid{
+  background:var(--slx-accent);color:#fff;
+}
+.slx-btn-nav-solid:hover{background:#0F766E;box-shadow:0 4px 12px rgba(13,148,136,.35)}
+
+/* ─── PAGE WRAPPER ───────────────────────────── */
+.slx-page{flex:1;padding:32px 28px;max-width:1240px;width:100%;margin:0 auto}
+
+/* ─── COMPONENTS ─────────────────────────────── */
+
+/* Card */
+.slx-card{
+  background:var(--slx-card);border-radius:var(--r);
+  border:1px solid var(--slx-border);box-shadow:var(--s1);overflow:hidden;
+}
+.slx-card-head{
+  padding:18px 24px;border-bottom:1px solid var(--slx-border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.slx-card-title{font-size:.95rem;font-weight:800;color:var(--slx-text)}
+.slx-card-body{padding:24px}
+
+/* Stats grid */
+.slx-stats{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;
+  margin-bottom:28px;
+}
+.slx-stat{
+  background:var(--slx-card);border-radius:var(--r);
+  border:1px solid var(--slx-border);box-shadow:var(--s1);
+  padding:20px 22px;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.slx-stat:hover{transform:translateY(-2px);box-shadow:var(--s2)}
+.slx-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--slx-accent)}
+.slx-stat.warn::before{background:var(--slx-warn)}
+.slx-stat.danger::before{background:var(--slx-danger)}
+.slx-stat.success::before{background:var(--slx-success)}
+.slx-stat-lbl{font-size:.7rem;font-weight:700;color:var(--slx-muted);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.slx-stat-val{font-size:2rem;font-weight:900;color:var(--slx-text);line-height:1}
+.slx-stat-sub{font-size:.72rem;color:var(--slx-muted);margin-top:6px}
+
+/* Welcome hero */
+.slx-hero-welcome{
+  background:linear-gradient(135deg,var(--slx-primary) 0%,var(--slx-primary-l) 55%,#1a7a6e 100%);
+  border-radius:var(--r);padding:36px 40px;color:#fff;
+  margin-bottom:28px;position:relative;overflow:hidden;
+}
+.slx-hero-welcome::before{
+  content:'⬡';position:absolute;right:30px;top:50%;transform:translateY(-50%);
+  font-size:10rem;opacity:.07;line-height:1;pointer-events:none;
+}
+.slx-hw-greeting{
+  font-size:.75rem;font-weight:700;opacity:.7;
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;
+}
+.slx-hw-name{
+  font-size:2.25rem;font-weight:900;letter-spacing:-.03em;
+  line-height:1.1;margin-bottom:16px;
+}
+.slx-hw-meta{display:flex;gap:20px;flex-wrap:wrap}
+.slx-hw-chip{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.13);border-radius:99px;
+  padding:5px 14px;font-size:.75rem;font-weight:700;
+  backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.15);
+}
+
+/* SSFO category cards */
+.slx-cat-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+  gap:20px;margin-bottom:32px;
+}
+.slx-cat-card{
+  background:var(--slx-card);border-radius:var(--r);
+  border:1px solid var(--slx-border);box-shadow:var(--s1);
+  overflow:hidden;transition:transform .2s,box-shadow .2s;
+}
+.slx-cat-card:hover{transform:translateY(-3px);box-shadow:var(--s2)}
+.slx-cat-head{padding:16px 20px;display:flex;align-items:center;gap:12px;color:#fff}
+.slx-cat-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.05rem;font-weight:900;flex-shrink:0;
+}
+.slx-cat-name{font-size:.95rem;font-weight:800;flex:1}
+.slx-cat-badge{
+  background:rgba(255,255,255,.2);border-radius:99px;
+  padding:3px 11px;font-size:.72rem;font-weight:800;
+}
+
+/* Category color overrides */
+.cc-haem .slx-cat-head{background:var(--cat-haem)}
+.cc-bio  .slx-cat-head{background:var(--cat-bio)}
+.cc-micro .slx-cat-head{background:var(--cat-micro)}
+.cc-sero .slx-cat-head{background:var(--cat-sero)}
+.cc-para .slx-cat-head{background:var(--cat-para)}
+.cc-bb   .slx-cat-head{background:var(--cat-bb)}
+.cc-gen  .slx-cat-head{background:var(--cat-gen)}
+
+/* Result list items inside category card */
+.slx-ritem{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 20px;border-bottom:1px solid var(--slx-border-l);
+  transition:background .15s;
+}
+.slx-ritem:last-child{border-bottom:none}
+.slx-ritem:hover{background:#F9FAFB}
+.slx-rdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--slx-accent)}
+.slx-rdot.ab{background:var(--slx-warn)}
+.slx-rdot.cr{background:var(--slx-danger)}
+.slx-rinfo{flex:1;min-width:0}
+.slx-rtest{font-size:.85rem;font-weight:700;color:var(--slx-text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slx-rdate{font-size:.72rem;color:var(--slx-muted);margin-top:2px}
+.slx-raction{display:flex;gap:5px;flex-shrink:0}
+
+/* Primary CTA buttons (page content, not nav) */
+.btn-primary{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:14px 28px;border-radius:var(--rs);
+  background:var(--slx-accent);color:#fff;font-weight:800;font-size:.9rem;
+  text-decoration:none;border:none;cursor:pointer;transition:all .2s;
+  box-shadow:0 4px 14px rgba(13,148,136,.28);
+}
+.btn-primary:hover{background:#0F766E;transform:translateY(-2px);box-shadow:0 8px 20px rgba(13,148,136,.35)}
+.btn-primary.large{padding:16px 34px;font-size:1rem}
+.btn-secondary{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:14px 28px;border-radius:var(--rs);
+  background:transparent;color:var(--slx-primary);font-weight:800;font-size:.9rem;
+  text-decoration:none;border:1.5px solid var(--slx-border);cursor:pointer;transition:all .2s;
+}
+.btn-secondary:hover{border-color:var(--slx-primary)}
+
+/* Micro buttons */
+.slx-mbtn{
+  padding:5px 11px;border-radius:6px;font-size:.7rem;font-weight:700;
+  border:none;cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;gap:4px;transition:all .15s;
+}
+.slx-mbtn-view{background:var(--slx-info-bg);color:var(--slx-info)}
+.slx-mbtn-view:hover{background:var(--slx-info);color:#fff}
+.slx-mbtn-dl{background:var(--slx-success-bg);color:var(--slx-success)}
+.slx-mbtn-dl:hover{background:var(--slx-success);color:#fff}
+
+/* Tags */
+.slx-tags{display:flex;flex-wrap:wrap;gap:5px}
+.slx-tag{
+  padding:3px 10px;border-radius:99px;font-size:.68rem;font-weight:700;
+  text-transform:capitalize;background:var(--slx-accent-dim);color:var(--slx-accent);
+}
+.slx-tag.w{background:var(--slx-warn-bg);color:var(--slx-warn)}
+.slx-tag.d{background:var(--slx-danger-bg);color:var(--slx-danger)}
+
+/* Badges */
+.slx-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 10px;border-radius:99px;
+  font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+}
+.b-released{background:var(--slx-info-bg);color:var(--slx-info)}
+.b-draft{background:#F3F4F6;color:#6B7280}
+.b-sas{background:var(--slx-success-bg);color:var(--slx-success)}
+.b-abnormal{background:var(--slx-warn-bg);color:var(--slx-warn)}
+.b-critical{background:var(--slx-danger-bg);color:var(--slx-danger)}
+.b-normal{background:var(--slx-success-bg);color:var(--slx-success)}
+
+/* Result table */
+.slx-rtable{width:100%;border-collapse:collapse;font-size:.875rem}
+.slx-rtable th{
+  background:var(--slx-primary);color:#fff;
+  padding:12px 16px;text-align:left;font-weight:700;
+  font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;
+}
+.slx-rtable td{
+  padding:12px 16px;border-bottom:1px solid var(--slx-border-l);
+  vertical-align:middle;
+}
+.slx-rtable tr:last-child td{border-bottom:none}
+.slx-rtable tr:nth-child(even) td{background:#FAFAFA}
+.slx-rtable tr:hover td{background:var(--slx-accent-dim)}
+.slx-rtable .fH{color:var(--slx-danger);font-weight:800}
+.slx-rtable .fL{color:var(--slx-warn);font-weight:800}
+.slx-rtable .vH{color:var(--slx-danger);font-weight:800;font-size:1rem}
+.slx-rtable .vL{color:var(--slx-warn);font-weight:800;font-size:1rem}
+
+/* Section header */
+.slx-sh{
+  display:flex;align-items:center;gap:10px;
+  font-size:1rem;font-weight:800;color:var(--slx-text);
+  margin-bottom:16px;
+}
+.slx-sh::after{content:'';flex:1;height:1px;background:var(--slx-border)}
+
+/* Alert */
+.slx-alert{
+  padding:13px 17px;border-radius:var(--rs);border-left:4px solid;
+  font-size:.85rem;font-weight:600;margin-bottom:20px;
+  display:flex;align-items:center;gap:10px;
+}
+.slx-alert-err{background:var(--slx-danger-bg);color:var(--slx-danger);border-color:var(--slx-danger)}
+.slx-alert-ok{background:var(--slx-success-bg);color:var(--slx-success);border-color:var(--slx-success)}
+.slx-alert-info{background:var(--slx-info-bg);color:var(--slx-info);border-color:var(--slx-info)}
+
+/* Empty state */
+.slx-empty{text-align:center;padding:52px 24px;color:var(--slx-muted)}
+.slx-empty-icon{font-size:3rem;margin-bottom:14px;opacity:.35}
+.slx-empty h3{font-size:1rem;font-weight:700;color:var(--slx-text);margin-bottom:6px}
+.slx-empty p{font-size:.85rem}
+
+/* Grid utils */
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.mb-6{margin-bottom:24px}
+.mb-8{margin-bottom:32px}
+
+/* Content-page layout utilities (Home, Book, Tests, Contact, etc.) */
+.slx-container{max-width:1140px;margin:0 auto;padding:0 24px}
+.slx-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.slx-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.slx-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+@media(max-width:900px){
+  .slx-grid-3,.slx-grid-4{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .slx-grid-2,.slx-grid-3,.slx-grid-4{grid-template-columns:1fr}
+}
+
+/* ─── FOOTER ─────────────────────────────────── */
+.slx-footer{
+  border-top:1px solid var(--slx-border);
+  background:var(--slx-card);
+  padding:20px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+  font-size:.75rem;color:var(--slx-muted);
+}
+.slx-footer-brand{font-weight:700;color:var(--slx-primary)}
+.slx-footer-powered{display:flex;align-items:center;gap:8px}
+.slx-footer-powered span{
+  background:var(--slx-accent-dim);color:var(--slx-accent);
+  padding:2px 9px;border-radius:99px;font-weight:800;font-size:.65rem;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+
+/* ─── RESPONSIVE ─────────────────────────────── */
+@media(max-width:768px){
+  .slx-nav{padding:0 16px;gap:12px}
+  .slx-nav-links{display:none}
+  .slx-page{padding:20px 16px}
+  .slx-hw-name{font-size:1.6rem}
+  .slx-stats{grid-template-columns:repeat(2,1fr)}
+  .slx-cat-grid{grid-template-columns:1fr}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .slx-stats{grid-template-columns:1fr}
+  .slx-hero-welcome{padding:24px}
+  .slx-hw-name{font-size:1.4rem}
+}
+</style>
 
 {% block page_css %}{% endblock %}
-
 </head>
-
-
 <body>
 
+<!-- ═══ NAVIGATION ═══ -->
+<header class="slx-nav">
 
-<!-- ================= HEADER ================= -->
+  <a href="/" class="slx-nav-brand">
+    <div class="b-icon">⬡</div>
+    <div>
+      <div class="b-name">Solunex</div>
+      <div class="b-tag">Health Portal</div>
+    </div>
+  </a>
 
-<header class="slx-portal-header">
+  <nav class="slx-nav-links">
+    <a href="/" class="{% if request.url.path == '/' %}slx-active{% endif %}">Home</a>
+    <a href="/tests" class="{% if request.url.path == '/tests' %}slx-active{% endif %}">Tests</a>
+    <a href="/book" class="{% if request.url.path == '/book' %}slx-active{% endif %}">Book Test</a>
+    <a href="/referrer/login">Referrers</a>
+    <a href="/results" class="{% if request.url.path == '/results' or request.url.path.startswith('/results/') %}slx-active{% endif %}">My Results</a>
+    <a href="/contact" class="{% if request.url.path == '/contact' %}slx-active{% endif %}">Contact</a>
+  </nav>
 
-<div class="slx-container slx-header-inner">
+  <div class="slx-nav-spacer"></div>
 
+  {% if patient %}
+  <div class="slx-nav-patient">
+    <div class="slx-nav-avatar">{{ patient.full_name[0] | upper if patient.full_name else 'P' }}</div>
+    <div>
+      <div class="slx-nav-pname">{{ patient.full_name }}</div>
+      <div class="slx-nav-pid">{{ patient.patient_no }}</div>
+    </div>
+  </div>
+  <a href="/logout" class="slx-btn-nav slx-btn-nav-outline">↪ Sign Out</a>
 
-<!-- BRAND -->
-
-<a href="/" class="slx-brand">
-
-<div class="slx-brand-mark"></div>
-
-<div class="slx-brand-text">
-<div class="slx-brand-name">I & E Lab</div>
-<div class="slx-brand-sub">Precision Diagnostics</div>
-</div>
-
-</a>
-
-
-
-<!-- MOBILE MENU BUTTON -->
-
-<button class="slx-menu-toggle" onclick="toggleMenu()">
-☰
-</button>
-
-
-
-<!-- NAVIGATION -->
-
-<nav class="slx-nav" id="slxNav">
-
-<a href="/"
-class="{% if request.url.path == '/' %}active{% endif %}">
-Home
-</a>
-
-<a href="/tests"
-class="{% if 'tests' in request.url.path %}active{% endif %}">
-Tests
-</a>
-
-<a href="/referrer/login"
-class="{% if 'referrer_login' in request.url.path %}active{% endif %}">
-Referrers
-</a>
-
-<a href="/book"
-class="{% if 'book' in request.url.path %}active{% endif %}">
-Book Test
-</a>
-
-<a href="/lookup"
-class="{% if 'lookup' in request.url.path or 'results' in request.url.path %}active{% endif %}">
-Results
-</a>
-
-<a href="/contact"
-class="{% if 'contact' in request.url.path %}active{% endif %}">
-Contact
-</a>
-
-
-</nav>
-
-</div>
+  {% else %}
+  <a href="/lookup" class="slx-btn-nav slx-btn-nav-solid">🔐 Sign In</a>
+  {% endif %}
 
 </header>
 
-
-
-<!-- ================= MAIN ================= -->
-
-<main class="slx-portal-main">
-
-{% block content %}{% endblock %}
-
+<!-- ═══ PAGE CONTENT ═══ -->
+<main class="slx-page">
+  {% block content %}{% endblock %}
 </main>
 
-
-
-<!-- ================= FOOTER ================= -->
-
-<footer class="slx-portal-footer">
-
-<div class="slx-container slx-footer-grid">
-
-
-<!-- LAB INFO -->
-
-<div class="slx-footer-col">
-
-<h4>I & E Laboratory</h4>
-
-<p>
-Precision diagnostics delivering accurate laboratory
-results for healthcare providers and patients.
-</p>
-
-</div>
-
-
-
-<!-- QUICK LINKS -->
-
-<div class="slx-footer-col">
-
-<h4>Quick Links</h4>
-
-<ul>
-
-<li><a href="/">Home</a></li>
-
-<li><a href="/tests">Laboratory Tests</a></li>
-
-<li><a href="/referrer/login">Referrers</a></li>
-
-<li><a href="/book">Book a Test</a></li>
-
-<li><a href="/lookup">Check Results</a></li>
-
-</ul>
-
-</div>
-
-
-
-<!-- SUPPORT -->
-
-<div class="slx-footer-col">
-
-<h4>Support</h4>
-
-<ul>
-
-<li><a href="/contact">Contact</a></li>
-
-</ul>
-
-</div>
-
-
-
-<!-- Admins Navigation -->
-
-<div class="slx-footer-col">
-
-<h4>Admin Navs</h4>
-
-
-<ul>
-
-<li><a href="/admin/login">Mr. Admin</a></li>
-
-</ul>
-
-</div>
-
-
-
-<!-- COMPANY -->
-
-<div class="slx-footer-col">
-
-<h4>Technology</h4>
-
-<p>
-Powered by <strong>Solunex Technologies Company</strong><br>
-Secure Medical Data Infrastructure
-</p>
-
-</div>
-
-
-
-</div>
-
-
-
-<div class="slx-footer-bottom">
-
-© {{ request.state.year if request.state and request.state.year else "2026" }}
-Solunex Technologies
-
-</div>
-
-
+<!-- ═══ FOOTER ═══ -->
+<footer class="slx-footer">
+  <div>
+    <span class="slx-footer-brand">I &amp; E Diagnostic Laboratory</span>
+    &nbsp;—&nbsp; Powered by Solunex Technologies LabCore 2.0
+  </div>
+  <div class="slx-footer-powered">
+    <span>SSDO</span>
+    <span>SAS</span>
+    &nbsp;All results are for reference purposes. Consult your physician for medical advice.
+  </div>
 </footer>
 
-
-
-<!-- ================= MOBILE NAV SCRIPT ================= -->
-
-<script>
-
-function toggleMenu() {
-
-const nav = document.getElementById("slxNav");
-nav.classList.toggle("open");
-
-}
-
-</script>
-
-
+{% block page_js %}{% endblock %}
 </body>
 </html>

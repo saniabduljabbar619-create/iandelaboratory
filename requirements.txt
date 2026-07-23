@@ -20,3 +20,8 @@ reportlab==4.2.5
 pillow==10.4.0
 
 requests>=2.31.0
+
+anthropic
+
+qrcode[pil]
+python-barcode

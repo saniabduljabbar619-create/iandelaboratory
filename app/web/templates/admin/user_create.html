@@ -1,33 +1,66 @@
 {% extends "layouts/base.html" %}
 
 {% block page_css %}
-<link rel="stylesheet" href="/static/css/user_create.css">
+<style>
+    .sx-page-header { margin-bottom: 22px; }
+    .sx-page-header p {
+        color: var(--sx-muted);
+        margin-top: 4px;
+        font-size: 13.5px;
+    }
+    .sx-form {
+        max-width: 460px;
+    }
+    .sx-form-group {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+    .sx-form-group label {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--sx-muted);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+    }
+    .sx-form-group input,
+    .sx-form-group select {
+        width: 100%;
+    }
+    .sx-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 28px;
+        padding-top: 22px;
+        border-top: 1px solid var(--sx-border);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 
-<div class="page-header">
-    <div>
-        <h2 class="page-title">Create User</h2>
-        <p class="page-subtitle">Provision system access for staff</p>
-    </div>
+<div class="sx-page-header">
+    <h2 class="page-title" style="margin:0;">Create User</h2>
+    <p>Provision system access for staff</p>
 </div>
 
-<div class="card form-card">
+<div class="card">
 
     <form method="post" class="sx-form">
 
-        <div class="form-group">
+        <div class="sx-form-group">
             <label>Username</label>
             <input type="text" name="username" required>
         </div>
 
-        <div class="form-group">
+        <div class="sx-form-group">
             <label>Password</label>
             <input type="password" name="password" required>
         </div>
 
-        <div class="form-group">
+        <div class="sx-form-group">
             <label>Role</label>
             <select name="role" required>
                 {% if current_user.role == "super_admin" %}
@@ -39,7 +72,7 @@
         </div>
 
         {% if current_user.role == "super_admin" %}
-        <div class="form-group">
+        <div class="sx-form-group">
             <label>Branch</label>
             <select name="branch_id" required>
                 {% for branch in branches %}
@@ -51,9 +84,9 @@
         </div>
         {% endif %}
 
-        <div class="form-actions">
-            <a href="/admin/users" class="btn-secondary">Cancel</a>
-            <button type="submit" class="btn-primary">
+        <div class="sx-form-actions">
+            <a href="/admin/users" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
                 Create User
             </button>
         </div>

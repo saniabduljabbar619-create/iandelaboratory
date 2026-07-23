@@ -28,6 +28,9 @@ from app.services.portal_reports.config import LAB_PROFILE
 from app.services.portal_reports.builder import build_bundle_result
 from app.services.portal_reports.renderer import render_pdf
 
+from pydantic import BaseModel
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
+
 router = APIRouter()
 templates = Jinja2Templates(directory="app/web/templates")
 UPLOAD_DIR = "uploads/payments"
@@ -108,12 +111,28 @@ def results_page(request: Request, db: Session = Depends(get_db)):
 
     service = PortalService(db, settings.PORTAL_SECRET)
 
-    patient_id = service.verify_token(token)
+    try:
+        patient_id = service.verify_token(token)
+    except Exception:
+        return RedirectResponse("/lookup", status_code=303)
+
+    patient = service.get_patient_profile(patient_id)
     results = service.list_released_results(patient_id)
+
+    # Group results by SSDO test category for the category cards
+    results_by_category: dict[str, list] = {}
+    for r in results:
+        cat = r.get("test_category") or "General"
+        results_by_category.setdefault(cat, []).append(r)
 
     return templates.TemplateResponse(
         "portal/results.html",
-        {"request": request, "results": results}
+        {
+            "request": request,
+            "patient": patient,
+            "results": results,
+            "results_by_category": results_by_category,
+        }
     )
 
 # ===============================
@@ -551,38 +570,44 @@ def tests_page(request: Request):
 # ===============================
 # REFERRER LOGIN PAGE
 # ===============================
+# ===============================
+# REFERRER LOGIN PAGE
+# ===============================
 @router.get("/referrer/login", response_class=HTMLResponse)
 def referrer_login_page(request: Request):
-    return templates.TemplateResponse(
-        "portal/referrer_login.html",
-        {"request": request}
-    )
+    return templates.TemplateResponse("portal/referrer_login.html", {"request": request})
 
 
 @router.post("/referrer/login")
-def referrer_login_action(
-    request: Request,
-    code: str = Form(...)
-):
+def referrer_login_action(request: Request, phone: str = Form(...), code: str = Form(...)):
     db = next(get_db())
+    from app.models.referrer import Referrer
+    from app.core.security import verify_password
 
-    from app.services.referrer_service import ReferrerService
-    service = ReferrerService(db)
+    phone_clean = phone.strip()
+    referrer = db.query(Referrer).filter(Referrer.phone == phone_clean).first()
 
-    referrer = service.get_by_code(code)
+    valid = False
+    if referrer and referrer.portal_code and referrer.portal_code_expires_at:
+        not_expired = datetime.now(timezone.utc) < referrer.portal_code_expires_at.replace(tzinfo=timezone.utc)
+        if not_expired and verify_password(code.strip(), referrer.portal_code):
+            valid = True
 
-    if not referrer:
+    if not valid:
         return templates.TemplateResponse(
             "portal/referrer_login.html",
             {
                 "request": request,
-                "error": "Invalid referrer code"
+                "phone": phone_clean,
+                "error": "Invalid or expired code. Re-enter your phone number for a new one.",
             }
         )
 
-    # ✅ USE EXISTING PORTAL TOKEN SYSTEM
-    portal_service = PortalService(db, settings.PORTAL_SECRET)
+    referrer.portal_code = None
+    referrer.portal_code_expires_at = None
+    db.commit()
 
+    portal_service = PortalService(db, settings.PORTAL_SECRET)
     token = portal_service._sign({
         "referrer_id": referrer.id,
         "scope": "referrer",
@@ -590,14 +615,42 @@ def referrer_login_action(
     })
 
     response = RedirectResponse(url="/referrer/dashboard", status_code=303)
-    response.set_cookie(
-        key="referrer_token",
-        value=token,
-        httponly=True,
-        max_age=3600
-    )
-
+    response.set_cookie(key="referrer_token", value=token, httponly=True, max_age=3600)
     return response
+
+
+@router.get("/referrer/logout")
+def referrer_logout():
+    response = RedirectResponse("/referrer/login", status_code=303)
+    response.delete_cookie("referrer_token")
+    return response
+
+
+# ===============================
+# VERIFY REFERRER TOKEN (HELPER)
+# ===============================
+def _verify_referrer(request: Request):
+    token = request.cookies.get("referrer_token")
+
+    if not token:
+        return None
+
+    db = next(get_db())
+    portal_service = PortalService(db, settings.PORTAL_SECRET)
+
+    try:
+        payload = portal_service._verify(token)
+
+        if payload.get("exp") < int(datetime.now(timezone.utc).timestamp()):
+            return None
+
+        if payload.get("scope") != "referrer":
+            return None
+
+        return payload.get("referrer_id")
+
+    except Exception:
+        return None
 
 
 # ===============================
@@ -640,17 +693,90 @@ def referrer_dashboard(request: Request):
 
     db = next(get_db())
 
-    from app.services.referrer_service import ReferrerService
-    service = ReferrerService(db)
+    from app.services.referrer_profile_service import ReferrerProfileService
+    svc = ReferrerProfileService(db)
 
-    summary = service.get_dashboard(referrer_id)
+    profile = svc.get_profile(referrer_id)
+    patients_data = svc.get_referred_patients(referrer_id, limit=100)
+    insights = svc.get_ssdo_insights(referrer_id)
 
     return templates.TemplateResponse(
         "portal/referrer_dashboard.html",
         {
             "request": request,
-            "summary": summary
+            "profile": profile,
+            "patients": patients_data["patients"],
+            "total_patients": patients_data["total"],
+            "insights": insights,
         }
+    )
+
+
+# ===============================
+# REFERRER AVATAR UPLOAD (from dashboard)
+# ===============================
+@router.post("/referrer/avatar")
+async def referrer_avatar_upload(request: Request, avatar: UploadFile = File(...)):
+    referrer_id = _verify_referrer(request)
+    if not referrer_id:
+        return RedirectResponse("/referrer/login", status_code=303)
+
+    db = next(get_db())
+    from app.services.referrer_profile_service import ReferrerProfileService
+    svc = ReferrerProfileService(db)
+    svc.upload_avatar(referrer_id, avatar)
+
+    return RedirectResponse("/referrer/dashboard", status_code=303)
+
+# ===============================
+# REFERRER — test catalog (for booking more tests)
+# ===============================
+@router.get("/referrer/tests")
+def referrer_test_catalog(request: Request):
+    referrer_id = _verify_referrer(request)
+    if not referrer_id:
+        return JSONResponse({"ok": False, "error": "Not authenticated"}, status_code=401)
+
+    db = next(get_db())
+    from app.services.test_type_service import TestTypeService
+    service = TestTypeService(db)
+    try:
+        tests = service.list_active()
+    except AttributeError:
+        tests = service.list()
+
+    return JSONResponse({
+        "ok": True,
+        "tests": [
+            {
+                "id": t.id,
+                "name": t.name,
+                "price": float(t.price or 0),
+                "category": getattr(t, "category", None) or "General",
+            }
+            for t in tests
+        ],
+    })
+
+
+# ===============================
+# REFERRER RESULT DOWNLOAD (from dashboard)
+# ===============================
+@router.get("/referrer/patients/{patient_id}/results/{result_id}/download")
+def referrer_result_download(request: Request, patient_id: int, result_id: int):
+    referrer_id = _verify_referrer(request)
+    if not referrer_id:
+        return RedirectResponse("/referrer/login", status_code=303)
+
+    db = next(get_db())
+    from app.services.referrer_profile_service import ReferrerProfileService
+    svc = ReferrerProfileService(db)
+    pdf_path = svc.download_patient_result(referrer_id, patient_id, result_id)
+
+    return FileResponse(
+        path=str(pdf_path),
+        media_type="application/pdf",
+        filename=f"result_{result_id}.pdf",
     )
 
 
@@ -707,11 +833,88 @@ def referrer_credits(request: Request):
 
 
 
-@router.get("/portal/referrer/login", response_class=HTMLResponse)
-def referrer_login_page(request: Request):
-    return templates.TemplateResponse("portal/referrer_login.html", {"request": request})
+
+# ===============================
+# REFERRER — fetch a fresh on-screen access code for a phone number
+# ===============================
+@router.post("/referrer/get-code")
+async def referrer_get_code(request: Request):
+    from fastapi.responses import JSONResponse
+    body = await request.json()
+    phone = (body.get("phone") or "").strip()
+
+    db = next(get_db())
+    from app.models.referrer import Referrer
+    from app.core.security import hash_password
+    import secrets
+
+    referrer = db.query(Referrer).filter(Referrer.phone == phone).first()
+    if not referrer:
+        # Same shape whether or not the number is registered
+        return JSONResponse({"ok": False})
+
+    code = f"{secrets.randbelow(1000000):06d}"
+    referrer.portal_code = hash_password(code)
+    referrer.portal_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+    db.commit()
+
+    return JSONResponse({"ok": True, "code": code})
 
 
-@router.get("/portal/referrer/dashboard", response_class=HTMLResponse)
-def referrer_dashboard_page(request: Request):
-    return templates.TemplateResponse("portal/referrer_dashboard.html", {"request": request})
+class ReferrerBookTestsIn(BaseModel):
+    test_type_ids: list[int]
+
+
+@router.post("/referrer/patients/{patient_id}/book-tests")
+def referrer_book_tests(request: Request, patient_id: int, payload: ReferrerBookTestsIn):
+    referrer_id = _verify_referrer(request)
+    if not referrer_id:
+        return JSONResponse({"ok": False, "error": "Not authenticated"}, status_code=401)
+
+    if not payload.test_type_ids:
+        return JSONResponse({"ok": False, "error": "No tests selected"}, status_code=400)
+
+    db = next(get_db())
+    from app.services.referrer_profile_service import ReferrerProfileService
+    from app.models.patient import Patient
+    from app.models.test_request import TestRequest
+    from app.services.numbering_service import NumberingService
+
+    svc = ReferrerProfileService(db)
+
+    # Ownership check — same pattern as result download: this patient must
+    # actually be referred by this referrer.
+    data = svc.get_referred_patients(referrer_id, limit=9999)
+    referred_ids = {p["patient_id"] for p in data["patients"]}
+    if patient_id not in referred_ids:
+        return JSONResponse(
+            {"ok": False, "error": "This patient was not referred by you."},
+            status_code=403,
+        )
+
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        return JSONResponse({"ok": False, "error": "Patient not found"}, status_code=404)
+
+    referrer = svc.get_referrer(referrer_id)
+    lab_number = NumberingService(db).next_lab_number()
+
+    created = []
+    for tt_id in payload.test_type_ids:
+        req = TestRequest(
+            patient_id=patient.id,
+            test_type_id=tt_id,
+            requested_by=f"Referrer: {referrer.name}",
+            status="pending",
+            lab_number=lab_number,
+            branch_id=patient.branch_id,
+        )
+        db.add(req)
+        created.append(req)
+    db.commit()
+
+    return JSONResponse({
+        "ok": True,
+        "lab_number": lab_number,
+        "count": len(created),
+    })

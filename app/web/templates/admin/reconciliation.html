@@ -1,58 +1,116 @@
 {% extends "layouts/base.html" %}
 
 {% block page_css %}
-<link rel="stylesheet" href="/static/css/reconciliation.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    .sx-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .sx-page-header p {
+        color: var(--sx-muted);
+        margin-top: 4px;
+        font-size: 13.5px;
+    }
+    .sx-filter-bar {
+        display: flex;
+        align-items: flex-end;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+    .sx-input-label {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .sx-input-label label {
+        font-size: 10.5px;
+        font-weight: 800;
+        color: var(--sx-muted);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+    }
+
+    .sx-recon-icon {
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        background: var(--sx-success-bg);
+        color: var(--sx-success);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+
+    .sx-branch-tag {
+        background: var(--sx-surface-alt);
+        border: 1px solid var(--sx-border);
+        color: var(--sx-muted);
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .sx-date-cell { display: flex; flex-direction: column; gap: 2px; }
+    .sx-date-cell small { color: var(--sx-muted); font-size: 11.5px; }
+    .sx-no-data { color: var(--sx-light); font-style: italic; font-size: 12.5px; }
+    .sx-amount-cell { font-weight: 800; color: var(--sx-text-dark); }
+    .sx-staff-cell { display: flex; align-items: center; gap: 6px; color: var(--sx-muted); font-size: 13px; }
+    .sx-staff-cell i { color: var(--sx-light); }
+    .sx-empty-state { text-align: center; padding: 40px; color: var(--sx-light); }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="reconcile-container">
-    <header class="page-header">
-        <div class="header-title">
-            <h1>Payments & Reconciliation</h1>
-            <p class="subtitle">Financial overview and audit trail</p>
+    <header class="sx-page-header">
+        <div>
+            <h1 class="page-title" style="margin:0;">Payments &amp; Reconciliation</h1>
+            <p>Financial overview and audit trail</p>
         </div>
-        <div class="filter-group">
-            <div class="input-with-label">
+        <div class="sx-filter-bar">
+            <div class="sx-input-label">
                 <label>From</label>
-                <input type="date" id="startDate" class="sx-input">
+                <input type="date" id="startDate">
             </div>
-            <div class="input-with-label">
+            <div class="sx-input-label">
                 <label>To</label>
-                <input type="date" id="endDate" class="sx-input">
+                <input type="date" id="endDate">
             </div>
-            <button onclick="loadReconciliation()" class="btn-primary filter-btn">
-                <i class="fas fa-filter"></i> Filter
+            <button onclick="loadReconciliation()" class="btn btn-primary">
+                <i class="fas fa-filter" style="margin-right:6px;"></i>Filter
             </button>
         </div>
     </header>
 
-    <div class="summary-grid" id="summaryGrid">
-        <div class="summary-card total">
-            <div class="card-icon"><i class="fas fa-wallet"></i></div>
-            <div class="card-data">
-                <label>Total Revenue</label>
-                <h2 id="totalAmount">₦0.00</h2>
-            </div>
+    <div class="sx-stats" id="summaryGrid">
+        <div class="sx-stat success">
+            <div class="sx-recon-icon"><i class="fas fa-wallet"></i></div>
+            <div class="sx-stat-lbl">Total Revenue</div>
+            <div class="sx-stat-val" id="totalAmount" style="font-size:22px;">₦0.00</div>
         </div>
-        <div class="summary-card cash">
-            <label>Cash</label>
-            <h2 id="cashAmount">₦0.00</h2>
+        <div class="sx-stat">
+            <div class="sx-stat-lbl">Cash</div>
+            <div class="sx-stat-val" id="cashAmount" style="font-size:22px;">₦0.00</div>
         </div>
-        <div class="summary-card transfer">
-            <label>Bank Transfer</label>
-            <h2 id="transferAmount">₦0.00</h2>
+        <div class="sx-stat">
+            <div class="sx-stat-lbl">Bank Transfer</div>
+            <div class="sx-stat-val" id="transferAmount" style="font-size:22px;">₦0.00</div>
         </div>
-        <div class="summary-card pos">
-            <label>POS Terminal</label>
-            <h2 id="posAmount">₦0.00</h2>
+        <div class="sx-stat">
+            <div class="sx-stat-lbl">POS Terminal</div>
+            <div class="sx-stat-val" id="posAmount" style="font-size:22px;">₦0.00</div>
         </div>
     </div>
 
-    <div class="table-wrapper">
+    <div class="sx-table-wrap">
         <table class="sx-table">
             <thead>
                 <tr>
-                    <th>Time & Date</th>
+                    <th>Time &amp; Date</th>
                     <th>Branch</th>
                     <th>Reference / Notes</th>
                     <th>Method</th>
@@ -73,8 +131,8 @@
 async function loadReconciliation() {
     const start = document.getElementById('startDate').value;
     const end = document.getElementById('endDate').value;
-    let url = '/admin/payments/reconcile/data'; 
-    
+    let url = '/admin/payments/reconcile/data';
+
     const params = new URLSearchParams();
     if (start) params.append('start_date', start);
     if (end) params.append('end_date', end);
@@ -88,6 +146,14 @@ async function loadReconciliation() {
     } catch (err) {
         console.error("Failed to load data", err);
     }
+}
+
+function methodBadgeClass(method) {
+    const m = (method || '').toLowerCase();
+    if (m === 'cash') return 'sx-badge-success';
+    if (m === 'transfer') return 'sx-badge-info';
+    if (m === 'pos') return 'sx-badge-gold';
+    return 'sx-badge-neutral';
 }
 
 function renderUI(data) {
@@ -105,7 +171,7 @@ function renderUI(data) {
 
     const tbody = document.getElementById('paymentTableBody');
     if (!data.payments || data.payments.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No payments found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="sx-empty-state">No payments found.</td></tr>';
         return;
     }
 
@@ -114,21 +180,21 @@ function renderUI(data) {
         return `
         <tr>
             <td>
-                <div class="date-cell">
+                <div class="sx-date-cell">
                     <span>${dateObj.toLocaleDateString()}</span>
                     <small>${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
                 </div>
             </td>
-            <td><span class="branch-tag">${p.branch_name || 'Main'}</span></td>
+            <td><span class="sx-branch-tag">${p.branch_name || 'Main'}</span></td>
             <td>
-                <div class="ref-cell">
-                    ${p.reference && p.reference !== 'N/A' ? p.reference : '<span class="no-data">No reference provided</span>'}
+                <div>
+                    ${p.reference && p.reference !== 'N/A' ? p.reference : '<span class="sx-no-data">No reference provided</span>'}
                 </div>
             </td>
-            <td><span class="badge ${p.method.toLowerCase()}">${p.method}</span></td>
-            <td class="amount-cell">₦${(p.amount || 0).toLocaleString()}</td>
+            <td><span class="sx-badge ${methodBadgeClass(p.method)}">${p.method}</span></td>
+            <td class="sx-amount-cell">₦${(p.amount || 0).toLocaleString()}</td>
             <td>
-                <div class="staff-cell">
+                <div class="sx-staff-cell">
                     <i class="fas fa-user-circle"></i> ${p.staff_name || 'System'}
                 </div>
             </td>

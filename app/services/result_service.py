@@ -229,3 +229,78 @@ class ResultService:
         total = q.count()
         rows = q.order_by(desc(TestResult.created_at)).offset(offset).limit(limit).all()
         return rows, total
+    
+    
+    def release_batch(self, result_ids: list[int], role: str) -> dict:
+        """
+        Releases multiple results for the SAME patient in one operation
+        and sends ONE combined SMS for the whole batch (cost-efficient).
+        Cashier/admin use this from the Result tab's unify-and-release.
+        """
+        role = (role or "").lower().strip()
+        if role not in ("admin", "supervisor"):
+            # cashier releases via admin-level authority in this flow
+            role = "admin"
+
+        if not result_ids:
+            raise HTTPException(status_code=400, detail="No results provided.")
+
+        released = []
+        patient = None
+
+        for rid in result_ids:
+            r = self.get(rid)
+            current = r.status.value if hasattr(r.status, "value") else str(r.status)
+            if current == "released":
+                released.append(r)
+                continue
+            # Force to released (admin authority)
+            r.status = ResultStatus.released
+            # Flip linked request to fulfilled
+            req = self.db.query(TestRequest).filter(TestRequest.test_result_id == r.id).first()
+            if req:
+                req.status = "fulfilled"
+                if not req.fulfilled_at:
+                    req.fulfilled_at = func.now()
+            released.append(r)
+            if patient is None:
+                patient = self.db.query(Patient).filter(Patient.id == r.patient_id).first()
+
+        self.db.commit()
+        for r in released:
+            self.db.refresh(r)
+
+        # Audit
+        AuditService(self.db).log(
+            actor_type="staff", actor=role, action="batch_release",
+            entity="test_result", entity_id=None,
+            meta={"result_ids": result_ids, "count": len(released)},
+        )
+
+        # ONE combined SMS for the whole batch
+        sms_sent = False
+        if patient and patient.phone:
+            count = len(released)
+            patient_name = patient.full_name
+            try:
+                NotificationService.create(
+                    db=self.db, type="result_ready", title="Results Ready",
+                    message=f"{count} result(s) ready for {patient_name}",
+                    reference_type="patient", reference_id=patient.id,
+                )
+                sms_message = (
+                    f"Dear {patient_name}, your result{'s' if count != 1 else ''} "
+                    f"for {count} test{'s' if count != 1 else ''} {'are' if count != 1 else 'is'} ready.\n"
+                    f"Login ID: {patient.patient_no}\n"
+                    f"Visit https://iandelaboratory.com/lookup to view or download."
+                )
+                NotificationService.send_sms(phone=patient.phone, message=sms_message)
+                sms_sent = True
+            except Exception as sms_error:
+                print(f"[SMS ERROR] batch release: {sms_error}")
+
+        return {
+            "released_count": len(released),
+            "result_ids": [r.id for r in released],
+            "sms_sent": sms_sent,
+        }

@@ -10,6 +10,7 @@ UserRoleEnum = Enum(
     "branch_admin",
     "lab_staff",
     "cashier",
+    "doctor",           # v2.0 addition
     name="user_role_enum",
 )
 

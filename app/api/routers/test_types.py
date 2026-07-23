@@ -24,5 +24,9 @@ def update_test_type(
     return TestTypeService(db).update(test_type_id, payload)
 
 @router.get("", response_model=list[TestTypeOut])
-def list_test_types(db: Session = Depends(get_db)):
-    return TestTypeService(db).list()
+def list_test_types(
+    active_only: bool = False,
+    db: Session = Depends(get_db),
+):
+    svc = TestTypeService(db)
+    return svc.list_active() if active_only else svc.list()

@@ -12,6 +12,8 @@ from app.models.user import User
 from app.models.booking import Booking
 from app.schemas.payment import PaymentCreate, PaymentOut, PaymentReconcileOut
 from app.services.payment_service import PaymentService
+from fastapi.responses import FileResponse
+
 
 router = APIRouter()
 
@@ -112,3 +114,47 @@ def reconcile_payments(
         "payments": payments_out,
         "summary": summary
     }
+    
+    
+@router.get("/cashier-summary")
+def cashier_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Today's snapshot for the logged-in cashier (isolation model)."""
+    svc = PaymentService(db, current_user)
+    return svc.cashier_today_summary()
+
+
+@router.get("/cashier-report")
+def cashier_report(
+    start_date: datetime = Query(None),
+    end_date: datetime = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Period financial report for the logged-in cashier (isolation model)."""
+    svc = PaymentService(db, current_user)
+    return svc.cashier_period_report(start_date=start_date, end_date=end_date)
+
+
+
+@router.get("/{payment_id}/receipt")
+def payment_receipt(
+    payment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Generate (or regenerate) the thermal receipt PDF for a payment."""
+    from app.services.receipt_service import generate_receipt_pdf
+    from app.models.payment import Payment
+    payment = db.query(Payment).filter(Payment.id == payment_id).first()
+    if not payment:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Payment not found.")
+    pdf_path = generate_receipt_pdf(db, payment)
+    return FileResponse(
+        path=str(pdf_path),
+        media_type="application/pdf",
+        filename=f"receipt_{payment_id}.pdf",
+    )

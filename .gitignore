@@ -36,3 +36,10 @@ dist/
 # --- Logs and Databases ---
 *.log
 *.sqlite3
+
+# --- Runtime artifacts & patient data (never commit) ---
+generated_reports/
+uploads/
+backup_*.sql
+*.sql
+

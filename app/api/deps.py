@@ -4,14 +4,14 @@ from __future__ import annotations
 from typing import Generator, Optional
 
 from fastapi import Depends, HTTPException, status, Header
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.core.security import decode_token
 from app.core.constants import UserRole
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+bearer_scheme = HTTPBearer()
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -22,7 +22,10 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def get_current_user_claims(token: str = Depends(oauth2_scheme)) -> dict:
+def get_current_user_claims(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+) -> dict:
+    token = credentials.credentials
     try:
         return decode_token(token)
     except Exception:

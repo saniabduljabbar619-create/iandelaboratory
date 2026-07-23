@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# app/services/portal_reports/renderer.py — LabCore v2.0
+from __future__ import annotations
+
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -10,6 +13,10 @@ from reportlab.platypus import Table, TableStyle
 from reportlab.lib.utils import ImageReader
 
 
+# --------------------------------------------------
+# HELPERS
+# --------------------------------------------------
+
 def _safe_set_alpha(c, a):
     try:
         c.setFillAlpha(a)
@@ -18,7 +25,6 @@ def _safe_set_alpha(c, a):
 
 
 def _parse_dt(raw) -> str:
-    """Parse an ISO datetime string or datetime object into a readable string."""
     if not raw or raw == "N/A":
         return "N/A"
     try:
@@ -35,6 +41,32 @@ def _parse_dt(raw) -> str:
         return str(raw)
 
 
+def _pil_to_reader(pil_img) -> ImageReader:
+    import io
+    buf = io.BytesIO()
+    pil_img.save(buf, format="PNG")
+    buf.seek(0)
+    return ImageReader(buf)
+
+
+# --------------------------------------------------
+# FLAG COLORS — v2.0 highlight system
+# --------------------------------------------------
+FLAG_COLORS = {
+    "H": colors.HexColor("#CC0000"),   # red — high
+    "L": colors.HexColor("#E87722"),   # amber — low
+    "N": colors.black,                 # black — normal
+}
+
+
+def _flag_color(state: str):
+    return FLAG_COLORS.get(str(state).upper(), colors.black)
+
+
+# --------------------------------------------------
+# HEADER
+# --------------------------------------------------
+
 def _draw_header(c, lab_profile, w, h):
     logo = lab_profile.get("logo_path")
     top_y = h - 20 * mm
@@ -43,32 +75,28 @@ def _draw_header(c, lab_profile, w, h):
         try:
             from PIL import Image
             pil_img = Image.open(logo)
-            if pil_img.mode not in ('RGB', 'RGBA'):
-                pil_img = pil_img.convert('RGB')
-
+            if pil_img.mode not in ("RGB", "RGBA"):
+                pil_img = pil_img.convert("RGB")
             img = ImageReader(pil_img)
             size = 18 * mm
-
-            c.drawImage(img, 15 * mm,             h - 35 * mm, size, size, mask='auto')
-            c.drawImage(img, w - 15 * mm - size,  h - 35 * mm, size, size, mask='auto')
+            c.drawImage(img, 15 * mm, h - 35 * mm, size, size, mask="auto")
+            c.drawImage(img, w - 15 * mm - size, h - 35 * mm, size, size, mask="auto")
         except Exception as e:
-            print(f"DEBUG PDF LOGO ERROR: {e}")
+            print(f"[PDF] Logo error: {e}")
 
     lab_name = lab_profile.get("lab_name", "Laboratory")
-    address  = lab_profile.get("address", "")
-    phone    = lab_profile.get("phone", "")
-    email    = lab_profile.get("email", "")
+    address = lab_profile.get("address", "")
+    phone = lab_profile.get("phone", "")
+    email = lab_profile.get("email", "")
 
     c.setFont("Helvetica-Bold", 15)
     c.drawCentredString(w / 2, top_y, lab_name)
 
     c.setFont("Helvetica", 9)
     y_txt = top_y - 5 * mm
-
     if address:
         c.drawCentredString(w / 2, y_txt, address)
         y_txt -= 4 * mm
-
     contact = "  ".join([x for x in [phone, email] if x])
     if contact:
         c.drawCentredString(w / 2, y_txt, contact)
@@ -79,25 +107,41 @@ def _draw_header(c, lab_profile, w, h):
 
 
 def _ensure_space(c, y, needed, page_height, lab_profile, w):
-    if y - needed < 25 * mm:
+    if y - needed < 35 * mm:
         c.showPage()
         _draw_header(c, lab_profile, w, page_height)
         return page_height - 50 * mm
     return y
 
 
-def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="lab", requested_at=None):
+# --------------------------------------------------
+# MAIN RENDER FUNCTION
+# --------------------------------------------------
+
+def render_pdf(
+    output_path,
+    lab_profile,
+    patient_row,
+    bundle_results,
+    source="lab",
+    requested_at=None,
+    # v2.0 additions
+    result_sync_id: str = None,
+    report_number: str = None,
+    scientist_name: str = None,
+    scientist_qualification: str = None,
+    sas_assisted: bool = False,
+    portal_base_url: str = "https://portal.solunex.ng",
+):
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 
     c = canvas.Canvas(str(out), pagesize=A4)
     w, h = A4
 
-    # ================= WATERMARK =================
-    logo      = lab_profile.get("logo_path")
-    watermark = bool(lab_profile.get("watermark_enabled", True))
-
-    if watermark and logo:
+    # ──────────── WATERMARK ────────────
+    logo = lab_profile.get("logo_path")
+    if lab_profile.get("watermark_enabled", True) and logo:
         try:
             from PIL import Image
             pil_img = Image.open(logo).convert("RGB")
@@ -109,78 +153,116 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
         except Exception:
             pass
 
-    # ================= HEADER =================
+    # ──────────── HEADER ────────────
     _draw_header(c, lab_profile, w, h)
 
-    # ================= PATIENT BLOCK =================
-    pid  = patient_row.get("Patient ID", "-")
-    name = patient_row.get("Name", "-")
-    sex  = patient_row.get("Sex", "-")
-    age  = patient_row.get("Age", "-")
 
-    # ── Derive report date: primary source is result.created_at passed in as
-    #    requested_at; falls back to bundle payload fields, then current time.
-    first_res = list(bundle_results.values())[0] if bundle_results else {}
-    req_raw   = (
-        requested_at                                        # ← primary: result.created_at from DB
-        or first_res.get("request", {}).get("created_at")  # ← fallback: result payload
-        or first_res.get("created_at")
-        or first_res.get("date")
-    )
-    requested_dt = _parse_dt(req_raw) if req_raw else datetime.now().strftime("%d %b %Y  %I:%M %p")
+    # ──────────── PATIENT BLOCK ────────────
+    pid = patient_row.get("Patient ID", "-")
+    name = patient_row.get("Name", "-")
+    sex = patient_row.get("Sex", "-")
+    age = patient_row.get("Age", "-")
+
+    lab_number = patient_row.get("Lab Number", "-")
+    requested = patient_row.get("Requested", "-")
+    reported = patient_row.get("Reported", "-")
+    released = patient_row.get("Released", "-")
 
     c.setFont("Helvetica-Bold", 11)
     c.drawString(15 * mm, h - 48 * mm, "Patient Report")
 
+    # SAS badge
+    if sas_assisted:
+        c.setFont("Helvetica-Bold", 7)
+        c.setFillColor(colors.HexColor("#1A6B3C"))
+        c.drawString(15 * mm, h - 53 * mm, "⬡ SAS ASSISTED")
+        c.setFillColor(colors.black)
+
+    # Row 1 — identity
     c.setFont("Helvetica", 9)
-    c.drawString(15 * mm, h - 53 * mm, f"Name:       {name}")
-    c.drawString(15 * mm, h - 57 * mm, f"Patient ID: {pid}")
-    c.drawString(80 * mm, h - 53 * mm, f"Sex: {sex}")
-    c.drawString(80 * mm, h - 57 * mm, f"Age: {age}")
-    c.drawString(w - 75 * mm, h - 53 * mm, f"Report Date: {requested_dt}")
+    c.drawString(15 * mm, h - 57 * mm, f"Name:       {name}")
+    c.drawString(15 * mm, h - 61 * mm, f"Patient ID: {pid}")
+    c.drawString(80 * mm, h - 57 * mm, f"Sex: {sex}")
+    c.drawString(80 * mm, h - 61 * mm, f"Age: {age}")
+    c.drawString(w - 75 * mm, h - 57 * mm, f"Lab Number:  {lab_number}")
 
-    y = h - 65 * mm
+    # Row 2 — accountability timeline (the metadata chain)
+    c.setFont("Helvetica", 7.5)
+    c.setFillColor(colors.HexColor("#555555"))
+    c.drawString(15 * mm, h - 66 * mm, f"Requested: {requested}")
+    c.drawString(80 * mm, h - 66 * mm, f"Reported: {reported}")
+    c.drawString(w - 75 * mm, h - 66 * mm, f"Released: {released}")
+    c.setFillColor(colors.black)
 
-    # ================= RESULTS =================
+    # Divider below patient block (below the timeline row)
+    c.setStrokeColor(colors.lightgrey)
+    c.setLineWidth(0.5)
+    c.line(15 * mm, h - 70 * mm, w - 15 * mm, h - 70 * mm)
+
+    # Table starts below the divider
+    y = h - 77 * mm
+
+    # ──────────── RESULTS ────────────
     for rid, payload in bundle_results.items():
         test_name = payload.get("request", {}).get("test_name", "Test")
         y = _ensure_space(c, y, 20 * mm, h, lab_profile, w)
 
         c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(colors.black)
         c.drawString(15 * mm, y, test_name)
         y -= 6 * mm
 
         typ = payload.get("type")
 
-        # ================= STRUCTURED RESULT =================
+        # ── STRUCTURED RESULT ──
         if typ == "structured":
             rows = payload.get("rows", [])
-            data = [["Parameter", "Result", "Unit", "Ref Range", "Flag"]]
+            header = ["Parameter", "Result", "Unit", "Ref Range", "Flag"]
+            data = [header]
+            row_flags = []
 
             for r in rows:
+                flag_state = str(r.get("flag", "")).upper()
+                row_flags.append(flag_state)
                 data.append([
-                    r.get("parameter", ""), r.get("result", ""),
-                    r.get("unit", ""),      r.get("ref_range", ""),
-                    r.get("flag", "")
+                    r.get("parameter", ""),
+                    str(r.get("result", "")),
+                    r.get("unit", ""),
+                    r.get("ref_range", ""),
+                    flag_state,
                 ])
 
-            tbl = Table(data, colWidths=[60 * mm, 25 * mm, 22 * mm, 35 * mm, 18 * mm])
-            tbl.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1,  0), colors.lightgrey),
-                ("GRID",       (0, 0), (-1, -1), 0.3, colors.grey),
-                ("FONT",       (0, 0), (-1,  0), "Helvetica-Bold"),
-                ("FONTSIZE",   (0, 0), (-1, -1), 8),
-                ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
-                ("WORDWRAP",   (0, 0), (-1, -1), True),
-                ("ALIGN",      (1, 1), (-1, -1), "CENTER"),
-            ]))
+            tbl = Table(data, colWidths=[62 * mm, 25 * mm, 22 * mm, 33 * mm, 18 * mm])
 
+            style = [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C5F8A")),
+                ("TEXTCOLOR",  (0, 0), (-1, 0), colors.white),
+                ("FONT",       (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE",   (0, 0), (-1, -1), 8),
+                ("GRID",       (0, 0), (-1, -1), 0.3, colors.grey),
+                ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
+                ("ALIGN",      (1, 1), (-1, -1), "CENTER"),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F7F9FC")]),
+            ]
+
+            for i, flag_state in enumerate(row_flags):
+                row_idx = i + 1
+                if flag_state == "H":
+                    style.append(("TEXTCOLOR", (1, row_idx), (1, row_idx), colors.HexColor("#CC0000")))
+                    style.append(("FONT", (1, row_idx), (1, row_idx), "Helvetica-Bold"))
+                    style.append(("TEXTCOLOR", (4, row_idx), (4, row_idx), colors.HexColor("#CC0000")))
+                elif flag_state == "L":
+                    style.append(("TEXTCOLOR", (1, row_idx), (1, row_idx), colors.HexColor("#E87722")))
+                    style.append(("FONT", (1, row_idx), (1, row_idx), "Helvetica-Bold"))
+                    style.append(("TEXTCOLOR", (4, row_idx), (4, row_idx), colors.HexColor("#E87722")))
+
+            tbl.setStyle(TableStyle(style))
             tw, th = tbl.wrapOn(c, w - 30 * mm, y)
             y = _ensure_space(c, y, th + 10 * mm, h, lab_profile, w)
             tbl.drawOn(c, 15 * mm, y - th)
             y -= th + 8 * mm
 
-        # ================= GRID TABLE RESULT =================
+        # ── TABLE / GRID RESULT ──
         elif typ == "table":
             sections = payload.get("uix", {}).get("sections") or [payload.get("grid", {})]
 
@@ -193,22 +275,27 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
                 if title:
                     y = _ensure_space(c, y, 12 * mm, h, lab_profile, w)
                     c.setFont("Helvetica-BoldOblique", 8)
+                    c.setFillColor(colors.HexColor("#2C5F8A"))
                     c.drawString(15 * mm, y, f"[{title}]")
+                    c.setFillColor(colors.black)
                     y -= 5 * mm
 
-                ncols     = max(len(r) for r in cells)
-                padded    = [r + [""] * (ncols - len(r)) for r in cells]
+                ncols = max(len(r) for r in cells)
+                padded = [r + [""] * (ncols - len(r)) for r in cells]
                 col_width = (w - 30 * mm) / ncols
 
                 tbl = Table(padded, colWidths=[col_width] * ncols)
                 tbl.setStyle(TableStyle([
                     ("GRID",       (0, 0), (-1, -1), 0.3, colors.grey),
                     ("FONT",       (0, 0), (-1,  0), "Helvetica-Bold"),
-                    ("BACKGROUND", (0, 0), (-1,  0), colors.whitesmoke),
+                    ("BACKGROUND", (0, 0), (-1,  0), colors.HexColor("#2C5F8A")),
+                    ("TEXTCOLOR",  (0, 0), (-1,  0), colors.white),
                     ("FONTSIZE",   (0, 0), (-1, -1), 8),
                     ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
-                    ("ALIGN",      (0, 0), ( 0, -1), "LEFT"),    # Parameters left
-                    ("ALIGN",      (1, 0), (-1, -1), "CENTER"),  # Values centred
+                    ("ALIGN",      (0, 0), ( 0, -1), "LEFT"),
+                    ("ALIGN",      (1, 0), (-1, -1), "CENTER"),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+                     [colors.white, colors.HexColor("#F7F9FC")]),
                 ]))
 
                 tw, th = tbl.wrapOn(c, w - 30 * mm, y)
@@ -216,32 +303,85 @@ def render_pdf(output_path, lab_profile, patient_row, bundle_results, source="la
                 tbl.drawOn(c, 15 * mm, y - th)
                 y -= th + 10 * mm
 
-        # Separator line between test results
+        # Separator between tests
         c.setStrokeColor(colors.lightgrey)
         c.line(15 * mm, y, w - 15 * mm, y)
         y -= 6 * mm
 
-    # ================= FOOTER =================
+    # ──────────── SIGNATURE BLOCK ────────────
+    # ──────────── SIGNATURE + STAMP ZONE ────────────
+    sci_name = scientist_name or lab_profile.get("scientist_name", "")
+    sci_qual = scientist_qualification or lab_profile.get("scientist_qualification", "")
+
+    # Sit the zone above the footer, wherever the results ended (min 42mm from bottom)
+    zone_y = max(y - 6 * mm, 42 * mm)
+
+    # LEFT — official stamp box
+    c.setStrokeColor(colors.grey)
+    c.setLineWidth(0.6)
+    stamp_w, stamp_h = 42 * mm, 22 * mm
+    c.rect(15 * mm, zone_y - stamp_h, stamp_w, stamp_h)
+    c.setFont("Helvetica-Oblique", 6.5)
+    c.setFillColor(colors.grey)
+    c.drawCentredString(15 * mm + stamp_w / 2, zone_y - stamp_h / 2, "Official Lab Stamp")
+    c.setFillColor(colors.black)
+
+    # RIGHT — scientist signature
+    c.setStrokeColor(colors.black)
+    c.setLineWidth(0.5)
+    c.line(w - 75 * mm, zone_y - 12 * mm, w - 15 * mm, zone_y - 12 * mm)
+    c.setFont("Helvetica-Bold", 8)
+    if sci_name:
+        c.drawRightString(w - 15 * mm, zone_y - 16 * mm, sci_name)
+    if sci_qual:
+        c.setFont("Helvetica", 7)
+        c.drawRightString(w - 15 * mm, zone_y - 20 * mm, sci_qual)
+    c.setFont("Helvetica", 7)
+    c.setFillColor(colors.grey)
+    c.drawRightString(w - 15 * mm, zone_y - 24 * mm, "Verified & Authorized by (Medical Laboratory Scientist)")
+    c.setFillColor(colors.black)
+
+    # ──────────── QR CODE ────────────
+    if result_sync_id:
+        try:
+            from app.services.barcode_service import generate_qr, get_portal_result_url
+            qr_url = get_portal_result_url(result_sync_id, base_url=portal_base_url)
+            qr_img = generate_qr(qr_url, box_size=3, border=1)
+            qr_reader = _pil_to_reader(qr_img)
+            qr_size = 22 * mm
+            c.drawImage(
+                qr_reader,
+                15 * mm,
+                20 * mm,
+                qr_size, qr_size,
+            )
+            c.setFont("Helvetica", 6)
+            c.setFillColor(colors.grey)
+            c.drawString(15 * mm, 18 * mm, "Scan to verify result online")
+            c.setFillColor(colors.black)
+        except Exception as e:
+            print(f"[PDF] QR error: {e}")
+
+    # ──────────── FOOTER ────────────
+    # ──────────── FOOTER (clinical notes only) ────────────
     c.setStrokeColor(colors.grey)
     c.setLineWidth(0.5)
-    c.line(15 * mm, 28 * mm, w - 15 * mm, 28 * mm)
-
-    c.setFont("Helvetica", 8)
-    footer = lab_profile.get(
-        "report_notes",
-        "Authorized Laboratory Report — Generated by Solunex Technologies Software.",
-    )
-    c.drawCentredString(w / 2, 22 * mm, footer)
+    c.line(15 * mm, 16 * mm, w - 15 * mm, 16 * mm)
 
     c.setFont("Helvetica-Oblique", 7)
-    c.setFillColor(colors.gray)
-
+    c.setFillColor(colors.grey)
+    clinical_note = lab_profile.get(
+        "clinical_note",
+        "Results relate only to the specimen received. Please correlate clinically. "
+        "Consult your physician for interpretation.",
+    )
+    c.drawCentredString(w / 2, 11 * mm, clinical_note)
+    c.setFillColor(colors.black)
     if source == "lab":
         source_note = "Official Reprint: Routed and fetched from the Laboratory Internal Portal."
     else:
         source_note = "Online Document: Electronically generated and downloaded via the Patient Portal."
-
-    c.drawCentredString(w / 2, 18 * mm, source_note)
+    c.drawCentredString(w / 2, 7 * mm, source_note)
 
     c.save()
     return str(out)

@@ -1,71 +1,293 @@
 {% extends "layouts/portal_base.html" %}
 
+{% block title %}Referrer Portal — Solunex Health Portal{% endblock %}
+
 {% block page_css %}
-<link rel="stylesheet" href="/static/css/referrer_login.css">
+<style>
+    .ref-login-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 220px);
+        padding: 24px 0;
+    }
+    .ref-login-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--slx-card);
+        border-radius: var(--r);
+        border: 1px solid var(--slx-border);
+        box-shadow: var(--s3);
+        padding: 40px 38px;
+        position: relative;
+        overflow: hidden;
+    }
+    .ref-login-card::before {
+        content: '⬡';
+        position: absolute;
+        bottom: -50px;
+        right: -40px;
+        font-size: 12rem;
+        opacity: .035;
+        color: var(--slx-primary);
+        line-height: 1;
+        pointer-events: none;
+    }
+    .ref-icon {
+        width: 52px; height: 52px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--slx-primary), var(--slx-primary-l));
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 1.5rem; font-weight: 900;
+        margin-bottom: 20px;
+        box-shadow: 0 6px 16px rgba(30,58,95,.28);
+    }
+    .ref-login-card h2 {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: var(--slx-text);
+        letter-spacing: -.02em;
+        margin-bottom: 6px;
+    }
+    .ref-login-card p.subtitle {
+        color: var(--slx-muted);
+        font-size: .875rem;
+        line-height: 1.6;
+        margin-bottom: 26px;
+    }
+    .ref-form-group {
+        margin-bottom: 18px;
+        text-align: left;
+        position: relative;
+        z-index: 1;
+    }
+    .ref-form-group label {
+        display: block;
+        font-size: .72rem;
+        font-weight: 700;
+        color: var(--slx-muted);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin-bottom: 7px;
+    }
+    .ref-form-group input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1.5px solid var(--slx-border);
+        border-radius: var(--rs);
+        font-size: .95rem;
+        font-family: var(--font);
+        color: var(--slx-text);
+        outline: none;
+        transition: all .2s;
+    }
+    .ref-form-group input:focus {
+        border-color: var(--slx-accent);
+        box-shadow: 0 0 0 3px rgba(13,148,136,.12);
+    }
+    .ref-hint {
+        font-size: .72rem;
+        color: var(--slx-muted);
+        margin-top: 6px;
+    }
+    .ref-btn-login {
+        width: 100%;
+        padding: 13px;
+        background: var(--slx-accent);
+        color: #fff;
+        border: none;
+        border-radius: var(--rs);
+        font-size: .95rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all .2s;
+        margin-top: 6px;
+        letter-spacing: .02em;
+    }
+    .ref-btn-login:hover {
+        background: #0F766E;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(13,148,136,.3);
+    }
+    .ref-btn-login:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .ref-error {
+        background: var(--slx-danger-bg);
+        color: var(--slx-danger);
+        border-left: 4px solid var(--slx-danger);
+        border-radius: var(--rs);
+        padding: 12px 15px;
+        font-size: .85rem;
+        font-weight: 600;
+        margin-bottom: 22px;
+        text-align: left;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Live code reveal */
+    .ref-code-reveal {
+        display: none;
+        background: var(--slx-accent-dim);
+        border: 1.5px dashed var(--slx-accent);
+        border-radius: var(--rs);
+        padding: 14px 16px;
+        margin-bottom: 18px;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+    }
+    .ref-code-reveal.show { display: block; }
+    .ref-code-reveal-lbl {
+        font-size: .68rem;
+        font-weight: 800;
+        color: var(--slx-accent);
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        margin-bottom: 6px;
+    }
+    .ref-code-value {
+        font-size: 1.7rem;
+        font-weight: 900;
+        letter-spacing: .35em;
+        color: var(--slx-primary);
+        font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+    }
+    .ref-code-note {
+        font-size: .7rem;
+        color: var(--slx-muted);
+        margin-top: 6px;
+    }
+    .ref-code-loading {
+        display: none;
+        text-align: center;
+        color: var(--slx-muted);
+        font-size: .8rem;
+        margin-bottom: 18px;
+        position: relative;
+        z-index: 1;
+    }
+    .ref-code-loading.show { display: block; }
+
+    .ref-footer-note {
+        margin-top: 26px;
+        padding-top: 20px;
+        border-top: 1px solid var(--slx-border);
+        text-align: center;
+        color: var(--slx-muted);
+        font-size: .78rem;
+        line-height: 1.7;
+        position: relative;
+        z-index: 1;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-
-<div class="login-container">
-    <div class="login-card">
-
+<div class="ref-login-wrap">
+    <div class="ref-login-card">
+        <div class="ref-icon">⬡</div>
         <h2>Referrer Portal</h2>
-        <p class="subtitle">Access your credit dashboard</p>
+        <p class="subtitle">Enter your registered phone number to reveal your sign-in code.</p>
 
-        <div class="form-group">
-            <label>Phone Number</label>
-            <input type="text" id="phone" placeholder="e.g. 07011221133">
+        {% if error %}
+        <div class="ref-error">⚠ {{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/referrer/login" id="refLoginForm">
+            <div class="ref-form-group">
+                <label>Phone Number</label>
+                <input type="tel" name="phone" id="refPhone" placeholder="e.g. 08031234567"
+                       value="{{ phone or '' }}" required autocomplete="tel" autofocus>
+                <div class="ref-hint">The phone number on file with the laboratory</div>
+            </div>
+
+            <div class="ref-code-loading" id="refCodeLoading">Checking…</div>
+
+            <div class="ref-code-reveal" id="refCodeReveal">
+                <div class="ref-code-reveal-lbl">Your Access Code</div>
+                <div class="ref-code-value" id="refCodeValue">——————</div>
+                <div class="ref-code-note">Valid for 5 minutes · enter it below to sign in</div>
+            </div>
+
+            <div class="ref-form-group">
+                <label>Access Code</label>
+                <input type="text" name="code" id="refCode" placeholder="123456"
+                       required autocomplete="off" inputmode="numeric" maxlength="6"
+                       style="letter-spacing:.3em;text-align:center;">
+            </div>
+
+            <button type="submit" class="ref-btn-login" id="refSubmitBtn" disabled>Sign In to Portal</button>
+        </form>
+
+        <div class="ref-footer-note">
+            No account yet? Contact the laboratory front desk to register as a referrer.
         </div>
-
-        <button id="loginBtn" onclick="login()">Login</button>
-
-        <p id="errorMsg" class="error"></p>
-
     </div>
 </div>
 
 <script>
-async function login() {
-    const phone = document.getElementById("phone").value.trim();
-    const btn = document.getElementById("loginBtn");
-    const error = document.getElementById("errorMsg");
+(function () {
+    const phoneInput = document.getElementById('refPhone');
+    const codeInput = document.getElementById('refCode');
+    const reveal = document.getElementById('refCodeReveal');
+    const codeValue = document.getElementById('refCodeValue');
+    const loading = document.getElementById('refCodeLoading');
+    const submitBtn = document.getElementById('refSubmitBtn');
 
-    error.innerText = "";
+    let debounceTimer = null;
 
-    if (!phone) {
-        error.innerText = "Phone number is required";
-        return;
+    function looksLikePhone(v) {
+        const digits = v.replace(/\D/g, '');
+        return digits.length >= 10;
     }
 
-    btn.disabled = true;
-    btn.innerText = "Signing in...";
+    async function fetchCode(phone) {
+        loading.classList.add('show');
+        reveal.classList.remove('show');
+        submitBtn.disabled = true;
 
-    try {
-        const res = await fetch("/api/referrer/login", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ phone })
-        });
+        try {
+            const res = await fetch('/referrer/get-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            });
+            const data = await res.json();
+            loading.classList.remove('show');
 
-        if (!res.ok) {
-            error.innerText = "Invalid phone number";
-            btn.disabled = false;
-            btn.innerText = "Login";
-            return;
+            if (data.ok && data.code) {
+                codeValue.textContent = data.code;
+                reveal.classList.add('show');
+                codeInput.value = data.code;
+                submitBtn.disabled = false;
+            } else {
+                reveal.classList.remove('show');
+                submitBtn.disabled = true;
+            }
+        } catch (err) {
+            loading.classList.remove('show');
+            console.error('Code fetch failed', err);
         }
-
-        const data = await res.json();
-
-        localStorage.setItem("referrer_id", data.referrer_id);
-        localStorage.setItem("referrer_name", data.name);
-
-        window.location.href = "/portal/referrer/dashboard";
-
-    } catch (err) {
-        error.innerText = "Network error. Try again.";
-        btn.disabled = false;
-        btn.innerText = "Login";
     }
-}
+
+    phoneInput.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        reveal.classList.remove('show');
+        submitBtn.disabled = true;
+
+        const v = phoneInput.value.trim();
+        if (!looksLikePhone(v)) return;
+
+        debounceTimer = setTimeout(function () {
+            fetchCode(v);
+        }, 500);
+    });
+
+    // If the phone field was pre-filled (e.g. after a failed attempt), fetch immediately
+    if (phoneInput.value && looksLikePhone(phoneInput.value)) {
+        fetchCode(phoneInput.value.trim());
+    }
+})();
 </script>
 {% endblock %}

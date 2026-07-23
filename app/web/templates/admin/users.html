@@ -1,29 +1,63 @@
 {% extends "layouts/base.html" %}
 
 {% block page_css %}
-<link rel="stylesheet" href="/static/css/users.css">
+<style>
+    .sx-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+    .sx-page-header p {
+        color: var(--sx-muted);
+        margin-top: 4px;
+        font-size: 13.5px;
+    }
+    .sx-table-filters {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--sx-border);
+        background: var(--sx-surface-alt);
+    }
+    .sx-table-filters input {
+        min-width: 220px;
+    }
+    .align-right { text-align: right; }
+    .sx-branch-badge {
+        background: var(--sx-info-bg);
+        color: var(--sx-info);
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 
-<div class="page-header">
+<div class="sx-page-header">
     <div>
-        <h2 class="page-title">User Management</h2>
-        <p class="page-subtitle">Manage system access and branch assignments</p>
+        <h2 class="page-title" style="margin:0;">User Management</h2>
+        <p>Manage system access and branch assignments</p>
     </div>
 
-    <a href="/admin/users/create" class="btn-primary">
+    <a href="/admin/users/create" class="btn btn-primary">
         + Create User
     </a>
 </div>
 
-<div class="card table-card">
+<div class="sx-table-wrap">
 
     <!-- ================= Filters ================= -->
-    <div class="table-filters">
-        <input 
-            type="text" 
-            id="userSearch" 
+    <div class="sx-table-filters">
+        <input
+            type="text"
+            id="userSearch"
             placeholder="Search username..."
             onkeyup="filterUsers()"
         >
@@ -51,28 +85,36 @@
         <tbody>
         {% for user in users %}
             <tr>
-                <td class="username-cell">
+                <td class="username-cell" style="font-weight:700;color:var(--sx-text-dark);">
                     {{ user.username }}
                 </td>
 
                 <td data-role="{{ user.role }}">
-                    <span class="role-badge role-{{ user.role }}">
-                        {{ user.role }}
-                    </span>
+                    {% if user.role == "super_admin" %}
+                        <span class="sx-badge sx-badge-gold">{{ user.role.replace("_"," ") }}</span>
+                    {% elif user.role == "branch_admin" %}
+                        <span class="sx-badge sx-badge-info">{{ user.role.replace("_"," ") }}</span>
+                    {% elif user.role == "lab_staff" %}
+                        <span class="sx-badge sx-badge-success">{{ user.role.replace("_"," ") }}</span>
+                    {% elif user.role == "cashier" %}
+                        <span class="sx-badge sx-badge-warn">{{ user.role.replace("_"," ") }}</span>
+                    {% else %}
+                        <span class="sx-badge sx-badge-neutral">{{ user.role.replace("_"," ") }}</span>
+                    {% endif %}
                 </td>
 
                 <td>
                     {% if user.branch_id %}
-                        <span class="branch-badge">
+                        <span class="sx-branch-badge">
                             Branch {{ user.branch_id }}
                         </span>
                     {% else %}
-                        —
+                        <span style="color:var(--sx-light);">—</span>
                     {% endif %}
                 </td>
 
                 <td class="align-right">
-                    <a href="#" class="btn-secondary btn-sm">Edit</a>
+                    <a href="#" class="btn btn-secondary" style="font-size:12px;padding:6px 13px;">Edit</a>
                 </td>
             </tr>
         {% endfor %}
