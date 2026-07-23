@@ -279,6 +279,8 @@ class PortalService:
             "status": result.status.value
                 if hasattr(result.status, "value") else str(result.status),
             "created_at": result.created_at.isoformat() if result.created_at else None,
+            "created_at_display": result.created_at.strftime("%d %b %Y") if result.created_at else "-",
+            "created_at_full_display": result.created_at.strftime("%d %B %Y, %I:%M %p") if result.created_at else "—",
             "disease_tags": ssdo.disease_tags if ssdo else [],
             "severity_flag": ssdo.severity_flag if ssdo else "unknown",
             "sas_assisted": bool(result.sas_predictions),

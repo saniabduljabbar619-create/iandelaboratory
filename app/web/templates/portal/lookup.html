@@ -59,6 +59,83 @@
         font-size: 13px;
         color: #475569;
     }
+
+    /* Page layout — centered card, matches Solunex Portal visual language */
+    .portal-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - var(--nav-h) - 90px);
+        padding: 40px 20px;
+    }
+
+    .portal-card {
+        background: var(--slx-card);
+        border: 1px solid var(--slx-border);
+        border-radius: var(--r);
+        box-shadow: var(--s2);
+        padding: 40px;
+        width: 100%;
+        max-width: 440px;
+        text-align: center;
+    }
+
+    .portal-card h2 {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: var(--slx-text);
+        letter-spacing: -0.02em;
+        margin-bottom: 10px;
+    }
+
+    .portal-card .subtitle {
+        color: var(--slx-muted);
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 28px;
+    }
+
+    .portal-form {
+        text-align: left;
+    }
+
+    .portal-form input[type="tel"],
+    .portal-form input[type="text"] {
+        width: 100%;
+        height: 45px;
+        padding: 0 14px;
+        border: 1.5px solid var(--slx-border);
+        border-radius: var(--rs);
+        font-size: 0.95rem;
+        font-family: var(--font);
+        color: var(--slx-text);
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .portal-form input:focus {
+        border-color: var(--slx-accent);
+        box-shadow: 0 0 0 3px var(--slx-accent-dim);
+    }
+
+    .portal-form .btn-primary {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    .security-note {
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--slx-border);
+        color: var(--slx-muted);
+        font-size: 0.75rem;
+        line-height: 1.6;
+    }
+
+    @media (max-width: 480px) {
+        .portal-card { padding: 28px 22px; }
+    }
+
 </style>
 
 <div class="portal-container">
