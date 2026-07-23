@@ -89,6 +89,15 @@ def login_action(
     return response
 
 # ===============================
+# LOGOUT (PATIENT)
+# ===============================
+@router.get("/logout")
+def patient_logout():
+    response = RedirectResponse("/lookup", status_code=303)
+    response.delete_cookie("portal_token")
+    return response
+
+# ===============================
 # HOME PAGE
 # ===============================
 @router.get("/", response_class=HTMLResponse)
