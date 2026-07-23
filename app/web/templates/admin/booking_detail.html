@@ -231,10 +231,71 @@ Approve Credit
 
 {% endif %}
 
+{% if booking.status in ["payment_verified", "approved_credit"] %}
+
+<hr class="sx-divider">
+
+<h3 class="sx-section-title">Convert to Patients</h3>
+<p style="color:var(--sx-muted);font-size:13.5px;margin-bottom:14px;">
+    Creates a real patient record (linked to the referrer, if any) and paid test requests
+    for each person in this booking. This cannot be undone.
+</p>
+
+<div class="sx-action-buttons">
+    <button class="btn btn-success" id="convertBtn" onclick="convertBooking({{ booking.id }})">
+        Convert to Patients
+    </button>
+</div>
+
+<div id="convertResult" style="margin-top:16px;display:none;"></div>
+
+{% elif booking.status == "converted" %}
+
+<hr class="sx-divider">
+<span class="sx-badge sx-badge-success">✓ Converted to Patients</span>
+
+{% endif %}
+
 </div>
 
 {% endblock %}
 
 {% block page_js %}
 <script src="/static/js/admin_booking_detail.js"></script>
+<script>
+async function convertBooking(bookingId) {
+    if (!confirm("Convert all patients in this booking? This creates real patient records and cannot be undone.")) return;
+
+    const btn = document.getElementById('convertBtn');
+    const resultBox = document.getElementById('convertResult');
+    btn.disabled = true;
+    btn.textContent = 'Converting…';
+
+    try {
+        const res = await fetch(`/api/payments/bookings/${bookingId}/convert`, { method: 'POST' });
+        const data = await res.json();
+
+        resultBox.style.display = 'block';
+
+        if (res.ok) {
+            let html = `<div class="sx-alert success">✓ ${data.converted_count} patient(s) converted successfully.</div>`;
+            if (data.errors && data.errors.length > 0) {
+                html += `<div class="sx-alert error">${data.errors.length} issue(s): ` +
+                    data.errors.map(e => `${e.patient_name} — ${e.error}`).join('; ') + `</div>`;
+            }
+            resultBox.innerHTML = html;
+            setTimeout(() => location.reload(), 1800);
+        } else {
+            resultBox.innerHTML = `<div class="sx-alert error">⚠ ${data.detail || 'Conversion failed.'}</div>`;
+            btn.disabled = false;
+            btn.textContent = 'Convert to Patients';
+        }
+    } catch (err) {
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = `<div class="sx-alert error">⚠ Network error. Please try again.</div>`;
+        btn.disabled = false;
+        btn.textContent = 'Convert to Patients';
+    }
+}
+</script>
 {% endblock %}

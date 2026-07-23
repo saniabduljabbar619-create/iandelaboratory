@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime
 from app.api.deps import get_db
@@ -83,6 +83,111 @@ def get_verified_bookings(
         )
 
     return out
+
+
+@router.get("/bookings/{booking_id}")
+def get_booking_detail(
+    booking_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Booking detail grouped by distinct patient, for the convert screen."""
+    from app.models.booking_item import BookingItem
+
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    items = db.query(BookingItem).filter(BookingItem.booking_id == booking_id).all()
+
+    patients: dict[tuple, dict] = {}
+    for it in items:
+        key = (it.patient_name, it.patient_phone)
+        if key not in patients:
+            patients[key] = {
+                "patient_name": it.patient_name,
+                "patient_phone": it.patient_phone,
+                "tests": [],
+                "converted": True,
+            }
+        patients[key]["tests"].append({
+            "test_name": it.test_name_snapshot,
+            "price": float(it.price_snapshot),
+        })
+        if not it.converted:
+            patients[key]["converted"] = False
+
+    return {
+        "id": booking.id,
+        "booking_code": booking.booking_code,
+        "status": booking.status,
+        "referrer_name": booking.referrer_name,
+        "referrer_phone": booking.referrer_phone,
+        "total_amount": float(booking.total_amount),
+        "created_at": booking.created_at,
+        "patients": list(patients.values()),
+    }
+
+
+@router.post("/bookings/{booking_id}/convert")
+def convert_booking(
+    booking_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Converts every unconverted patient in this booking into a real Patient
+    (linked to the booking's referrer, if any) + real paid TestRequests.
+    Callable from both the desktop app and the web Admin panel.
+    """
+    from app.models.booking_item import BookingItem
+    from app.services.booking_conversion_service import BookingConversionService
+
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    if booking.status == "converted":
+        raise HTTPException(status_code=400, detail="Booking already converted")
+    if booking.status not in ["payment_verified", "approved_credit"]:
+        raise HTTPException(status_code=400, detail="Booking not ready for conversion")
+
+    items = db.query(BookingItem).filter(
+        BookingItem.booking_id == booking_id,
+        BookingItem.converted == False,
+    ).all()
+    if not items:
+        raise HTTPException(status_code=400, detail="Nothing to convert")
+
+    # One anchor item id per distinct patient (name+phone)
+    seen: dict[tuple, int] = {}
+    for item in items:
+        key = (item.patient_name, item.patient_phone)
+        if key not in seen:
+            seen[key] = item.id
+
+    branch_id = getattr(current_user, "branch_id", None) or 1
+    cashier_name = getattr(current_user, "username", None) or "admin"
+
+    converted, errors = [], []
+    for (name, phone), anchor_item_id in seen.items():
+        try:
+            created = BookingConversionService.convert_patient(
+                db=db,
+                booking_id=booking_id,
+                patient_id=anchor_item_id,
+                branch_id=branch_id,
+                cashier_name=cashier_name,
+            )
+            converted.append({"patient_name": name, "tests_created": len(created)})
+        except Exception as e:
+            errors.append({"patient_name": name, "error": str(e)})
+
+    return {
+        "converted_count": len(converted),
+        "patients": converted,
+        "errors": errors,
+        "booking_status": booking.status,
+    }
 
 
 

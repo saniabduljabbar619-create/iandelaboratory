@@ -1,0 +1,157 @@
+{% extends "layouts/base.html" %}
+
+{% block page_css %}
+<style>
+    .sx-page-header { margin-bottom: 22px; }
+    .sx-page-header p {
+        color: var(--sx-muted);
+        margin-top: 4px;
+        font-size: 13.5px;
+    }
+    .sx-form {
+        max-width: 460px;
+    }
+    .sx-form-group {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+    .sx-form-group label {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--sx-muted);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+    }
+    .sx-form-group input,
+    .sx-form-group select {
+        width: 100%;
+    }
+    .sx-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 28px;
+        padding-top: 22px;
+        border-top: 1px solid var(--sx-border);
+    }
+    .sx-readonly-field {
+        padding: 9px 13px;
+        border: 1.5px solid var(--sx-border);
+        border-radius: var(--sx-rs);
+        background: var(--sx-surface-alt);
+        color: var(--sx-muted);
+        font-size: 13.5px;
+        font-weight: 600;
+    }
+    .sx-danger-zone {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--sx-border);
+        max-width: 460px;
+    }
+    .sx-danger-zone h3 {
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--sx-text-dark);
+        margin-bottom: 4px;
+    }
+    .sx-danger-zone p {
+        font-size: 12.5px;
+        color: var(--sx-muted);
+        margin-bottom: 14px;
+    }
+    .sx-danger-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+    }
+    .sx-danger-row input[type="password"] {
+        flex: 1;
+        min-width: 180px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="sx-page-header">
+    <h2 class="page-title" style="margin:0;">Edit User</h2>
+    <p>Update role and branch assignment, or manage account status.</p>
+</div>
+
+<div class="card">
+
+    <form method="post" action="/admin/users/{{ target.id }}/edit" class="sx-form">
+
+        <div class="sx-form-group">
+            <label>Username</label>
+            <div class="sx-readonly-field">{{ target.username }}</div>
+        </div>
+
+        <div class="sx-form-group">
+            <label>Role</label>
+            <select name="role" required>
+                <option value="lab_staff" {% if target.role == "lab_staff" %}selected{% endif %}>Lab Staff</option>
+                <option value="cashier" {% if target.role == "cashier" %}selected{% endif %}>Cashier</option>
+                {% if current_user.role == "super_admin" %}
+                <option value="branch_admin" {% if target.role == "branch_admin" %}selected{% endif %}>Branch Admin</option>
+                {% endif %}
+            </select>
+        </div>
+
+        {% if current_user.role == "super_admin" %}
+        <div class="sx-form-group">
+            <label>Branch</label>
+            <select name="branch_id" required>
+                {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if target.branch_id == branch.id %}selected{% endif %}>
+                        {{ branch.code }} — {{ branch.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="sx-form-actions">
+            <a href="/admin/users" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                Save Changes
+            </button>
+        </div>
+
+    </form>
+
+    <div class="sx-danger-zone">
+        <h3>Reset Password</h3>
+        <p>Set a new password for {{ target.username }}. They'll need to use it on their next sign-in.</p>
+        <form method="post" action="/admin/users/{{ target.id }}/reset-password" class="sx-danger-row">
+            <input type="password" name="new_password" placeholder="New password" required minlength="6">
+            <button type="submit" class="btn btn-accent">Reset Password</button>
+        </form>
+
+        <h3 style="margin-top:24px;">Account Status</h3>
+        {% if target.is_active %}
+        <p>Deactivating blocks this user from logging in but preserves their history and records.</p>
+        <form method="post" action="/admin/users/{{ target.id }}/deactivate">
+            <button type="submit" class="btn btn-danger" style="border:none;cursor:pointer;font-family:inherit;"
+                onclick="return confirm('Deactivate {{ target.username }}? They will not be able to log in.')">
+                Deactivate User
+            </button>
+        </form>
+        {% else %}
+        <p>This account is currently <span class="sx-badge sx-badge-danger">Inactive</span> and cannot log in.</p>
+        <form method="post" action="/admin/users/{{ target.id }}/activate">
+            <button type="submit" class="btn btn-primary">
+                Reactivate User
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}

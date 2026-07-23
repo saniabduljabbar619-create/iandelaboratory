@@ -274,6 +274,83 @@ def user_create(
     "/admin/users?success=User created successfully",
     status_code=303
 )
+    
+    
+    
+@router.get("/users/{user_id}/edit", response_class=HTMLResponse)
+def user_edit_page(
+    user_id: int,
+    request: Request,
+    current_user = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+    target = service.get_user(current_user, user_id)
+    branches = db.query(Branch).all() if current_user.role == "super_admin" else []
+
+    return templates.TemplateResponse(
+        "admin/user_edit.html",
+        {"request": request, "target": target, "branches": branches, "current_user": current_user},
+    )
+
+
+@router.post("/users/{user_id}/edit")
+def user_edit(
+    user_id: int,
+    role: str = Form(...),
+    branch_id: int | None = Form(None),
+    current_user = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+    service.update_user(current_user, user_id, role, branch_id)
+    return RedirectResponse(
+        "/admin/users?success=User updated successfully",
+        status_code=303,
+    )
+
+
+@router.post("/users/{user_id}/deactivate")
+def user_deactivate(
+    user_id: int,
+    current_user = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+    service.set_active(current_user, user_id, False)
+    return RedirectResponse(
+        "/admin/users?success=User deactivated",
+        status_code=303,
+    )
+
+
+@router.post("/users/{user_id}/activate")
+def user_activate(
+    user_id: int,
+    current_user = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+    service.set_active(current_user, user_id, True)
+    return RedirectResponse(
+        "/admin/users?success=User reactivated",
+        status_code=303,
+    )
+
+
+@router.post("/users/{user_id}/reset-password")
+def user_reset_password(
+    user_id: int,
+    new_password: str = Form(...),
+    current_user = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    service = UserService(db)
+    service.reset_password(current_user, user_id, new_password)
+    return RedirectResponse(
+        "/admin/users?success=Password reset successfully",
+        status_code=303,
+    )
 
 
 

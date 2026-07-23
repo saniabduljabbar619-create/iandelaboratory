@@ -35,6 +35,12 @@
         font-size: 12px;
         font-weight: 700;
     }
+    .sx-row-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+    .sx-inline-form { display: inline; }
 </style>
 {% endblock %}
 
@@ -78,6 +84,7 @@
                 <th>Username</th>
                 <th>Role</th>
                 <th>Branch</th>
+                <th>Status</th>
                 <th class="align-right">Actions</th>
             </tr>
         </thead>
@@ -113,8 +120,32 @@
                     {% endif %}
                 </td>
 
+                <td>
+                    {% if user.is_active %}
+                        <span class="sx-badge sx-badge-success">Active</span>
+                    {% else %}
+                        <span class="sx-badge sx-badge-danger">Inactive</span>
+                    {% endif %}
+                </td>
+
                 <td class="align-right">
-                    <a href="#" class="btn btn-secondary" style="font-size:12px;padding:6px 13px;">Edit</a>
+                    <div class="sx-row-actions">
+                        {% if user.role != "super_admin" %}
+                        <a href="/admin/users/{{ user.id }}/edit" class="btn btn-secondary" style="font-size:12px;padding:6px 13px;">Edit</a>
+                        {% if user.is_active %}
+                        <form method="post" action="/admin/users/{{ user.id }}/deactivate" class="sx-inline-form"
+                              onsubmit="return confirm('Deactivate {{ user.username }}?')">
+                            <button type="submit" class="btn btn-danger" style="font-size:12px;padding:6px 13px;border:none;cursor:pointer;font-family:inherit;">Deactivate</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="/admin/users/{{ user.id }}/activate" class="sx-inline-form">
+                            <button type="submit" class="btn btn-primary" style="font-size:12px;padding:6px 13px;">Reactivate</button>
+                        </form>
+                        {% endif %}
+                        {% else %}
+                        <span style="color:var(--sx-light);font-size:12px;">Protected</span>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
         {% endfor %}

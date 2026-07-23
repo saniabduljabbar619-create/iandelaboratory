@@ -26,7 +26,7 @@ class Referrer(Base):
     address = Column(String(500), nullable=True)
     contact_person = Column(String(255), nullable=True)
     license_no = Column(String(100), nullable=True)
-    discount_percent = Column(Numeric(5, 2), nullable=False, default=0.00)
+    discount_percent = Column(Numeric(5, 2), nullable=False, default=0.00, server_default="0.00")
     notes = Column(Text, nullable=True)
 
     # Financial

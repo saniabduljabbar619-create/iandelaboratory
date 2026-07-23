@@ -20,7 +20,7 @@ class TestRequest(Base):
 
     request_no = Column(String(50), unique=True, nullable=True, index=True)
     lab_number = Column(String(50), nullable=True, index=True)
-    priority = Column(String(20), nullable=False, default="normal")
+    priority = Column(String(20), nullable=False, default="normal", server_default="normal")
     # normal | active | urgent | emergency
 
     patient_id = Column(Integer, nullable=False, index=True)
@@ -47,4 +47,3 @@ class TestRequest(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
     branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"), nullable=False)
-

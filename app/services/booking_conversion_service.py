@@ -131,10 +131,14 @@ class BookingConversionService:
                 date_of_birth=anchor.dob,
                 gender=anchor.gender,
                 branch_id=branch_id,
-                patient_no=BookingConversionService._next_patient_no(db),  # ← real ID
+                referrer_id=booking.referrer_id,  # link to the referrer, if any
+                patient_no=BookingConversionService._next_patient_no(db),
             )
             db.add(patient)
             db.flush()
+        elif booking.referrer_id and not patient.referrer_id:
+            # Existing patient found by phone but not yet linked to a referrer
+            patient.referrer_id = booking.referrer_id
 
         # ── Step 4: Backfill patient_id on items ─────────────────────────────
         if not anchor.patient_id:

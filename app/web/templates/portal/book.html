@@ -643,9 +643,11 @@ bookingTypes.forEach(type => {
             genderInput.removeAttribute("required");
             emailInput.removeAttribute("required");
 
-            // Optionally require referrer email when grouping
+            // Referrer name + phone required for group bookings — phone is
+            // what links the booking to a real Referrer account
             referrerEmailField.setAttribute("required", true);
             referrerNameField.setAttribute("required", true);
+            referrerPhoneField.setAttribute("required", true);
 
         } else {
             // Hide group sections
@@ -662,6 +664,7 @@ bookingTypes.forEach(type => {
             // FIX: Ensure referrer fields are NOT required when hidden
             referrerEmailField.removeAttribute("required");
             referrerNameField.removeAttribute("required");
+            referrerPhoneField.removeAttribute("required");
         }
         updateSummary();
     });

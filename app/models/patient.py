@@ -30,7 +30,7 @@ class Patient(Base):
 
     # v2.0 — portal access
     portal_code = Column(String(255), nullable=True)      # hashed
-    portal_enabled = Column(Boolean, default=True, nullable=False)
+    portal_enabled = Column(Boolean, default=True, nullable=False, server_default="1")
 
     # v2.0 — referrer link (nullable; usually set at booking)
     referrer_id = Column(Integer, nullable=True)
