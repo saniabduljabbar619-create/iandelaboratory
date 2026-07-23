@@ -62,6 +62,10 @@ app.add_middleware(
 # --------------------------------------------------
 # STATIC + UPLOADS (SAFE PATHS)
 # --------------------------------------------------
+# `uploads/` is gitignored (contains patient payment proofs, referrer avatars —
+# never committed), so a fresh container built straight from git won't have it
+# on disk yet. Create it before mounting, or app startup crashes here.
+os.makedirs("uploads", exist_ok=True)
 app.mount("/static", StaticFiles(directory="app/web/static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
