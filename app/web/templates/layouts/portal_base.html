@@ -362,6 +362,13 @@ img{max-width:100%;display:block}
   text-transform:uppercase;letter-spacing:.06em;
 }
 
+.slx-footer-admin{
+  color:var(--slx-light);font-size:.7rem;font-weight:600;
+  margin-left:14px;padding-left:14px;border-left:1px solid var(--slx-border);
+  transition:color .15s;
+}
+.slx-footer-admin:hover{color:var(--slx-muted)}
+
 /* ─── RESPONSIVE ─────────────────────────────── */
 @media(max-width:768px){
   .slx-nav{padding:0 16px;gap:12px}
@@ -437,6 +444,9 @@ img{max-width:100%;display:block}
     <span>SAS</span>
     &nbsp;All results are for reference purposes. Consult your physician for medical advice.
   </div>
+
+  <a href="/admin/login" class="slx-footer-admin">Admin</a>
+</footer>
 </footer>
 
 {% block page_js %}{% endblock %}
