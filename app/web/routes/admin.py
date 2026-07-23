@@ -515,7 +515,24 @@ def approve_credit_booking(
 
     return {"status": "approved_credit"}
 
+@router.post("/bookings/{booking_id}/convert")
+def admin_convert_booking(
+    booking_id: int,
+    current_user = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    from app.services.booking_conversion_service import BookingConversionService
+    from fastapi.responses import JSONResponse
 
+    branch_id = getattr(current_user, "branch_id", None) or 1
+    cashier_name = getattr(current_user, "username", None) or "admin"
+
+    try:
+        result = BookingConversionService.convert_booking(db, booking_id, branch_id, cashier_name)
+    except Exception as e:
+        return JSONResponse({"detail": str(e)}, status_code=400)
+
+    return result
 
 # =========================================
 # BATCH SETTLEMENT ACTION

@@ -172,3 +172,53 @@ class BookingConversionService:
 
         db.commit()
         return created_requests
+    
+    @staticmethod
+    def convert_booking(db: Session, booking_id: int, branch_id: int, cashier_name: str) -> dict:
+        """
+        Converts every unconverted patient in a booking into a real Patient
+        (linked to the referrer, if any) + real paid TestRequests.
+        Shared by both the web Admin (/admin/...) and desktop (/api/...) routes.
+        """
+        from app.models.booking_item import BookingItem
+
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            raise Exception("Booking not found")
+        if booking.status == "converted":
+            raise Exception("Booking already converted")
+        if booking.status not in ["payment_verified", "approved_credit"]:
+            raise Exception("Booking not ready for conversion")
+
+        items = db.query(BookingItem).filter(
+            BookingItem.booking_id == booking_id,
+            BookingItem.converted == False,
+        ).all()
+        if not items:
+            raise Exception("Nothing to convert")
+
+        seen: dict[tuple, int] = {}
+        for item in items:
+            key = (item.patient_name, item.patient_phone)
+            if key not in seen:
+                seen[key] = item.id
+
+        converted, errors = [], []
+        for (name, phone), anchor_item_id in seen.items():
+            try:
+                created = BookingConversionService.convert_patient(
+                    db=db,
+                    booking_id=booking_id,
+                    patient_id=anchor_item_id,
+                    branch_id=branch_id,
+                    cashier_name=cashier_name,
+                )
+                converted.append({"patient_name": name, "tests_created": len(created)})
+            except Exception as e:
+                errors.append({"patient_name": name, "error": str(e)})
+
+        return {
+            "converted_count": len(converted),
+            "patients": converted,
+            "errors": errors,
+        }

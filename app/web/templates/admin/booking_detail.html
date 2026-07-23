@@ -272,7 +272,7 @@ async function convertBooking(bookingId) {
     btn.textContent = 'Converting…';
 
     try {
-        const res = await fetch(`/api/payments/bookings/${bookingId}/convert`, { method: 'POST' });
+        const res = await fetch(`/admin/bookings/${bookingId}/convert`, { method: 'POST' });
         const data = await res.json();
 
         resultBox.style.display = 'block';
