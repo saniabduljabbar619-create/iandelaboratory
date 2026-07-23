@@ -111,6 +111,24 @@ class PortalService:
             raise HTTPException(status_code=404, detail="Result not found or not yet released.")
         return r
 
+    def get_ssdo_for_result(self, result_id: int):
+        """
+        Returns the SSDOIndex row for a single test result, or None.
+        Used by the result-detail page for the severity badge, test category,
+        and disease tags — same lookup _serialize_result() does internally
+        for the list page, exposed separately here since this page works
+        with the raw TestResult object rather than a serialized dict.
+        """
+        from app.models.ssdo_index import SSDOIndex
+        return (
+            self.db.query(SSDOIndex)
+            .filter(
+                SSDOIndex.record_type == "test_result",
+                SSDOIndex.record_id == result_id,
+            )
+            .first()
+        )
+
     def get_patient_profile(self, patient_id: int) -> dict:
         patient = self.db.query(Patient).filter(Patient.id == patient_id).first()
         if not patient:
@@ -280,7 +298,6 @@ class PortalService:
                 if hasattr(result.status, "value") else str(result.status),
             "created_at": result.created_at.isoformat() if result.created_at else None,
             "created_at_display": result.created_at.strftime("%d %b %Y") if result.created_at else "-",
-            "created_at_full_display": result.created_at.strftime("%d %B %Y, %I:%M %p") if result.created_at else "—",
             "disease_tags": ssdo.disease_tags if ssdo else [],
             "severity_flag": ssdo.severity_flag if ssdo else "unknown",
             "sas_assisted": bool(result.sas_predictions),

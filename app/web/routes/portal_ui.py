@@ -152,12 +152,14 @@ def view_result(request: Request, result_id: int):
     patient_id = service.verify_token(token)
 
     result = service.get_released_result(patient_id, result_id)
+    ssfo = service.get_ssdo_for_result(result_id)
 
     return templates.TemplateResponse(
         "portal/result_view.html",
         {
             "request": request,
-            "result": result
+            "result": result,
+            "ssfo": ssfo,
         }
     )
 

@@ -168,7 +168,7 @@
     <div>
       <div class="slx-rv-test-name">{{ result.test_type.name if result.test_type else 'Laboratory Result' }}</div>
       <div class="slx-rv-test-sub">
-        <span>📅 {{ result.created_at_full_display }}</span>
+        <span>📅 {{ result.created_at.strftime('%d %B %Y, %I:%M %p') if result.created_at else '—' }}</span>
         <span>🆔 Report No: SLX-{{ '%05d' % result.id }}</span>
       </div>
     </div>
