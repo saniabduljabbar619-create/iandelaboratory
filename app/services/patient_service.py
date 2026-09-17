@@ -39,12 +39,16 @@ class PatientService:
         current_year_yy = now.strftime("%y") 
         year_prefix = f"{self.PREFIX}-{current_year_yy}-"
 
-        # 2. Find the highest number for the current year prefix
-        # We use 'with_for_update' to prevent race conditions during high-volume registration
+        # 2. Find the highest number for the current year prefix.
+        # IMPORTANT: order by string LENGTH first, then lexicographically —
+        # plain string DESC breaks once the sequence crosses from 4-digit
+        # numbers (…-9999) into 5-digit numbers (…-10000+), because
+        # "…-9999" > "…-10000" as a string even though it's numerically
+        # smaller. Length-first ordering restores correct numeric ordering.
         last = (
             self.db.query(Patient)
             .filter(Patient.patient_no.like(f"{year_prefix}%"))
-            .order_by(Patient.patient_no.desc())
+            .order_by(func.length(Patient.patient_no).desc(), Patient.patient_no.desc())
             .with_for_update()
             .first()
         )
