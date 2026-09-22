@@ -70,8 +70,8 @@ def bootstrap(db: Session):
     # Super Admin Logic
     if db.query(User).count() == 0:
         admin = User(
-            username="Abdoull",
-            password_hash=hash_password("Abdoull202012"),
+            username="Profnur",
+            password_hash=hash_password("@Zulnur4eva"),
             role="super_admin",
             branch_id=None,
         )
