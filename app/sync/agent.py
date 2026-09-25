@@ -136,11 +136,14 @@ def pull() -> int:
             # to the cloud on the next request.
             state.put(db.connection(), "pull_ack_ids", resp.get("ids", []))
             db.commit()
+            jobs = sync.reindex_jobs(stats) if changes else []
         except Exception:
             db.rollback()
             raise
         finally:
             db.close()
+        for job, local_id in jobs:
+            job(local_id)
         _download_files([(ch["table"], ch["sync_id"], col) for ch in changes for col in _file_columns(ch)])
         total += len(changes)
         if not resp.get("more"):

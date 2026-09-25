@@ -20,7 +20,7 @@ from __future__ import annotations
 import hmac
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -60,10 +60,12 @@ class PullIn(BaseModel):
 
 
 @router.post("/push", dependencies=[Depends(_require_peer)])
-def push(payload: PushIn, db: Session = Depends(get_db)):
+def push(payload: PushIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     try:
         stats = sync.apply_incoming(db, payload.changes)
         db.commit()
+        for job, local_id in sync.reindex_jobs(stats):
+            background_tasks.add_task(job, local_id)
     except sync.SyncError as e:
         db.rollback()
         raise HTTPException(status_code=409, detail=str(e))

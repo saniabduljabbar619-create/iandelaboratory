@@ -372,6 +372,7 @@ def _apply_upsert(conn, spec: TableSpec, change: dict, final: bool, stats: dict)
                 conn.execute(update(t).where(t.c.id == local_id).values({col: local_path}))
 
     stats["applied"] += 1
+    stats.setdefault("_touched", set()).add((spec.table, local_id))
     return True
 
 
@@ -432,3 +433,19 @@ def apply_incoming(db: Session, changes: list[dict]) -> dict:
     finally:
         db.info.pop("sync_applying", None)
     return stats
+
+
+# SSDO index (patient timelines / disease history used by the portals) is
+# derived data, rebuilt on each node rather than synced.
+_REINDEX = {
+    "patients": "index_patient_task",
+    "test_requests": "index_request_task",
+    "test_results": "index_result_task",
+}
+
+
+def reindex_jobs(stats: dict) -> list:
+    """Call after the batch is committed: [(function, local_id), ...] to run."""
+    from app.services.ssdo import tasks
+    touched = stats.pop("_touched", set())
+    return [(getattr(tasks, _REINDEX[t]), i) for t, i in sorted(touched) if t in _REINDEX]

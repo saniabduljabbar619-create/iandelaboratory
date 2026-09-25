@@ -22,17 +22,23 @@ the local network (Wi-Fi or cable) up.
 
 ## What syncs, and who wins
 
-- **Lab work (LAN → cloud):** patients, test requests, results, payments,
+- **Existing data:** step 4 below copies the whole cloud database, with
+  every patient, result and payment so far, onto the server PC once. From
+  then on both sides stay identical.
+- **Two-way sync:** every change on either side goes to the other, whether
+  it's a new record or an edit to an old one. That covers patients, test
+  requests, results, payments, bookings and payment proofs, referrers and
   referrals, blood bank, users, test types and templates, notifications and
-  the audit log. Patients can then see released results on the online
-  portal once the server PC syncs.
-- **Online activity (cloud → LAN):** portal bookings and their items,
-  payment proof images, referrer portal codes and photos, "book tests" from
-  the referrer portal, and users created on the cloud admin page.
+  the audit log.
+  - Lab work goes up, so patients see released results on the online portal.
+  - Online activity comes down: portal bookings, payment proof images,
+    referrer "book tests", portal codes and photos.
 - **LAN-only authority:** numbering settings and counters, lab report
   counters and subscriptions. The cloud never overwrites these.
-- **Not synced:** SSDO index and analytics (rebuilt from the data), and
-  portal lock-out counters (kept per server).
+- **Rebuilt on each side instead of copied:** the SSDO patient history
+  index is refreshed automatically for every record that arrives. Analytics
+  is recalculated from the data.
+- **Kept per server:** portal lock-out counters.
 - **Same record edited on both sides while offline:** the newer edit wins
   and ties go to the server PC. A record deleted on one side stays deleted.
 - **Numbers:**
