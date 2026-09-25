@@ -74,7 +74,7 @@ Notes for Render:
   10-second sync keeps it awake. That uses about 730 of the free plan's
   750 hours a month, so it only fits if this is your only free service.
 
-This step must come **before** step 2. From this moment the cloud records
+This step must come **before** step 4 (copying the database). From this moment the cloud records
 every change it makes, so nothing done online is missed.
 
 ### 2. Server PC: install the software
