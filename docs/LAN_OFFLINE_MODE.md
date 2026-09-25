@@ -47,7 +47,7 @@ the local network (Wi-Fi or cable) up.
 
 ### 1. Cloud: deploy this version and switch sync on (do this first)
 
-On the cloud host, add these environment variables and redeploy:
+In the Render dashboard, open the web service → **Environment**, add these variables and save (Render redeploys automatically):
 
 ```
 NODE_ROLE=cloud
@@ -62,6 +62,17 @@ for step 3.
 On startup, the cloud creates three new empty tables: `sync_outbox`,
 `sync_map` and `sync_state`. Existing tables are not changed. If you use
 Alembic instead, the migration is `0006_lan_sync_tables`.
+
+Notes for Render:
+- `SYNC_CLOUD_URL` in step 3 is the service's Render address, e.g.
+  `https://<your-service>.onrender.com`.
+- Render's disk is wiped on every deploy or restart, so payment proofs
+  uploaded on the portal only live there until the next deploy. The server
+  PC downloads each one within seconds of syncing, so the server PC becomes
+  the safe copy.
+- On Render's free plan the service sleeps when idle. The server PC's
+  10-second sync keeps it awake. That uses about 730 of the free plan's
+  750 hours a month, so it only fits if this is your only free service.
 
 This step must come **before** step 2. From this moment the cloud records
 every change it makes, so nothing done online is missed.
