@@ -31,6 +31,7 @@ from app.core.dependencies import get_current_user, get_db
 from app.sync import engine as sync
 from app.sync import state
 from app.sync.files import safe_upload_path
+from app.sync.progress import progress_status
 from app.sync.registry import spec_for
 
 router = APIRouter(prefix="/api/sync", tags=["sync"])
@@ -81,9 +82,10 @@ def pull(payload: PullIn, db: Session = Depends(get_db)):
     # Everything the LAN server confirmed last time is done; drop it first.
     sync.delete_outbox(conn, payload.ack_ids)
     changes, ids = sync.collect_outgoing(conn, payload.limit)
-    more = sync.pending_count(conn) > len(ids)
+    remaining = max(sync.pending_count(conn) - len(ids), 0)
     db.commit()
-    return {"changes": changes, "ids": ids, "more": more}
+    # "remaining" lets the LAN server show how much is still waiting up here.
+    return {"changes": changes, "ids": ids, "more": remaining > 0, "remaining": remaining}
 
 
 def _row_file(db: Session, table: str, sync_id: str, column: str):
@@ -125,17 +127,7 @@ async def put_file(
 
 @router.get("/status", dependencies=[Depends(_require_enabled)])
 def status(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    conn = db.connection()
-    return {
-        "enabled": True,
-        "role": settings.NODE_ROLE,
-        "cloud_url": settings.SYNC_CLOUD_URL if settings.NODE_ROLE == "lan" else None,
-        "online": state.get(conn, "online"),
-        "last_ok_at": state.get(conn, "last_ok_at"),
-        "last_error": state.get(conn, "last_error"),
-        "last_error_at": state.get(conn, "last_error_at"),
-        "pending_changes": sync.pending_count(conn),
-    }
+    return progress_status(db.connection())
 
 
 @router.post("/run-now", dependencies=[Depends(_require_enabled)])

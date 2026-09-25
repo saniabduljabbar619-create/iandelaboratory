@@ -45,16 +45,8 @@ def status() -> None:
     db = SessionLocal()
     try:
         conn = db.connection()
-        print(json.dumps({
-            "role": settings.NODE_ROLE,
-            "sync_enabled": settings.SYNC_ENABLED,
-            "cloud_url": settings.SYNC_CLOUD_URL,
-            "pending_changes": sync.pending_count(conn),
-            "online": state.get(conn, "online"),
-            "last_ok_at": state.get(conn, "last_ok_at"),
-            "last_error": state.get(conn, "last_error"),
-            "last_error_at": state.get(conn, "last_error_at"),
-        }, indent=2))
+        from app.sync.progress import progress_status
+        print(json.dumps(progress_status(conn), indent=2))
     finally:
         db.close()
 

@@ -134,7 +134,10 @@ def pull() -> int:
                     log.warning("pull: %s", w)
             # Saved in the same transaction as the applied rows, and confirmed
             # to the cloud on the next request.
-            state.put(db.connection(), "pull_ack_ids", resp.get("ids", []))
+            conn = db.connection()
+            state.put(conn, "pull_ack_ids", resp.get("ids", []))
+            state.put(conn, "pending_down", resp.get("remaining", 0))
+            _count_synced(conn, len(resp.get("ids", [])))
             db.commit()
             jobs = sync.reindex_jobs(stats) if changes else []
         except Exception:
@@ -163,6 +166,7 @@ def push() -> int:
                 _post("/api/sync/push", json={"changes": changes})
                 _upload_files(db, changes)
             sync.delete_outbox(db.connection(), ids)
+            _count_synced(db.connection(), len(ids))
             db.commit()
             total += len(changes)
         except Exception:
@@ -176,8 +180,10 @@ def run_once() -> dict:
     """Pull, renumber, push. Records the outcome in sync_state for /api/sync/status."""
     result = {"pulled": 0, "renumbered": 0, "pushed": 0}
     now = datetime.utcnow().isoformat()
+    _reset_progress_if_idle()
     try:
         result["pulled"] = pull()
+        _record(online=True)  # cloud answered: show "syncing", not "offline", while the backlog drains
         db = SessionLocal()
         try:
             result["renumbered"] = finalize_temp_lab_numbers(db)
@@ -185,6 +191,7 @@ def run_once() -> dict:
             db.close()
         result["pushed"] = push()
         _record(online=True, last_ok_at=now, last_error=None, last_error_at=None)
+        _reset_progress_if_idle()
     except CloudUnreachable as e:
         _record(online=False, last_error=f"cloud unreachable: {e}", last_error_at=now)
         raise
@@ -192,6 +199,26 @@ def run_once() -> dict:
         _record(online=True, last_error=str(e)[:500], last_error_at=now)
         raise
     return result
+
+
+def _count_synced(conn, n: int) -> None:
+    """Progress bar: changes moved (either direction) since both sides were last identical."""
+    if n:
+        state.put(conn, "synced_since_idle", int(state.get(conn, "synced_since_idle", 0) or 0) + n)
+
+
+def _reset_progress_if_idle() -> None:
+    """Once nothing is waiting in either direction, the next backlog starts from zero."""
+    db = SessionLocal()
+    try:
+        conn = db.connection()
+        if sync.pending_count(conn) == 0 and not state.get(conn, "pending_down", 0):
+            state.put(conn, "synced_since_idle", 0)
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
 
 
 def _record(**values) -> None:
