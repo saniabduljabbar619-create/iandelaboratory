@@ -119,6 +119,12 @@ class NumberingService:
         return self.render(fmt, seq, today)
 
     def next_lab_number(self) -> str:
+        # LAN mode: the LAN server issues real lab numbers; the cloud hands out
+        # a temporary one that the LAN server replaces when it syncs down.
+        from app.sync.numbers import cloud_issues_temp_numbers, temp_lab_number
+        if cloud_issues_temp_numbers():
+            return temp_lab_number()
+
         fmt = self.get("lab_number_format")
         policy = self.get("lab_reset_policy")
         today = date.today()

@@ -12,6 +12,7 @@ from app.models.booking_item import BookingItem
 from app.models.test_type import TestType
 from app.services.notification_service import NotificationService
 from app.services.referrer_service import ReferrerService
+from app.sync.numbers import booking_code
 
 
 
@@ -117,7 +118,7 @@ class BookingService:
             self.db.add(booking)
             self.db.flush()
 
-            booking.booking_code = f"SLB-BKG-{booking.id:04d}"
+            booking.booking_code = booking_code(booking.id)
 
             for entry in items:
 
@@ -278,7 +279,7 @@ class BookingService:
             # Generate booking code
             # --------------------------------------------------
 
-            booking.booking_code = f"SLB-BKG-{booking.id:04d}"
+            booking.booking_code = booking_code(booking.id)
 
             # --------------------------------------------------
             # Insert booking items

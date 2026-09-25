@@ -9,6 +9,7 @@ per-patient result downloads.
 from __future__ import annotations
 
 import os
+from datetime import datetime
 import shutil
 from pathlib import Path
 from typing import Optional
@@ -120,6 +121,9 @@ class ReferrerProfileService:
             shutil.copyfileobj(file.file, f)
 
         ref.avatar_path = str(dest)
+        # The path is the same on every re-upload, so without this the row
+        # wouldn't change and a new photo would never reach the other server.
+        ref.updated_at = datetime.utcnow()
         self.db.commit()
 
         return {

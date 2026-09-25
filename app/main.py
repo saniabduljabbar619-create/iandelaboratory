@@ -35,6 +35,7 @@ from app.api.routers.analytics import router as analytics_router
 from app.api.routers.onboarding import router as onboarding_router
 from app.api.routers.voice import router as voice_router
 from app.api.routers.settings import router as settings_router
+from app.api.routers.sync import router as sync_router
 
 
 # --------------------------------------------------
@@ -101,6 +102,14 @@ app.include_router(analytics_router)
 app.include_router(onboarding_router)
 app.include_router(voice_router)
 app.include_router(settings_router)
+app.include_router(sync_router)
+
+# --------------------------------------------------
+# LAN <-> CLOUD SYNC (off unless SYNC_ENABLED=true)
+# --------------------------------------------------
+if settings.SYNC_ENABLED:
+    from app.sync import capture
+    capture.install()
 
 # --------------------------------------------------
 # STARTUP
@@ -110,6 +119,9 @@ def _startup():
     os.makedirs(BASE_DIR.parent / "uploads" / "payments", exist_ok=True)
     os.makedirs(BASE_DIR.parent / "uploads" / "results", exist_ok=True)
     init_db()
+    if settings.SYNC_ENABLED and settings.NODE_ROLE == "lan":
+        from app.sync import agent
+        agent.start()
 
 # --------------------------------------------------
 # TEST ROUTE (AUDIT)
