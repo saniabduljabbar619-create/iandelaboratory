@@ -80,8 +80,11 @@ def _download_files(wanted: list[tuple[str, str, str]]) -> None:
                 continue
             t = sync.table_of(table)
             path = safe_upload_path(conn.execute(select(t.c[col]).where(t.c.id == local_id)).scalar())
-            if not path or path.exists():
+            if not path:
                 continue
+            # Always fetch: the row changed on the cloud, and files such as
+            # uploads/referrers/<id>.jpg are overwritten in place, so an
+            # existing local file may be an old version.
             try:
                 resp = requests.get(settings.SYNC_CLOUD_URL.rstrip("/") + "/api/sync/file",
                                     headers={"X-Sync-Token": settings.SYNC_TOKEN}, timeout=TIMEOUT,
@@ -91,9 +94,12 @@ def _download_files(wanted: list[tuple[str, str, str]]) -> None:
                 continue
             if resp.status_code == 200:
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(resp.content)
+                tmp = path.with_name(path.name + ".part")
+                tmp.write_bytes(resp.content)
+                tmp.replace(path)   # never leave a half-written file behind
             elif resp.status_code == 404:
-                log.warning("file %s is missing on the cloud too; skipping", path)
+                # e.g. Render's disk was wiped by a redeploy: keep our copy.
+                log.warning("file %s is not on the cloud; keeping the local copy", path)
             else:
                 failed.append([table, sync_id, col])
         state.put(conn, "file_retry", failed)
