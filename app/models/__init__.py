@@ -36,3 +36,6 @@ from app.models.blood_bank import BloodDonor, BloodInventory, CrossMatch
 from app.models.analytics import AnalyticsSnapshot, DiseaseWeeklyTrend
 from app.models.voice_announcement import VoiceAnnouncement
 from app.models.portal_auth import PortalAuthAttempt
+
+# LAN <-> cloud sync bookkeeping
+from app.sync.models import SyncOutbox, SyncMap, SyncState

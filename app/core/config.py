@@ -28,5 +28,20 @@ class Settings(BaseSettings):
     # v2.0 — AI layer
     ANTHROPIC_API_KEY: Optional[str] = None
 
+    # Aiven requires SSL; a local MySQL on the LAN server PC usually doesn't.
+    DB_SSL: bool = True
+
+    # ---- Offline LAN mode + cloud sync (see docs/LAN_OFFLINE_MODE.md) ----
+    # "cloud" = the hosted server (Aiven).  "lan" = the server PC in the lab.
+    NODE_ROLE: str = "cloud"
+    # Master switch. While False nothing sync-related runs on this node.
+    SYNC_ENABLED: bool = False
+    # Shared secret between the LAN server and the cloud (same value on both).
+    SYNC_TOKEN: Optional[str] = None
+    # LAN only: base URL of the cloud server, e.g. https://api.example.com
+    SYNC_CLOUD_URL: Optional[str] = None
+    SYNC_INTERVAL_SECONDS: int = 10
+    SYNC_BATCH_SIZE: int = 200
+
 
 settings = Settings()
